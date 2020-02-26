@@ -62,175 +62,6 @@ class Trainer_valuator(object):
         else: torch.save(self.trainer.model.state_dict(), checkpoint_path)
 
 
-
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=200,
-#         batch_size=100,
-#         lr=1e-2,
-#         lr_scheduler_milestones=[50, 170],
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         # plot_interval=5,
-#         model='alexnet_cifar',
-#         dataset="cifar10",
-#         gpu_idx = "0", # choose gpu
-#         # save_model_path="checkpoints/resnet34.pth",
-#         # load_model_path='checkpoints/cifar100_resnet18_epoch99_acc92.83.pth', 
-#         random_seed=2,
-#         # print_config=True,
-#         # print_device=True,
-#         num_workers = 5, # 使用多进程加载数据
-#         # use_visdom = True, # 使用visdom可视化训练过程
-#     )
-#     trainer_valuator.run()
-#     print("end")
-
-# # test
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=90,
-#         batch_size=50,
-#         lr=1e-1,
-#         lr_scheduler_milestones=[31, 61],
-#         model='test',
-#         dataset="cifar10",
-#         gpu_idx = "7", # choose gpu
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         random_seed=2,
-#         # num_workers = 20, # 使用多进程加载数据
-#         use_visdom = True, # 使用visdom可视化训练过程
-#         plot_interval=50,
-#         env='test_test',
-#     )
-#     trainer_valuator.run()
-#     print("end")
-
-# ---------------------------imagenet------------------------------------------------------
-
-# # resnet
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=50,
-#         batch_size=200,
-#         lr=1e-1,
-#         lr_scheduler_milestones=[20, 30, 40],
-#         model='resnext50_32x4d',
-#         dataset="imagenet",
-#         gpu_idx = "2, 3", # choose gpu
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         random_seed=2,
-#         num_workers = 10, # 使用多进程加载数据
-#         use_visdom = True, # 使用visdom可视化训练过程
-#         plot_interval=200,
-#         env='imagenet_classification_resnext50_32x4d',
-#     )
-#     trainer_valuator.run()
-#     print("end")
-    
-
-# # vgg
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=100,
-#         batch_size=200,
-#         lr=1e-2,
-#         lr_scheduler_milestones=[50],
-#         model='vgg11_cifar',
-#         dataset="imagenet",
-#         gpu_idx = "0, 1", # choose gpu
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         random_seed=2,
-#         num_workers = 10, # 使用多进程加载数据
-#         use_visdom = True, # 使用visdom可视化训练过程
-#         plot_interval=200,
-#         env='imagenet_classification',
-#     )
-#     trainer_valuator.run()
-#     print("end")
-
-
-# ---------------------------cifar------------------------------------------------------
-
-# # shufflenet
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=200,
-#         batch_size=100,
-#         lr=1e-2,
-#         lr_scheduler_milestones=[100, 150],
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         model='shufflenet_v2_x2_0',
-#         dataset="cifar10",
-#         gpu_idx = "1", # choose gpu
-#         random_seed=2,
-#         num_workers = 5, # 使用多进程加载数据
-#     )
-#     trainer_valuator.run()
-#     print("end")
-
-
-# # mobilenet
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=200,
-#         batch_size=100,
-#         lr=1e-2,
-#         lr_scheduler_milestones=[100, 150],
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         model='mobilenet_v2',
-#         dataset="cifar10",
-#         gpu_idx = "0", # choose gpu
-#         random_seed=2,
-#         num_workers = 5, # 使用多进程加载数据
-#     )
-#     trainer_valuator.run()
-#     print("end")
-
-
-# # densenet
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=80,
-#         batch_size=100,
-#         lr=1e-2,
-#         lr_scheduler_milestones=[40, 60],
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         model='densenet_cifar2',
-#         dataset="cifar100",
-#         gpu_idx = "3", # choose gpu
-#         random_seed=2,
-#         num_workers = 5, # 使用多进程加载数据
-#     )
-#     trainer_valuator.run()
-#     print("end")
-
-
-# # resnext
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=80,
-#         batch_size=100,
-#         lr=1e-2,
-#         lr_scheduler_milestones=[40, 60],
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         model='resnext29_8x16d',
-#         dataset="cifar10",
-#         gpu_idx = "1, 2", # choose gpu
-#         random_seed=2,
-#         num_workers = 5, # 使用多进程加载数据
-#     )
-#     trainer_valuator.run()
-#     print("end")
-
-
 # # resnet
 # if __name__ == "__main__":
 #     trainer_valuator = Trainer_valuator(
@@ -257,10 +88,13 @@ if __name__ == "__main__":
         batch_size=100,
         lr=1e-2,
         lr_scheduler_milestones=[81, 122],
-        model='vgg19_cifar',
-        env='cifar10_vgg19_xxx',
+        model='vgg16_bn_cifar',
+        env='slimming_vgg16_bn_s',
+        legend='slimming',
+        slimming=True,
+        gpu_idx = "1", # choose gpu
         dataset="cifar10",
-        gpu_idx = "7", # choose gpu
+        slimming_lambda=1e-4,
         weight_decay=1e-4,
         momentum=0.9,
         random_seed=2,
@@ -271,21 +105,3 @@ if __name__ == "__main__":
     trainer_valuator.run()
     print("end")
 
-
-# # alexnet
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=150,
-#         batch_size=100,
-#         lr=1e-2,
-#         lr_scheduler_milestones=[50, 110],
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         model='alexnet_cifar',
-#         dataset="cifar100",
-#         gpu_idx = "7", # choose gpu
-#         random_seed=2,
-#         num_workers = 5, # 使用多进程加载数据
-#     )
-#     trainer_valuator.run()
-#     print("end")

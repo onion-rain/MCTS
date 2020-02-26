@@ -188,6 +188,10 @@ class Trainer(object):
             # compute gradient and do SGD step
             self.optimizer.zero_grad()
             loss.backward()
+
+            if self.config.slimming:
+                self.updateBN()
+                
             self.optimizer.step()
 
             # meters update
@@ -254,6 +258,12 @@ class Trainer(object):
         
         # update learning rate
         self.lr_scheduler.step()
+
+    # additional subgradient descent on the sparsity-induced penalty term
+    def updateBN(self):
+        for m in self.model.modules():
+            if isinstance(m, torch.nn.BatchNorm2d):
+                m.weight.grad.data.add_(self.config.slimming_lambda*torch.sign(m.weight.data))  # L1
 
 
 if __name__ == "__main__":

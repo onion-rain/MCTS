@@ -31,9 +31,11 @@ class Configuration(object):
     momentum = 0.9
     lr_scheduler_milestones = [100, 150]
     dataloader_droplast = False
-
     dataset = "cifar10" # Dataset can only be cifar10 or cifar100
     
+    slimming = False
+    slimming_lambda = 1e-4
+
     # # windows
     # dataset_root = 'E:\competition\Python\PyTorch\dataset/' # 训练集存放路径
     # load_model_path = None # 加载预训练的模型的路径，为None代表不加载
