@@ -66,18 +66,14 @@ class Trainer_valuator(object):
         else: torch.save(self.trainer.model.state_dict(), save_model_path)
 
 
-
-# vgg
+# vgg retrain
 if __name__ == "__main__":
     trainer_valuator = Trainer_valuator(
-        max_epoch=150,
+        max_epoch=40,
         batch_size=100,
         lr=1e-2,
-        lr_scheduler_milestones=[81, 122],
+        lr_scheduler_milestones=[20],
         model='vgg_cfg',
-        env='slim_vgg_cfg',
-        legend='sparsity_vgg_cfg',
-        slim=True,
         gpu_idx = "4", # choose gpu
         dataset="cifar10",
         slim_lambda=1e-4,
@@ -85,11 +81,36 @@ if __name__ == "__main__":
         momentum=0.9,
         random_seed=2,
         num_workers = 10, # 使用多进程加载数据
-        use_visdom = True, # 使用visdom可视化训练过程
-        plot_interval=50,
+        load_model_path="slimmed_checkpoints/cifar10_vgg_cfg_acc57.48.pth"
     )
     trainer_valuator.run()
     print("end")
+
+
+# # vgg
+# if __name__ == "__main__":
+#     trainer_valuator = Trainer_valuator(
+#         max_epoch=150,
+#         batch_size=100,
+#         lr=1e-2,
+#         lr_scheduler_milestones=[81, 122],
+#         model='vgg_cfg',
+#         env='slim_vgg_cfg',
+#         legend='sparsity_vgg_cfg',
+#         slim=True,
+#         gpu_idx = "4", # choose gpu
+#         dataset="cifar10",
+#         slim_lambda=1e-4,
+#         weight_decay=1e-4,
+#         momentum=0.9,
+#         random_seed=2,
+#         num_workers = 10, # 使用多进程加载数据
+#         use_visdom = True, # 使用visdom可视化训练过程
+#         plot_interval=50,
+#     )
+#     trainer_valuator.run()
+#     print("end")
+
 
 # # nin
 # if __name__ == "__main__":

@@ -30,7 +30,7 @@ class Slimmer_tester(object):
         self.tester.test()
 
         print("")
-        print("| ------------------- simple slim model ------------------ |")
+        print("| ----------------- simple slimming model ---------------- |")
         self.slimmer.simple_slim()
         self.tester.model = self.slimmer.simple_slimmed_model
         self.tester.print_flops_params()
@@ -43,18 +43,16 @@ class Slimmer_tester(object):
         self.tester.test()
 
         print("")
-        print("| ----------------------- slim model --------------------- |")
+        print("| -------------------- slimming model -------------------- |")
         self.slimmer.slim()
         self.tester.model = self.slimmer.slimmed_model
         self.tester.print_flops_params()
         self.tester.test()
 
-        # print("")
-        
-        # # save slimmed model
-        # if self.slimmer.config.save_model_path is None:
-        #     self.slimmer.config.save_model_path = "slimmed_checkpoints/" + self.slimmer.config.dataset + "_" + self.slimmer.config.model + "_acc{acc:.2f}.pth".format(acc=self.tester.top1_acc.avg)
-        # torch.save(self.slimmer.model.state_dict(), self.slimmer.config.save_model_path)
+        # save slimmed model
+        if self.slimmer.config.save_model_path is None:
+            self.slimmer.config.save_model_path = "slimmed_checkpoints/" + self.slimmer.config.dataset + "_" + self.slimmer.config.model + "_acc{acc:.2f}.pth".format(acc=self.tester.top1_acc.avg)
+        torch.save(self.slimmer.model, self.slimmer.config.save_model_path)
 
 if __name__ == "__main__":
     slimmer_tester = Slimmer_tester(
@@ -62,7 +60,7 @@ if __name__ == "__main__":
         dataset="cifar10",
         gpu_idx = "5", # choose gpu
         random_seed=2,
-        load_model_path="checkpoints/cifar10_vgg_slim_epoch111_acc91.73.pth",
+        load_model_path="checkpoints/cifar10_vgg_slim_epoch150_acc91.86.pth",
         num_workers = 5, # 使用多进程加载数据
         slim_percent=0.1,
     )
