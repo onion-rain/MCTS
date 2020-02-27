@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 __all__ = [
-    'VGG_cifar', 'vgg_slim',
+    'VGG_cifar', 'vgg_cfg',
     'vgg11_cifar', 'vgg11_bn_cifar', 
     'vgg13_cifar', 'vgg13_bn_cifar', 
     'vgg16_cifar', 'vgg16_bn_cifar',
@@ -16,8 +16,8 @@ class VGG_cifar(nn.Module):
     def __init__(self, features, num_classes=1000, init_weights=True):
         super(VGG_cifar, self).__init__()
         self.features = features
-        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
-        self.classifier = nn.Linear(512 * 7 * 7, num_classes)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.classifier = nn.Linear(512, num_classes)
         if init_weights:
             self._initialize_weights()
 
@@ -59,10 +59,10 @@ def make_layers(cfg, batch_norm=False):
 
 
 cfgs = {
-    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512],
+    'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512],
+    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512],
+    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512],
 }
 
 
@@ -126,7 +126,7 @@ def vgg19_bn_cifar(**kwargs):
     """
     return _vgg('E', True, **kwargs)
 
-def vgg_slim(cfg=None, **kwargs):
+def vgg_cfg(cfg=None, **kwargs): # 默认vgg19
     if cfg is None:
         cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512]
     model = VGG_cifar(make_layers(cfg, batch_norm=True), **kwargs)

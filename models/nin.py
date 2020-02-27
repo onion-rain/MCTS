@@ -33,6 +33,9 @@ class nin(nn.Module):
         super(nin, self).__init__()
         if cfg is None:
             cfg = [192, 160, 96, 192, 192, 192, 192, 192]
+        else:
+            cfg = [n for n in cfg if isinstance(n, int)]
+            
         
         self.features = nn.Sequential(
                 nn.Conv2d(3, cfg[0], kernel_size=5, stride=1, padding=2),

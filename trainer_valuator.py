@@ -74,9 +74,9 @@ if __name__ == "__main__":
         batch_size=100,
         lr=1e-2,
         lr_scheduler_milestones=[81, 122],
-        model='vgg_slim',
-        env='slim_vgg_slim',
-        legend='sparsity_vgg_slim',
+        model='vgg_cfg',
+        env='slim_vgg_cfg',
+        legend='sparsity_vgg_cfg',
         slim=True,
         gpu_idx = "4", # choose gpu
         dataset="cifar10",

@@ -18,7 +18,11 @@ import models
 from utils import accuracy, print_model_parameters, AverageMeter, get_path
 
 class Slimmer(object):
-
+    """
+    导入的模型必须有BN层，
+    并且事先进行稀疏训练，
+    并且全连接层前要将左右特征图池化为1x1，即最终卷积输出的通道数即为全连接层输入通道数
+    """
     def __init__(self, config=None, vis=None, **kwargs):
         print("| ----------------- Initializing Slimmer ----------------- |")
         if config == None:
@@ -155,8 +159,7 @@ class Slimmer(object):
         # print(cfg_mask)
         
         print('{:<30}  {:<8}'.format('==> creating new model: ', self.config.model))
-        # self.slimmed_model = models.__dict__[self.config.model](cfg=cfg, num_classes=self.num_classes) # 根据cfg构建新的model
-        self.slimmed_model = models.__dict__['vgg_cfg'](cfg=cfg, num_classes=self.num_classes) # 根据cfg构建新的model
+        self.slimmed_model = models.__dict__[self.config.model](cfg=cfg, num_classes=self.num_classes) # 根据cfg构建新的model
         if len(self.config.gpu_idx_list) > 1:
             self.slimmed_model = torch.nn.DataParallel(self.slimmed_model, device_ids=self.config.gpu_idx_list)
         self.slimmed_model.to(self.device) # 模型转移到设备上
