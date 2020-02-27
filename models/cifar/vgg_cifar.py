@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 __all__ = [
-    'VGG_cifar', 
+    'VGG_cifar', 'vgg_slim',
     'vgg11_cifar', 'vgg11_bn_cifar', 
     'vgg13_cifar', 'vgg13_bn_cifar', 
     'vgg16_cifar', 'vgg16_bn_cifar',
@@ -17,15 +17,7 @@ class VGG_cifar(nn.Module):
         super(VGG_cifar, self).__init__()
         self.features = features
         self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
-        self.classifier = nn.Sequential(
-            nn.Linear(512 * 7 * 7, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, num_classes),
-        )
+        self.classifier = nn.Linear(512 * 7 * 7, num_classes)
         if init_weights:
             self._initialize_weights()
 
@@ -133,3 +125,9 @@ def vgg19_bn_cifar(**kwargs):
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
     return _vgg('E', True, **kwargs)
+
+def vgg_slim(cfg=None, **kwargs):
+    if cfg is None:
+        cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512]
+    model = VGG_cifar(make_layers(cfg, batch_norm=True), **kwargs)
+    return model

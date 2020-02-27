@@ -21,7 +21,7 @@ class Configuration(object):
     num_workers = 0 # 默认不使用多进程加载数据，便于调试
     plot_interval = 20 # visdom plot info every N batch
     max_epoch = 100
-    batch_size = 128
+    batch_size = 100
     lr = 1e-2 # initial learning rate
     lr_decay = 0.2 # when val_loss increase, lr = lr*lr_decay
     random_seed = None
@@ -33,8 +33,9 @@ class Configuration(object):
     dataloader_droplast = False
     dataset = "cifar10" # Dataset can only be cifar10 or cifar100
     
-    slimming = False
-    slimming_lambda = 1e-4
+    slim = False
+    slim_lambda = 1e-4
+    slim_percent = 0.1
 
     # # windows
     # dataset_root = 'E:\competition\Python\PyTorch\dataset/' # 训练集存放路径

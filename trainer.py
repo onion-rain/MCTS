@@ -21,7 +21,7 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 class Trainer(object):
 
     def __init__(self, config=None, vis=None, **kwargs):
-        print("| ----------- Initializing Trainer ----------- |")
+        print("| --------------- Initializing Trainer --------------- |")
         if config == None:
             self.config = Configuration()
             self.config.update_config(kwargs) # 解析参数更新默认配置
@@ -34,10 +34,10 @@ class Trainer(object):
 
         if len(self.config.gpu_idx_list) > 0:
             self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
-            print("==> chosen GPU index: " + self.config.gpu_idx)
+            print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
         else:
             self.device = torch.device('cpu')
-            print("==> device: CPU")
+            print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
 
         # Random Seed
         if self.config.random_seed is None:
@@ -46,7 +46,7 @@ class Trainer(object):
         torch.manual_seed(self.config.random_seed)
 
         # step1: data
-        print(f'==> Preparing dataset: {self.config.dataset}')
+        print('{:<30}  {:<8}'.format('==> Preparing dataset: ', self.config.dataset))
         if self.config.dataset.startswith("cifar"): # --------------cifar dataset------------------
             transform = tv.transforms.Compose([
                 tv.transforms.RandomCrop(32, padding=4),
@@ -74,7 +74,7 @@ class Trainer(object):
                 )
                 self.num_classes = 100
             else: 
-                print("Dataset can only be cifar10 or cifar100")
+                print("Dataset undefined")
                 exit()
 
         elif self.config.dataset is "imagenet": # ----------------imagenet dataset------------------
@@ -108,7 +108,8 @@ class Trainer(object):
         )
 
         # step2: model
-        print(f'==> creating model: {self.config.model}')
+        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.model))
+        print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
         self.model = models.__dict__[self.config.model](num_classes=self.num_classes) # 从models中获取名为config.model的model
         if self.config.load_model_path:
             self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device)) # 加载目标模型参数
@@ -189,7 +190,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
             loss.backward()
 
-            if self.config.slimming:
+            if self.config.slim:
                 self.updateBN()
                 
             self.optimizer.step()
@@ -261,9 +262,9 @@ class Trainer(object):
 
     # additional subgradient descent on the sparsity-induced penalty term
     def updateBN(self):
-        for m in self.model.modules():
-            if isinstance(m, torch.nn.BatchNorm2d):
-                m.weight.grad.data.add_(self.config.slimming_lambda*torch.sign(m.weight.data))  # L1
+        for module in self.model.modules():
+            if isinstance(module, torch.nn.BatchNorm2d):
+                module.weight.grad.data.add_(self.config.slim_lambda * torch.sign(module.weight.data))  # L1
 
 
 if __name__ == "__main__":

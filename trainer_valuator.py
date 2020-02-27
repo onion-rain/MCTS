@@ -28,19 +28,22 @@ class Trainer_valuator(object):
     def print_bar(self):
         """calculate duration time"""
         interval = datetime.datetime.now() - self.start_time
-        print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".format(
-            model=self.trainer.config.model,
-            dataset=self.trainer.config.dataset,
-            dh=interval.seconds//3600,
-            dm=interval.seconds%3600//60,
-            ds=interval.seconds%60,
-        ))
+        print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+            format(
+                model=self.trainer.config.model,
+                dataset=self.trainer.config.dataset,
+                dh=interval.seconds//3600,
+                dm=interval.seconds%3600//60,
+                ds=interval.seconds%60,
+            )
+        )
 
     def run(self):
         # initial test
+        self.valuator.print_flops_params()
         self.valuator.test(epoch=0)
         self.print_bar()
-        for epoch in range(1, self.trainer.config.max_epoch):
+        for epoch in range(1, self.trainer.config.max_epoch+1):
             # train & valuate
             self.trainer.train(epoch)
             self.valuator.model = self.trainer.model
@@ -56,52 +59,83 @@ class Trainer_valuator(object):
                 else: torch.save(self.trainer.model.state_dict(), checkpoint_path)
         
         # save last model
-        checkpoint_path = "checkpoints/" + self.trainer.config.dataset + "_" + self.trainer.config.model + "_epoch{epoch}_acc{acc:.2f}.pth".format(epoch=self.trainer.config.max_epoch, acc=self.valuator.top1_acc.avg)
+        if self.trainer.config.save_model_path is None:
+            save_model_path = "checkpoints/" + self.trainer.config.dataset + "_" + self.trainer.config.model + "_epoch{epoch}_acc{acc:.2f}.pth".format(epoch=self.trainer.config.max_epoch, acc=self.valuator.top1_acc.avg)
         if len(self.trainer.config.gpu_idx_list) > 1:
-            torch.save(self.trainer.model.module.state_dict(), checkpoint_path)
-        else: torch.save(self.trainer.model.state_dict(), checkpoint_path)
+            torch.save(self.trainer.model.module.state_dict(), save_model_path)
+        else: torch.save(self.trainer.model.state_dict(), save_model_path)
 
-
-# # resnet
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=200,
-#         batch_size=100,
-#         lr=1e-1,
-#         lr_scheduler_milestones=[100, 150],
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         model='resnet20',
-#         dataset="cifar10",
-#         gpu_idx = "7", # choose gpu
-#         random_seed=2,
-#         num_workers = 5, # 使用多进程加载数据
-#     )
-#     trainer_valuator.run()
-# #     print("end")
 
 
 # vgg
 if __name__ == "__main__":
     trainer_valuator = Trainer_valuator(
-        max_epoch=164,
+        max_epoch=150,
         batch_size=100,
         lr=1e-2,
         lr_scheduler_milestones=[81, 122],
-        model='vgg16_bn_cifar',
-        env='slimming_vgg16_bn_s',
-        legend='slimming',
-        slimming=True,
-        gpu_idx = "1", # choose gpu
+        model='vgg_slim',
+        env='slim_vgg_slim',
+        legend='sparsity_vgg_slim',
+        slim=True,
+        gpu_idx = "4", # choose gpu
         dataset="cifar10",
-        slimming_lambda=1e-4,
+        slim_lambda=1e-4,
         weight_decay=1e-4,
         momentum=0.9,
         random_seed=2,
-        num_workers = 5, # 使用多进程加载数据
+        num_workers = 10, # 使用多进程加载数据
         use_visdom = True, # 使用visdom可视化训练过程
         plot_interval=50,
     )
     trainer_valuator.run()
     print("end")
+
+# # nin
+# if __name__ == "__main__":
+#     trainer_valuator = Trainer_valuator(
+#         max_epoch=164,
+#         batch_size=100,
+#         lr=1e-2,
+#         lr_scheduler_milestones=[81, 122],
+#         model='nin',
+#         env='slim_nin',
+#         legend='sparsity_nin',
+#         slim=True,
+#         gpu_idx = "6", # choose gpu
+#         dataset="cifar10",
+#         slim_lambda=1e-4,
+#         weight_decay=1e-4,
+#         momentum=0.9,
+#         random_seed=2,
+#         num_workers = 5, # 使用多进程加载数据
+#         use_visdom = True, # 使用visdom可视化训练过程
+#         plot_interval=50,
+#     )
+#     trainer_valuator.run()
+#     print("end")
+
+# # nin_gc
+# if __name__ == "__main__":
+#     trainer_valuator = Trainer_valuator(
+#         max_epoch=164,
+#         batch_size=100,
+#         lr=1e-2,
+#         lr_scheduler_milestones=[81, 122],
+#         model='nin_gc',
+#         env='slim_nin_gc',
+#         legend='sparsity_nin_gc',
+#         slim=True,
+#         gpu_idx = "6", # choose gpu
+#         dataset="cifar10",
+#         slim_lambda=1e-4,
+#         weight_decay=1e-4,
+#         momentum=0.9,
+#         random_seed=2,
+#         num_workers = 5, # 使用多进程加载数据
+#         use_visdom = True, # 使用visdom可视化训练过程
+#         plot_interval=50,
+#     )
+#     trainer_valuator.run()
+#     print("end")
 

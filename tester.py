@@ -13,7 +13,7 @@ from utils import accuracy, print_model_parameters, AverageMeter
 class Tester(object):
     
     def __init__(self, config=None, vis=None, **kwargs):
-        print("| ----------- Initializing Tester ------------ |")
+        print("| ----------------- Initializing Tester ------------------ |")
         if config == None:
             self.config = Configuration()
             self.config.update_config(kwargs) # 解析参数更新默认配置
@@ -26,10 +26,10 @@ class Tester(object):
 
         if len(self.config.gpu_idx_list) > 0:
             self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
-            print("==> chosen GPU index: " + self.config.gpu_idx)
+            print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
         else:
             self.device = torch.device('cpu')
-            print("==> device: CPU")
+            print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
 
         # Random Seed
         if self.config.random_seed is None:
@@ -38,7 +38,7 @@ class Tester(object):
         torch.manual_seed(self.config.random_seed)
 
         # step1: data
-        print(f'==> Preparing dataset: {self.config.dataset}')
+        print('{:<30}  {:<8}'.format('==> Preparing dataset: ', self.config.dataset))
         if self.config.dataset.startswith("cifar"): # --------------cifar dataset------------------
             transform = tv.transforms.Compose([
                 tv.transforms.ToTensor(), 
@@ -96,8 +96,8 @@ class Tester(object):
         )
 
         # step2: model
-        print(f'==> creating model: {self.config.model}')
-        print(f'==> load_model: {self.config.load_model_path}')
+        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.model))
+        print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
         self.model = models.__dict__[self.config.model](num_classes=self.num_classes) # 从models中获取名为config.model的model
         if self.config.load_model_path:
             self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device)) # 加载目标模型参数
@@ -106,13 +106,7 @@ class Tester(object):
         self.model.to(self.device) # 模型转移到设备上
         # print(self.model)
         # print_model_parameters(self.model)
-        if self.config.dataset.startswith("cifar"):
-            flops, params = get_model_complexity_info(self.model, (3, 32, 32), as_strings=True, print_per_layer_stat=False)
-        elif self.config.dataset is "imagenet":
-            flops, params = get_model_complexity_info(self.model, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
-        print('{:<30}  {:<8}'.format('Computational complexity: ', flops))
-        print('{:<30}  {:<8}'.format('Number of parameters: ', params))
-        # print('Total params: %.2fM' % (sum(p.numel() for p in self.model.parameters())/1000000.0))
+        # self.print_flops_params()
 
         # step3: criterion
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -125,6 +119,7 @@ class Tester(object):
         self.dataload_time = AverageMeter()
 
     def run(self):
+        self.print_flops_params()
         self.test()
 
     def test(self, epoch=None):
@@ -185,17 +180,24 @@ class Tester(object):
         if self.config.use_visdom:
             self.vis.plot('test_loss', self.loss_meter.avg, x=epoch)
             self.vis.plot('test_top1', self.top1_acc.avg, x=epoch)
-        
-        # utils.deep_compression.write_log(self.config.log_path, f"initial_accuracy: {accuracy}")
-        # utils.deep_compression.print_nonzeros(self.model)
+    
+
+    def print_flops_params(self):
+        if self.config.dataset.startswith("cifar"):
+            flops, params = get_model_complexity_info(self.model, (3, 32, 32), as_strings=True, print_per_layer_stat=False)
+        elif self.config.dataset is "imagenet":
+            flops, params = get_model_complexity_info(self.model, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
+        print('{:<30}  {:<8}'.format('==> Computational complexity: ', flops))
+        print('{:<30}  {:<8}'.format('==> Number of parameters: ', params))
+        # print('Total params: %.2fM' % (sum(p.numel() for p in self.model.parameters())/1000000.0))
 
 if __name__ == "__main__":
     tester = Tester(
         batch_size=200,
-        model='vgg19_bn_cifar',
+        model='vgg16_bn_cifar',
         dataset="cifar10",
-        gpu_idx = "7", # choose gpu
-        load_model_path='checkpoints/cifar_vgg/cifar10_vgg16_bn_cifar_epoch164_acc92.28.pth',
+        gpu_idx = "0", # choose gpu
+        load_model_path='slimmed_checkpoints/cifar10_vgg16_bn_cifar_slimming_acc92.32.pth',
         random_seed=1,
         # use_visdom = True, # 使用visdom可视化训练过程
         # env='test_test',
