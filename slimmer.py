@@ -198,6 +198,8 @@ class Slimmer(object):
                 module1.weight.data = module0.weight.data[:, idx0].clone() # module0.weight.data[输出通道数，输入通道数]
                 # print("full connection: in channels: {:d}, out channels: {:d}".format(idx0.shape[0], module0.weight.data.shape[0]))
                 break # 仅调整第一层全连接层
+            
+        return cfg
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ class Slimmer_tester(object):
         self.tester = Tester(config=config)
 
     def run(self):
-
+        cfg = []
         print("")
         print("| -------------------- original model -------------------- |")
         self.tester.test(self.slimmer.model)
@@ -45,13 +45,18 @@ class Slimmer_tester(object):
 
         print("")
         print("| -------------------- slimming model -------------------- |")
-        self.slimmer.slim()
+        cfg = self.slimmer.slim()
         self.tester.test(self.slimmer.slimmed_model)
         print_flops_params(self.tester.model, self.tester.config.dataset)
 
         # save slimmed model
         if self.slimmer.config.save_model_path is None:
-            self.slimmer.config.save_model_path = "slimmed_checkpoints/" + self.slimmer.config.dataset + "_" + self.slimmer.config.model + "_acc{acc:.2f}.pth".format(acc=self.tester.top1_acc.avg)
+            self.slimmer.config.save_model_path = ("slimmed_checkpoints/" 
+                                                + self.slimmer.config.dataset 
+                                                + "_" 
+                                                + self.slimmer.config.model 
+                                                + "_acc{acc:.2f}".format(acc=self.tester.top1_acc.avg) 
+                                                + "_" + str(cfg) + ".pth")
         torch.save(self.slimmer.model.state_dict(), self.slimmer.config.save_model_path)
 
 if __name__ == "__main__":
