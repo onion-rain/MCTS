@@ -108,14 +108,18 @@ class Slimmer(object):
             if isinstance(module, torch.nn.BatchNorm2d):
                 weight_copy = module.weight.data.clone()
                 mask = weight_copy.abs().gt(self.threshold).float().to(self.device) # torch.gt(a, b): a>b为1否则为0
+                if torch.sum(mask) == 0:
+                    error_str = 'Slim Error: layer' + str(layer_index) + ": " + module._get_name() + ': remain_out_channels = 0! turn down the slim_percent!'
+                    print(error_str)
+                    raise
                 slimmed_num += (mask.shape[0] - torch.sum(mask))
                 module.weight.data.mul_(mask)
                 module.bias.data.mul_(mask)
                 # print('layer index: {:3d} \t total channel: {:4d} \t remaining channel: {:4d}'.
                 #     format(layer_index, mask.shape[0], int(torch.sum(mask))))
 
-        slim_ratio = slimmed_num/len(bn_abs_weghts)
-        print('{:<30}  {:.6f}'.format('==> slim ratio: ', slim_ratio))
+        self.slim_ratio = slimmed_num/len(bn_abs_weghts)
+        print('{:<30}  {:.6f}'.format('==> slim ratio: ', self.slim_ratio))
 
 
     def slim(self, slim_percent=None):
@@ -148,6 +152,10 @@ class Slimmer(object):
             if isinstance(module, torch.nn.BatchNorm2d):
                 weight_copy = module.weight.data.clone()
                 mask = weight_copy.abs().gt(self.threshold).float().to(self.device) # torch.gt(a, b): a>b为1否则为0
+                if torch.sum(mask) == 0:
+                    error_str = 'Slim Error: layer' + str(layer_index) + ": " + module._get_name() + ': remain_out_channels = 0! turn down the slim_percent!'
+                    print(error_str)
+                    raise
                 slimmed_num += (mask.shape[0] - torch.sum(mask))
                 cfg.append(int(torch.sum(mask)))
                 cfg_mask.append(mask.clone())
@@ -163,8 +171,8 @@ class Slimmer(object):
         if len(self.config.gpu_idx_list) > 1:
             self.slimmed_model = torch.nn.DataParallel(self.slimmed_model, device_ids=self.config.gpu_idx_list)
         self.slimmed_model.to(self.device) # 模型转移到设备上
-        slim_ratio = slimmed_num/len(bn_abs_weghts)
-        print('{:<30}  {:.6f}'.format('==> slim ratio: ', slim_ratio))
+        self.slim_ratio = slimmed_num/len(bn_abs_weghts)
+        print('{:<30}  {:.6f}'.format('==> slim ratio: ', self.slim_ratio))
         # print(self.slimmed_model)
 
         # 将参数复制到新模型
@@ -177,6 +185,14 @@ class Slimmer(object):
                 idx1 = np.squeeze(np.argwhere(np.asarray(conv_out_channels_mask.cpu().numpy())))
                 # print('conv: in channels: {:d}, out chennels:{:d}'.format(idx0.shape[0], idx1.shape[0]))
                  # module0.weight.data[卷积核个数，深度，长，宽]
+
+                 # 当通道数只保留一个时，idx维度为2，元素却只有一个，此时需要降维到一维
+                 # 否则module0.weight.data[:, idx, :, :]会报错：IndexError: too many indices for array
+                if idx0.size == 1:
+                    idx0 = np.resize(idx0, (1,))
+                if idx1.size == 1:
+                    idx1 = np.resize(idx1, (1,))
+
                 w = module0.weight.data[:, idx0, :, :].clone() # 剪输入通道
                 w = w[idx1, :, :, :].clone() # 剪输出通道
                 module1.weight.data = w.clone()
@@ -198,7 +214,7 @@ class Slimmer(object):
                 module1.weight.data = module0.weight.data[:, idx0].clone() # module0.weight.data[输出通道数，输入通道数]
                 # print("full connection: in channels: {:d}, out channels: {:d}".format(idx0.shape[0], module0.weight.data.shape[0]))
                 break # 仅调整第一层全连接层
-            
+
         return cfg
 
 

@@ -25,18 +25,19 @@ class Slimmer_tester(object):
 
     def run(self):
         cfg = []
+
         print("")
         print("| -------------------- original model -------------------- |")
         self.tester.test(self.slimmer.model)
         print_flops_params(self.tester.model, self.tester.config.dataset)
         # print_model_parameters(self.tester.model)
 
-        print("")
-        print("| ----------------- simple slimming model ---------------- |")
-        self.slimmer.simple_slim()
-        self.tester.test(self.slimmer.simple_slimmed_model)
-        print_flops_params(self.tester.model, self.tester.config.dataset)
-        # print_nonzeros(self.tester.model)
+        # print("")
+        # print("| ----------------- simple slimming model ---------------- |")
+        # self.slimmer.simple_slim()
+        # self.tester.test(self.slimmer.simple_slimmed_model)
+        # print_flops_params(self.tester.model, self.tester.config.dataset)
+        # # print_nonzeros(self.tester.model)
 
         # print("")
         # print("| -------------------- original model -------------------- |")
@@ -55,7 +56,8 @@ class Slimmer_tester(object):
                                                 + self.slimmer.config.dataset 
                                                 + "_" 
                                                 + self.slimmer.config.model 
-                                                + "_acc{acc:.2f}".format(acc=self.tester.top1_acc.avg) 
+                                                + "_ratio{:.2f}".format(self.slimmer.slim_ratio)
+                                                + "_acc{:.2f}".format(self.tester.top1_acc.avg) 
                                                 + "_" + str(cfg) + ".pth")
         torch.save(self.slimmer.model.state_dict(), self.slimmer.config.save_model_path)
 
@@ -67,7 +69,7 @@ if __name__ == "__main__":
         random_seed=2,
         load_model_path="checkpoints/cifar10_vgg_slim_epoch150_acc91.86.pth",
         num_workers = 5, # 使用多进程加载数据
-        slim_percent=0.1,
+        slim_percent=0.8,
     )
     slimmer_tester.run()
     print("end")
