@@ -46,8 +46,7 @@ class Trainer_valuator(object):
         for epoch in range(1, self.trainer.config.max_epoch+1):
             # train & valuate
             self.trainer.train(epoch)
-            self.valuator.model = self.trainer.model
-            self.valuator.test(epoch)
+            self.valuator.test(self.trainer.model, epoch)
             self.print_bar()
 
             # save checkpoint

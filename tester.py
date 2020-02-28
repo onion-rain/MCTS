@@ -4,11 +4,10 @@ from tqdm import tqdm
 import torchvision as tv
 import time
 import random
-from ptflops import get_model_complexity_info
 
 from config import Configuration
 import models
-from utils import accuracy, print_model_parameters, AverageMeter
+from utils import accuracy, print_model_parameters, AverageMeter, print_flops_params
 
 class Tester(object):
     
@@ -106,7 +105,7 @@ class Tester(object):
         self.model.to(self.device) # 模型转移到设备上
         # print(self.model)
         # print_model_parameters(self.model)
-        # self.print_flops_params()
+        # print_flops_params(self.model, self.config.dataset)
 
         # step3: criterion
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -122,7 +121,15 @@ class Tester(object):
         self.print_flops_params()
         self.test()
 
-    def test(self, epoch=None):
+    def test(self, model=None, epoch=None):
+        """
+        测试指定模型在指定数据集上的表现, 数据集在创建Tester类是通过修改self.config确定
+        args:
+            model: 要测试的模型，若不为none则self.model更新为model，若为none则测试self.model
+            epoch：用于显示当前epoch
+        """
+        if model is not None:
+            self.model = model
         self.model.eval() # 验证模式
         self.loss_meter.reset()
         self.top1_acc.reset()
@@ -181,15 +188,6 @@ class Tester(object):
             self.vis.plot('test_loss', self.loss_meter.avg, x=epoch)
             self.vis.plot('test_top1', self.top1_acc.avg, x=epoch)
     
-
-    def print_flops_params(self):
-        if self.config.dataset.startswith("cifar"):
-            flops, params = get_model_complexity_info(self.model, (3, 32, 32), as_strings=True, print_per_layer_stat=False)
-        elif self.config.dataset is "imagenet":
-            flops, params = get_model_complexity_info(self.model, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
-        print('{:<30}  {:<8}'.format('==> Computational complexity: ', flops))
-        print('{:<30}  {:<8}'.format('==> Number of parameters: ', params))
-        # print('Total params: %.2fM' % (sum(p.numel() for p in self.model.parameters())/1000000.0))
 
 if __name__ == "__main__":
     tester = Tester(
