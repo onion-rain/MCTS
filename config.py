@@ -14,7 +14,7 @@ class Configuration(object):
     dataset = DogCat_dataset(config.train_data_root)\n
     '''
     use_visdom = False
-    env = 'cifar10_vgg16' # visdom 环境
+    env = 'main' # visdom 环境
     legend = None # visdom 图例名称，为None从取env第一个"_"之后的字符串作为legend
     model = 'resnet34' # 要训练的模型，名字必须与models/__init__.py中的名字一致
     gpu_idx = "" # choose gpu
@@ -31,26 +31,16 @@ class Configuration(object):
     momentum = 0.9
     lr_scheduler_milestones = [100, 150]
     dataloader_droplast = False
-    dataset = "cifar10" # Dataset can only be cifar10 or cifar100
+    dataset = "cifar10" # Dataset can only be cifar10 or cifar100 or imagenet
     
     slim = False
     slim_lambda = 1e-4
     slim_percent = 0.1
 
-    # # windows
-    # dataset_root = 'E:\competition\Python\PyTorch\dataset/' # 训练集存放路径
-    # load_model_path = None # 加载预训练的模型的路径，为None代表不加载
-    # save_model_path = None
-
-    # gpu_server
     dataset_root = '/home/xueruini/onion_rain/pytorch/dataset/' # 训练集存放路径
     load_model_path = None # 加载预训练的模型的路径，为None代表不加载
     save_model_path = None
-
-    log_path = "log.txt"
-    sensitivity = 2 # sensitivity灵敏度，sensitivity*std得到prune的threshold
-    percentile = 95 # 剪枝比例
-    bits = 5 # 量化比特数
+    
 
     def update_config(self, kwargs):
         '''

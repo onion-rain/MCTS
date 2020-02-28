@@ -2,7 +2,7 @@ from .tv.alexnet import *
 from .tv.resnet import *
 from .tv.resnext import *
 from .tv.densenet import *
-from .tv.vgg import *
+# from .tv.vgg import *
 
 
 from .cifar.resnet_cifar import *
@@ -22,3 +22,4 @@ from .LeNet import LeNet, LeNet_5
 from .test import *
 from .nin import *
 from .nin_gc import *
+from .vgg import vgg

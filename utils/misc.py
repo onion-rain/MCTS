@@ -8,10 +8,12 @@ from torch.nn.modules.module import Module
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 from ptflops import get_model_complexity_info
+import shutil
 
 
 __all__ = ['write_log', 'print_model_parameters', 'print_nonzeros', 
-            'accuracy', 'get_path', 'AverageMeter', 'print_flops_params']
+            'accuracy', 'get_path', 'AverageMeter', 'print_flops_params',
+            'save_checkpoint']
 
 
 def write_log(filename, content):
@@ -112,3 +114,19 @@ def print_flops_params(model, dataset='cifar'):
     print('{:<30}  {:<8}'.format('==> Computational complexity: ', flops))
     print('{:<30}  {:<8}'.format('==> Number of parameters: ', params))
     # print('Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
+
+    
+def save_checkpoint(state, is_best=False, epoch=None, file_root='checkpoints/', file_name='model'):
+    """
+    args:
+        state: model.state_dict()
+        is_best(bool): 是则单独保存到model_best.pth.tar，覆盖至前的
+        epoch(int): 若为None则覆盖之前的checkpoint，否则分别保存每一次的checkpoint
+        file_root(str): checkpoint文件保存目录
+        file_name(str): file_name
+    """
+    if epoch is not None:
+        file_root = file_root + "epoch{}_".format(str(epoch))
+    torch.save(state, file_root + file_name + '_checkpoint.pth.tar')
+    if is_best:
+        shutil.copyfile(file_root+file_name+'_checkpoint.pth.tar', file_root + file_name + '_best.pth.tar')

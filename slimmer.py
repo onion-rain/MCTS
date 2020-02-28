@@ -60,11 +60,13 @@ class Slimmer(object):
         print('{:<30}  {:<8}'.format('==> creating model: ', self.config.model))
         print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
         self.model = models.__dict__[self.config.model](num_classes=self.num_classes) # 从models中获取名为config.model的model
-        if self.config.load_model_path:
-            self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device)) # 加载目标模型参数
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
+        if self.config.load_model_path: # 加载目标模型参数
+            # self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device))
+            checkpoint = torch.load(self.config.load_model_path, map_location=self.device)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
         # print(self.model)
         # print_model_parameters(self.model)
 
@@ -100,7 +102,7 @@ class Slimmer(object):
             slim_percent = self.config.slim_percent
         threshold_index = int(len(bn_abs_weghts) * slim_percent)
         self.threshold = bn_abs_weights_sorted[threshold_index]
-        print('{:<30}  {:.6f}'.format('==> slim threshold: ', self.threshold))
+        print('{:<30}  {:0.4e}'.format('==> slim threshold: ', self.threshold))
         
         # slim
         slimmed_num = 0
@@ -119,7 +121,7 @@ class Slimmer(object):
                 #     format(layer_index, mask.shape[0], int(torch.sum(mask))))
 
         self.slim_ratio = slimmed_num/len(bn_abs_weghts)
-        print('{:<30}  {:.6f}'.format('==> slim ratio: ', self.slim_ratio))
+        print('{:<30}  {:.4f}%'.format('==> slim ratio: ', self.slim_ratio*100))
 
 
     def slim(self, slim_percent=None):
@@ -135,14 +137,14 @@ class Slimmer(object):
         for module in original_model.modules():
             if isinstance(module, torch.nn.BatchNorm2d):
                 bn_abs_weghts = torch.cat([bn_abs_weghts, module.weight.data.abs().clone()], 0)
-        
+
         # 计算slim阈值
         bn_abs_weights_sorted, _ = torch.sort(bn_abs_weghts)
         if slim_percent == None:
             slim_percent = self.config.slim_percent
         threshold_index = int(len(bn_abs_weghts) * slim_percent)
         self.threshold = bn_abs_weights_sorted[threshold_index]
-        print('{:<30}  {:.6f}'.format('==> slim threshold: ', self.threshold))
+        print('{:<30}  {:0.4e}'.format('==> slim threshold: ', self.threshold))
 
         # 计算slim之后的模型结构
         slimmed_num = 0
@@ -156,6 +158,12 @@ class Slimmer(object):
                     error_str = 'Slim Error: layer' + str(layer_index) + ": " + module._get_name() + ': remain_out_channels = 0! turn down the slim_percent!'
                     print(error_str)
                     raise
+
+
+                # print(weight_copy)##############################################
+
+
+
                 slimmed_num += (mask.shape[0] - torch.sum(mask))
                 cfg.append(int(torch.sum(mask)))
                 cfg_mask.append(mask.clone())
@@ -166,13 +174,14 @@ class Slimmer(object):
         print(cfg)
         # print(cfg_mask)
         
+        # 构建新model
         print('{:<30}  {:<8}'.format('==> creating new model: ', self.config.model))
         self.slimmed_model = models.__dict__[self.config.model](cfg=cfg, num_classes=self.num_classes) # 根据cfg构建新的model
         if len(self.config.gpu_idx_list) > 1:
             self.slimmed_model = torch.nn.DataParallel(self.slimmed_model, device_ids=self.config.gpu_idx_list)
         self.slimmed_model.to(self.device) # 模型转移到设备上
         self.slim_ratio = slimmed_num/len(bn_abs_weghts)
-        print('{:<30}  {:.6f}'.format('==> slim ratio: ', self.slim_ratio))
+        print('{:<30}  {:.4f}%'.format('==> slim ratio: ', self.slim_ratio*100))
         # print(self.slimmed_model)
 
         # 将参数复制到新模型

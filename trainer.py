@@ -19,7 +19,10 @@ import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 class Trainer(object):
-
+    """
+    可通过传入config类来配置Trainer，这种情况下若要会用visdom必须传入vis类
+    也可通过**kwargs配置Trainer
+    """
     def __init__(self, config=None, vis=None, **kwargs):
         print("| --------------- Initializing Trainer --------------- |")
         if config == None:
@@ -53,8 +56,8 @@ class Trainer(object):
                 tv.transforms.RandomHorizontalFlip(),
                 tv.transforms.ToTensor(),
                 tv.transforms.Normalize(
-                    mean=[0.4914, 0.4822, 0.4465], 
-                    std=[0.2023, 0.1994, 0.2010],
+                    mean=[0.5, 0.5, 0.5], 
+                    std=[0.5, 0.5, 0.5],
                 ) # 标准化的过程为(input-mean)/std
             ])
             if self.config.dataset is "cifar10": # -----------------cifar10 dataset----------------
@@ -104,21 +107,23 @@ class Trainer(object):
             num_workers=self.config.num_workers,
             pin_memory=True,
             drop_last = self.config.dataloader_droplast,
-            
         )
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating model: ', self.config.model))
         print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
         self.model = models.__dict__[self.config.model](num_classes=self.num_classes) # 从models中获取名为config.model的model
-        if self.config.load_model_path:
-            self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device)) # 加载目标模型参数
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
-        # print(self.model)
-        # print_model_parameters(self.model)
-
+        if self.config.load_model_path: # 加载目标模型参数
+            # self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device))
+            checkpoint = torch.load(self.config.load_model_path, map_location=self.device)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            print("{:<30}  {:<8}".format('==> model epoch: ', checkpoint['epoch']))
+            print("{:<30}  {:<8}".format('==> model best acc1: ', checkpoint['best_acc1']))
+            # config_state_dict = checkpoint['config_state_dict']
+            
         # exit(0)
         
         # step3: criterion and optimizer
@@ -159,7 +164,15 @@ class Trainer(object):
                 torch.save(self.model.module.state_dict(), self.config.save_model_path)
             else: torch.save(self.model.state_dict(), self.config.save_model_path)
 
-    def train(self, epoch):
+    def train(self, model=None, epoch=None):
+        """
+        在指定数据集上训练指定模型, 数据集在创建Trainer类时通过修改self.config确定
+        args:
+            model: 要训练的模型，若不为none则self.model更新为model，若为none则训练self.model
+            epoch：仅用于显示当前epoch
+        """
+        if model is not None:
+            self.model = model
         self.model.train() # 训练模式
         self.loss_meter.reset()
         self.top1_acc.reset()
@@ -217,7 +230,7 @@ class Trainer(object):
                 # "top5: {top5:3.3f} | "
                 "load_time: {time_percent:2.0f}% | "
                 "lr   : {lr:0.1e}".format(
-                    epoch=epoch,
+                    epoch=0 if epoch == None else epoch,
                     done=done,
                     total_len=len(self.train_dataset),
                     percentage=percentage,
@@ -264,6 +277,7 @@ class Trainer(object):
     def updateBN(self):
         for module in self.model.modules():
             if isinstance(module, torch.nn.BatchNorm2d):
+                # torch.sign(module.weight.data)是约束稀疏那项求导的结果
                 module.weight.grad.data.add_(self.config.slim_lambda * torch.sign(module.weight.data))  # L1
 
 

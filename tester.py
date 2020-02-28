@@ -10,7 +10,10 @@ import models
 from utils import accuracy, print_model_parameters, AverageMeter, print_flops_params
 
 class Tester(object):
-    
+    """
+    可通过传入config类来配置Tester，这种情况下若要会用visdom必须传入vis类
+    也可通过**kwargs配置Tester
+    """
     def __init__(self, config=None, vis=None, **kwargs):
         print("| ----------------- Initializing Tester ------------------ |")
         if config == None:
@@ -42,8 +45,8 @@ class Tester(object):
             transform = tv.transforms.Compose([
                 tv.transforms.ToTensor(), 
                 tv.transforms.Normalize(
-                    mean=(0.4914, 0.4822, 0.4465), 
-                    std=(0.2023, 0.1994, 0.2010)
+                    mean=(0.5, 0.5, 0.5), 
+                    std=(0.5, 0.5, 0.5)
                 ) # 标准化的过程为(input-mean)/std
             ])
             if self.config.dataset is "cifar10": # -----------------cifar10 dataset----------------
@@ -98,11 +101,15 @@ class Tester(object):
         print('{:<30}  {:<8}'.format('==> creating model: ', self.config.model))
         print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
         self.model = models.__dict__[self.config.model](num_classes=self.num_classes) # 从models中获取名为config.model的model
-        if self.config.load_model_path:
-            self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device)) # 加载目标模型参数
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
+        if self.config.load_model_path: # 加载目标模型参数
+            # self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device))
+            checkpoint = torch.load(self.config.load_model_path, map_location=self.device)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            print("{:<30}  {:<8}".format('==> model epoch: ', checkpoint['epoch']))
+            print("{:<30}  {:<8}".format('==> model best acc1: ', checkpoint['best_acc1']))
         # print(self.model)
         # print_model_parameters(self.model)
         # print_flops_params(self.model, self.config.dataset)
@@ -123,10 +130,10 @@ class Tester(object):
 
     def test(self, model=None, epoch=None):
         """
-        测试指定模型在指定数据集上的表现, 数据集在创建Tester类是通过修改self.config确定
+        测试指定模型在指定数据集上的表现, 数据集在创建Tester类时通过修改self.config确定
         args:
             model: 要测试的模型，若不为none则self.model更新为model，若为none则测试self.model
-            epoch：用于显示当前epoch
+            epoch：仅用于显示当前epoch
         """
         if model is not None:
             self.model = model
