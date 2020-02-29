@@ -24,7 +24,7 @@ class Trainer(object):
     也可通过**kwargs配置Trainer
     """
     def __init__(self, config=None, vis=None, **kwargs):
-        print("| --------------- Initializing Trainer --------------- |")
+        print("| ----------------- Initializing Trainer ----------------- |")
         if config == None:
             self.config = Configuration()
             self.config.update_config(kwargs) # 解析参数更新默认配置
@@ -164,15 +164,12 @@ class Trainer(object):
                 torch.save(self.model.module.state_dict(), self.config.save_model_path)
             else: torch.save(self.model.state_dict(), self.config.save_model_path)
 
-    def train(self, model=None, epoch=None):
+    def train(self, epoch=None):
         """
-        在指定数据集上训练指定模型, 数据集在创建Trainer类时通过修改self.config确定
+        在指定数据集上训练指定模型, model和dataset在创建Trainer类时通过修改self.config确定
         args:
-            model: 要训练的模型，若不为none则self.model更新为model，若为none则训练self.model
             epoch：仅用于显示当前epoch
         """
-        if model is not None:
-            self.model = model
         self.model.train() # 训练模式
         self.loss_meter.reset()
         self.top1_acc.reset()
@@ -203,7 +200,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
             loss.backward()
 
-            if self.config.slim:
+            if self.config.sparsity:
                 self.updateBN()
                 
             self.optimizer.step()
@@ -229,7 +226,7 @@ class Trainer(object):
                 "top1: {top1:3.3f}% | "
                 # "top5: {top5:3.3f} | "
                 "load_time: {time_percent:2.0f}% | "
-                "lr   : {lr:0.1e}".format(
+                "lr   : {lr:0.1e} ".format(
                     epoch=0 if epoch == None else epoch,
                     done=done,
                     total_len=len(self.train_dataset),
@@ -277,8 +274,8 @@ class Trainer(object):
     def updateBN(self):
         for module in self.model.modules():
             if isinstance(module, torch.nn.BatchNorm2d):
-                # torch.sign(module.weight.data)是约束稀疏那项求导的结果
-                module.weight.grad.data.add_(self.config.slim_lambda * torch.sign(module.weight.data))  # L1
+                # torch.sign(module.weight.data)是对sparsity-induced penalty(g(γ))求导的结果
+                module.weight.grad.data.add_(self.config.sparsity_lambda * torch.sign(module.weight.data))  # L1
 
 
 if __name__ == "__main__":

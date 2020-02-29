@@ -22,4 +22,3 @@ from .LeNet import LeNet, LeNet_5
 from .test import *
 from .nin import *
 from .nin_gc import *
-from .vgg import vgg

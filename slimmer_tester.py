@@ -11,7 +11,7 @@ from tester import Tester
 from trainer import Trainer
 from config import Configuration
 from utils.visualize import Visualizer
-from utils import print_flops_params, print_nonzeros, print_model_parameters
+from utils import print_flops_params, print_nonzeros, print_model_parameters, save_checkpoint
 
 class Slimmer_tester(object):
 
@@ -30,7 +30,6 @@ class Slimmer_tester(object):
         self.retrainer = Trainer(config=config, vis=vis)
 
     def run(self):
-        cfg = []
 
         print("")
         print("| -------------------- original model -------------------- |")
@@ -52,81 +51,82 @@ class Slimmer_tester(object):
 
         print("")
         print("| -------------------- slimming model -------------------- |")
-        cfg = self.slimmer.slim()
+        structure = self.slimmer.slim()
         self.tester.test(self.slimmer.slimmed_model)
         print_flops_params(self.tester.model, self.tester.config.dataset)
 
-        # print("")
-        # print("| ----------------- saving slimmed model ----------------- |")
-        # save_model_path = ("slimmed_checkpoints/" 
-        #                     + self.slimmer.config.dataset 
-        #                     + "_" 
-        #                     + self.slimmer.config.model 
-        #                     + "_ratio{:.2f}".format(self.slimmer.slim_ratio)
-        #                     + "_acc{:.2f}".format(self.tester.top1_acc.avg)
-        #                     + "_" + str(cfg) + ".pth")
-        # print(save_model_path)
-        # torch.save(self.slimmer.slimmed_model.state_dict(), save_model_path)
+        # save slimmed model
+        name = ('slimmed_ratio' 
+                + str(self.slimmer.config.slim_percent) 
+                + '_' 
+                + self.slimmer.config.dataset 
+                + "_" + self.slimmer.config.model)
+        if len(self.slimmer.config.gpu_idx_list) > 1:
+            state_dict = self.slimmer.slimmed_model.module.state_dict()
+        else: state_dict = self.slimmer.slimmed_model.state_dict()
+        path = save_checkpoint({
+            'structure': structure,
+            'ratio': self.slimmer.slim_ratio,
+            'model_state_dict': state_dict,
+            'best_acc1': self.tester.top1_acc.avg,
+        }, file_root='slimmed_checkpoints/', file_name=name)
+        print('{:<30}  {}'.format('==> save path: ', path))
 
-        # print("")
-        # print("| ------------------- retraining model ------------------- |")
-        # for epoch in range(1, self.retrainer.config.max_epoch+1):
-        #     # train & valuate
-        #     self.retrainer.train(self.slimmer.slimmed_model, epoch)
-        #     self.tester.test(self.retrainer.model, epoch)
-        #     print("")
+        print("")
+        print("| ---------------------- finetuning ---------------------- |")
+        best_acc1 = 0
+        name = ('finetuned_ratio' 
+                + str(self.slimmer.config.slim_percent) 
+                + '_' 
+                + self.retrainer.config.dataset 
+                + "_" 
+                + self.retrainer.config.model)
+        self.retrainer.model = self.slimmer.slimmed_model
+        for epoch in range(1, self.retrainer.config.max_epoch+1):
+            # train & valuate
+            self.retrainer.train(epoch)
+            self.tester.test(self.retrainer.model, epoch)
+            print("")
 
-        # print("")
-        # print("| -----------------saving retrained model ---------------- |")
-        # if self.retrainer.config.save_model_path is None:
-        #     save_model_path = ("checkpoints/" + self.retrainer.config.dataset 
-        #                         + "_" + self.retrainer.config.model 
-        #                         + "_epoch{epoch}_acc{acc:.2f}.pth".format(
-        #                             epoch=self.retrainer.config.max_epoch, 
-        #                             acc=self.valuator.top1_acc.avg
-        #                         ))
-        # else: save_model_path = self.retrainer.config.save_model_path
-        # if len(self.retrainer.config.gpu_idx_list) > 1:
-        #     torch.save(self.retrainer.model.module.state_dict(), save_model_path)
-        # else: torch.save(self.retrainer.model.state_dict(), save_model_path)
+            # save checkpoint
+            is_best = self.tester.top1_acc.avg > best_acc1
+            best_acc1 = max(self.tester.top1_acc.avg, best_acc1)
+            if len(self.retrainer.config.gpu_idx_list) > 1:
+                state_dict = self.retrainer.model.module.state_dict()
+            else: state_dict = self.retrainer.model.state_dict()
+            path = save_checkpoint({
+                'epoch': epoch,
+                'structure': structure,
+                'ratio': self.slimmer.slim_ratio,
+                'model_state_dict': state_dict,
+                'best_acc1': self.tester.top1_acc.avg,
+                'optimizer_state_dict': self.retrainer.optimizer.state_dict(),
+            }, is_best=is_best, file_root='slimmed_checkpoints/', file_name=name)
+        print('{:<30}  {}'.format('==> best acc1: ', best_acc1))
 
 
 if __name__ == "__main__":
     slimmer_tester = Slimmer_tester(
-        model='vgg',
+        model='vgg_cfg',
         dataset="cifar10",
-        gpu_idx = "5", # choose gpu
+        gpu_idx = "4", # choose gpu
         random_seed=2,
-        load_model_path="checkpoints/github_slim/cifar10_vgg_best.pth.tar",
-        num_workers = 5, # 使用多进程加载数据
-        slim_percent=0.3,
-        # save_model_path="slimmed_checkpoints/xxx.pth"
+        load_model_path="checkpoints/with_sparsity/cifar10_vgg_cfg_best.pth.tar",
+        num_workers = 6, # 使用多进程加载数据
+        slim_percent=0.7,
         # retrain
-        max_epoch=30,
+        max_epoch=10,
         batch_size=100,
-        lr=1e-2,
-        lr_scheduler_milestones=[10, 20],
+        lr=1e-1,
+        lr_scheduler_milestones=[4, 7],
         weight_decay=1e-4,
         momentum=0.9,
-        slim=False,
+        sparsity=False,
         use_visdom = True, # 使用visdom可视化训练过程
-        env='slim_vgg_cfg_retrain',
-        legend='sparsity_vgg_cfg_retrain',
+        env='cifar10_vgg_cfg_retrain',
+        legend='vgg_cfg_sparsity_retrain',
         plot_interval=50,
     )
     slimmer_tester.run()
     print("end")
-
-# if __name__ == "__main__":
-#     slimmer_tester = Slimmer_tester(
-#         model='nin',
-#         dataset="cifar10",
-#         gpu_idx = "5", # choose gpu
-#         random_seed=2,
-#         load_model_path="checkpoints/cifar10_nin_epoch123_acc90.83.pth",
-#         num_workers = 5, # 使用多进程加载数据
-#         slim_percent=0.1,
-#     )
-#     slimmer_tester.run()
-#     print("end")
 

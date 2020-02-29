@@ -33,8 +33,8 @@ class Configuration(object):
     dataloader_droplast = False
     dataset = "cifar10" # Dataset can only be cifar10 or cifar100 or imagenet
     
-    slim = False
-    slim_lambda = 1e-4
+    sparsity = False
+    sparsity_lambda = 1e-4
     slim_percent = 0.1
 
     dataset_root = '/home/xueruini/onion_rain/pytorch/dataset/' # 训练集存放路径

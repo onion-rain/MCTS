@@ -125,7 +125,7 @@ class Tester(object):
         self.dataload_time = AverageMeter()
 
     def run(self):
-        self.print_flops_params()
+        print_flops_params(model=self.model)
         self.test()
 
     def test(self, model=None, epoch=None):
@@ -176,7 +176,7 @@ class Tester(object):
                 "top1: {top1:3.3f}% | "
                 # "top5: {top5:3.3f} | "
                 "load_time: {time_percent:2.0f}% | "
-                "UTC+8: {time_str}".format(
+                "UTC+8: {time_str} ".format(
                     epoch=0 if epoch == None else epoch,
                     done=done,
                     total_len=len(self.test_dataset),
@@ -199,16 +199,16 @@ class Tester(object):
 if __name__ == "__main__":
     tester = Tester(
         batch_size=200,
-        model='vgg16_bn_cifar',
+        model='vgg_cfg',
         dataset="cifar10",
-        gpu_idx = "0", # choose gpu
-        load_model_path='slimmed_checkpoints/cifar10_vgg16_bn_cifar_slimming_acc92.32.pth',
+        gpu_idx = "4", # choose gpu
+        load_model_path='checkpoints/with_sparsity/cifar10_vgg_cfg_best.pth.tar',
         random_seed=1,
         # use_visdom = True, # 使用visdom可视化训练过程
         # env='test_test',
         # print_config=True,
         # print_device=True,
-        # num_workers = 10, # 使用多进程加载数据
+        num_workers = 10, # 使用多进程加载数据
     )
     tester.run()
     print("end")

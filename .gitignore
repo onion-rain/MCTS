@@ -1,3 +1,5 @@
 *.pyc
 *.pth
+*.pth.tar
 checkpoints/
+slimmed_checkpoints/

@@ -11,13 +11,29 @@ __all__ = [
 ]
 
 
+def make_layers(structure, batch_norm=False):
+    layers = []
+    in_channels = 3
+    for v in structure:
+        if v == 'M':
+            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        else:
+            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+            if batch_norm:
+                layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+            else:
+                layers += [conv2d, nn.ReLU(inplace=True)]
+            in_channels = v
+    return nn.Sequential(*layers)
+
+
 class VGG_cifar(nn.Module):
 
-    def __init__(self, features, num_classes=1000, init_weights=True):
+    def __init__(self, structure, batch_norm, num_classes=1000, init_weights=True):
         super(VGG_cifar, self).__init__()
-        self.features = features
+        self.features = make_layers(structure, batch_norm=batch_norm)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.classifier = nn.Linear(512, num_classes)
+        self.classifier = nn.Linear(structure[-1], num_classes)
         if init_weights:
             self._initialize_weights()
 
@@ -42,23 +58,8 @@ class VGG_cifar(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
-def make_layers(cfg, batch_norm=False):
-    layers = []
-    in_channels = 3
-    for v in cfg:
-        if v == 'M':
-            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
-        else:
-            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-            if batch_norm:
-                layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
-            else:
-                layers += [conv2d, nn.ReLU(inplace=True)]
-            in_channels = v
-    return nn.Sequential(*layers)
 
-
-cfgs = {
+structures = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512],
     'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512],
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512],
@@ -66,68 +67,79 @@ cfgs = {
 }
 
 
-def _vgg(cfg, batch_norm, **kwargs):
-    model = VGG_cifar(make_layers(cfgs[cfg], batch_norm=batch_norm), **kwargs)
-    return model
-
-
-def vgg11_cifar(**kwargs):
+def vgg11_cifar(structure=None, **kwargs):
     r"""VGG 11-layer model (configuration "A") from
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
-    return _vgg('A', False, **kwargs)
+    if structure is not None:
+        structure = structures['A']
+    return VGG_cifar(structure, False, **kwargs)
 
 
-def vgg11_bn_cifar(**kwargs):
+def vgg11_bn_cifar(structure=None, **kwargs):
     r"""VGG 11-layer model (configuration "A") with batch normalization
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
-    return _vgg('A', True, **kwargs)
+    if structure is not None:
+        structure = structures['A']
+    return VGG_cifar(structure, True, **kwargs)
 
 
-def vgg13_cifar(**kwargs):
+def vgg13_cifar(structure=None, **kwargs):
     r"""VGG 13-layer model (configuration "B")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
-    return _vgg('B', False, **kwargs)
+    if structure is not None:
+        structure = structures['B']
+    return VGG_cifar(structure, False, **kwargs)
 
 
-def vgg13_bn_cifar(**kwargs):
+def vgg13_bn_cifar(structure=None, **kwargs):
     r"""VGG 13-layer model (configuration "B") with batch normalization
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
-    return _vgg('B', True, **kwargs)
+    if structure is not None:
+        structure = structures['B']
+    return VGG_cifar(structure, True, **kwargs)
 
 
-def vgg16_cifar(**kwargs):
+def vgg16_cifar(structure=None, **kwargs):
     r"""VGG 16-layer model (configuration "D")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
-    return _vgg('D', False, **kwargs)
+    if structure is not None:
+        structure = structures['D']
+    return VGG_cifar(structure, False, **kwargs)
 
 
-def vgg16_bn_cifar(**kwargs):
+def vgg16_bn_cifar(structure=None, **kwargs):
     r"""VGG 16-layer model (configuration "D") with batch normalization
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
-    return _vgg('D', True, **kwargs)
+    if structure is not None:
+        structure = structures['D']
+    return VGG_cifar(structure, True, **kwargs)
 
 
-def vgg19_cifar(**kwargs):
+def vgg19_cifar(structure=None, **kwargs):
     r"""VGG 19-layer model (configuration "E")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
-    return _vgg('E', False, **kwargs)
+    if structure is not None:
+        structure = structures['E']
+    return VGG_cifar(structure, False, **kwargs)
 
 
-def vgg19_bn_cifar(**kwargs):
+def vgg19_bn_cifar(structure=None, **kwargs):
     r"""VGG 19-layer model (configuration 'E') with batch normalization
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
     """
-    return _vgg('E', True, **kwargs)
+    if structure is not None:
+        structure = structures['E']
+    return VGG_cifar(structure, True, **kwargs)
 
-def vgg_cfg(cfg=None, **kwargs): # 默认vgg19
-    if cfg is None:
-        cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512]
-    model = VGG_cifar(make_layers(cfg, batch_norm=True), **kwargs)
-    return model
+def vgg_cfg(structure=None, **kwargs):
+    """默认VGG19BN，可通过structure更改结构"""
+    if structure is None:
+        structure = structures['E']
+    return VGG_cifar(structure, True, **kwargs)

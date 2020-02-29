@@ -124,9 +124,12 @@ def save_checkpoint(state, is_best=False, epoch=None, file_root='checkpoints/', 
         epoch(int): 若为None则覆盖之前的checkpoint，否则分别保存每一次的checkpoint
         file_root(str): checkpoint文件保存目录
         file_name(str): file_name
+    return:
+        (str)返回文件保存path：file_root + file_name + '_checkpoint.pth.tar'
     """
     if epoch is not None:
         file_root = file_root + "epoch{}_".format(str(epoch))
     torch.save(state, file_root + file_name + '_checkpoint.pth.tar')
     if is_best:
         shutil.copyfile(file_root+file_name+'_checkpoint.pth.tar', file_root + file_name + '_best.pth.tar')
+    return (file_root + file_name + '_checkpoint.pth.tar')

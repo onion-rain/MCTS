@@ -41,26 +41,21 @@ class Trainer_valuator(object):
 
     def run(self):
         best_acc1 = 0
-        checkpoint_name = (self.trainer.config.dataset + "_" + self.trainer.config.model)
+        name = (self.trainer.config.dataset + "_" + self.trainer.config.model)
 
         # initial test
         print_flops_params(model=self.valuator.model)
         self.valuator.test(epoch=0)
         self.print_bar()
+        print("")
         for epoch in range(1, self.trainer.config.max_epoch+1):
             # train & valuate
             self.trainer.train(epoch=epoch)
             self.valuator.test(model=self.trainer.model, epoch=epoch)
             self.print_bar()
-
+            print("")
+            
             # save checkpoint
-            # if ((epoch%(self.trainer.config.max_epoch//10) == 0) 
-            #     and (epoch != self.trainer.config.max_epoch)):
-            #     checkpoint_path = "checkpoints/" + self.trainer.config.dataset + "_" + self.trainer.config.model + "_epoch{epoch}_acc{acc:.2f}.pth".format(epoch=epoch, acc=self.valuator.top1_acc.avg)
-            #     if len(self.trainer.config.gpu_idx_list) > 1:
-            #         torch.save(self.trainer.model.module.state_dict(), checkpoint_path)
-            #     else: torch.save(self.trainer.model.state_dict(), checkpoint_path)
-
             is_best = self.valuator.top1_acc.avg > best_acc1
             best_acc1 = max(self.valuator.top1_acc.avg, best_acc1)
             if len(self.trainer.config.gpu_idx_list) > 1:
@@ -71,79 +66,52 @@ class Trainer_valuator(object):
                 'model_state_dict': state_dict,
                 'best_acc1': best_acc1,
                 'optimizer_state_dict': self.trainer.optimizer.state_dict(),
-            }, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=checkpoint_name)
+            }, is_best=is_best, epoch=None, file_root='checkpoints/with_sparsity/', file_name=name)
 
-        
 
-# vgg
+# train vgg with sparsity
 if __name__ == "__main__":
     trainer_valuator = Trainer_valuator(
         max_epoch=150,
         batch_size=100,
-        lr=1e-2,
+        lr=1e-1,
         lr_scheduler_milestones=[81, 122],
-        model='vgg',
-        env='slim_vgg',
-        legend='sparsity_vgg',
+        model='vgg_cfg',
+        env='cifar10_vgg_cfg_sparsity',
+        legend='vgg_cfg_sparsity',
         use_visdom = True, # 使用visdom可视化训练过程
         plot_interval=50,
-        slim=True,
-        gpu_idx = "4", # choose gpu
+        sparsity=True,
+        sparsity_lambda=1e-4,
+        gpu_idx = "6", # choose gpu
         dataset="cifar10",
-        slim_lambda=1e-4,
         weight_decay=1e-4,
         momentum=0.9,
-        random_seed=2,
+        random_seed=1,
         num_workers = 10, # 使用多进程加载数据
     )
     trainer_valuator.run()
     print("end")
 
-
-# # nin
+# # train vgg without sparsity
 # if __name__ == "__main__":
 #     trainer_valuator = Trainer_valuator(
-#         max_epoch=164,
+#         max_epoch=150,
 #         batch_size=100,
-#         lr=1e-2,
+#         lr=1e-1,
 #         lr_scheduler_milestones=[81, 122],
-#         model='nin',
-#         env='slim_nin',
-#         legend='sparsity_nin',
-#         slim=True,
-#         gpu_idx = "6", # choose gpu
-#         dataset="cifar10",
-#         slim_lambda=1e-4,
-#         weight_decay=1e-4,
-#         momentum=0.9,
-#         random_seed=2,
-#         num_workers = 5, # 使用多进程加载数据
+#         model='vgg_cfg',
+#         env='cifar10_vgg_cfg',
+#         legend='vgg_cfg',
 #         use_visdom = True, # 使用visdom可视化训练过程
 #         plot_interval=50,
-#     )
-#     trainer_valuator.run()
-#     print("end")
-
-# # nin_gc
-# if __name__ == "__main__":
-#     trainer_valuator = Trainer_valuator(
-#         max_epoch=164,
-#         batch_size=100,
-#         lr=1e-2,
-#         lr_scheduler_milestones=[81, 122],
-#         model='nin_gc',
-#         env='slim_nin_gc',
-#         legend='sparsity_nin_gc',
-#         slim=True,
-#         gpu_idx = "6", # choose gpu
+#         sparsity=False,
+#         gpu_idx = "5", # choose gpu
 #         dataset="cifar10",
-#         slim_lambda=1e-4,
 #         weight_decay=1e-4,
 #         momentum=0.9,
-#         random_seed=2,
-#         num_workers = 5, # 使用多进程加载数据
-#         use_visdom = True, # 使用visdom可视化训练过程
-#         plot_interval=50,
+#         random_seed=1,
+#         num_workers = 10, # 使用多进程加载数据
 #     )
 #     trainer_valuator.run()
 #     print("end")

@@ -148,7 +148,7 @@ class Slimmer(object):
 
         # 计算slim之后的模型结构
         slimmed_num = 0
-        cfg = [] # 每层mask非零元素和，即新模型各层通道数列表
+        cfg_structure = [] # 每层mask非零元素和，即新模型各层通道数列表
         cfg_mask = [] # 每层mask
         for layer_index, module in enumerate(original_model.modules()):
             if isinstance(module, torch.nn.BatchNorm2d):
@@ -165,24 +165,27 @@ class Slimmer(object):
 
 
                 slimmed_num += (mask.shape[0] - torch.sum(mask))
-                cfg.append(int(torch.sum(mask)))
+                cfg_structure.append(int(torch.sum(mask)))
                 cfg_mask.append(mask.clone())
                 # print('layer index: {:3d} \t total channel: {:4d} \t remaining channel: {:4d}'.
                 #     format(layer_index, mask.shape[0], int(torch.sum(mask))))
             elif isinstance(module, torch.nn.MaxPool2d):
-                cfg.append('M')
-        print(cfg)
+                cfg_structure.append('M')
+        print(cfg_structure)
         # print(cfg_mask)
         
         # 构建新model
         print('{:<30}  {:<8}'.format('==> creating new model: ', self.config.model))
-        self.slimmed_model = models.__dict__[self.config.model](cfg=cfg, num_classes=self.num_classes) # 根据cfg构建新的model
+        self.slimmed_model = models.__dict__[self.config.model](structure=cfg_structure, num_classes=self.num_classes) # 根据cfg构建新的model
         if len(self.config.gpu_idx_list) > 1:
             self.slimmed_model = torch.nn.DataParallel(self.slimmed_model, device_ids=self.config.gpu_idx_list)
         self.slimmed_model.to(self.device) # 模型转移到设备上
         self.slim_ratio = slimmed_num/len(bn_abs_weghts)
         print('{:<30}  {:.4f}%'.format('==> slim ratio: ', self.slim_ratio*100))
         # print(self.slimmed_model)
+
+        # torch.save(self.slimmed_model, 'slimmed_model.pth')
+        # exit(0)
 
         # 将参数复制到新模型
         layer_id_in_cfg = 0
@@ -224,7 +227,7 @@ class Slimmer(object):
                 # print("full connection: in channels: {:d}, out channels: {:d}".format(idx0.shape[0], module0.weight.data.shape[0]))
                 break # 仅调整第一层全连接层
 
-        return cfg
+        return cfg_structure
 
 
 if __name__ == "__main__":
