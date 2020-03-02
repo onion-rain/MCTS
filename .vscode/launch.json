@@ -4,14 +4,19 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    
-
         {
             "name": "debug",
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "args": [
+                "--arch", "vgg19_bn_cifar",
+                "--dataset", "cifar10",
+                "--gpu", "5",
+                "--valuate",
+                "-rp", "checkpoints/cifar10_vgg19_bn_cifar_checkpoint.pth.tar",
+            ],
         },
     ]
 }

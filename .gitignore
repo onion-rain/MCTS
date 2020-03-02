@@ -3,3 +3,4 @@
 *.pth.tar
 checkpoints/
 slimmed_checkpoints/
+*_pycache__

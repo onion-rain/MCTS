@@ -7,123 +7,20 @@ import random
 
 from config import Configuration
 import models
-from utils import accuracy, print_model_parameters, AverageMeter, print_flops_params
+from utils import accuracy, print_model_parameters, AverageMeter, print_flops_params, get_dataloader
 
 class Tester(object):
     """
-    可通过传入config类来配置Tester，这种情况下若要会用visdom必须传入vis类
+    可通过传入config_dic来配置Tester，这种情况下不会在初始化过程中print相关数据
     也可通过**kwargs配置Tester
     """
-    def __init__(self, config=None, vis=None, **kwargs):
-        print("| ----------------- Initializing Tester ------------------ |")
-        if config == None:
-            self.config = Configuration()
-            self.config.update_config(kwargs) # 解析参数更新默认配置
-            if self.config.check_config(): raise # 检测路径、设备是否存在
-            if self.config.use_visdom:
-                self.vis = Visualizer(self.config.env, self.config.legend) # 初始化visdom
-        else: 
-            self.config = config
-            self.vis = vis
+    def __init__(self, config_dic=None, **kwargs):
 
-        if len(self.config.gpu_idx_list) > 0:
-            self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
-            print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
+        if config_dic is None:
+            self.init_from_kwargs(**kwargs)
         else:
-            self.device = torch.device('cpu')
-            print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
-
-        # Random Seed
-        if self.config.random_seed is None:
-            self.config.random_seed = random.randint(1, 10000)
-        random.seed(self.config.random_seed)
-        torch.manual_seed(self.config.random_seed)
-
-        # step1: data
-        print('{:<30}  {:<8}'.format('==> Preparing dataset: ', self.config.dataset))
-        if self.config.dataset.startswith("cifar"): # --------------cifar dataset------------------
-            transform = tv.transforms.Compose([
-                tv.transforms.ToTensor(), 
-                tv.transforms.Normalize(
-                    mean=(0.5, 0.5, 0.5), 
-                    std=(0.5, 0.5, 0.5)
-                ) # 标准化的过程为(input-mean)/std
-            ])
-            if self.config.dataset is "cifar10": # -----------------cifar10 dataset----------------
-                self.test_dataset = tv.datasets.CIFAR10(
-                    root=self.config.dataset_root,
-                    train=False,
-                    download=False,
-                    transform=transform,
-                )
-                self.num_classes = 10
-            elif self.config.dataset is "cifar100": # --------------cifar100 dataset----------------
-                self.test_dataset = tv.datasets.CIFAR100(
-                    root=self.config.dataset_root,
-                    train=False,
-                    download=False,
-                    transform=transform,
-                )
-                self.num_classes = 100
-            else: 
-                print("Dataset can only be cifar10 or cifar100")
-                exit()
-
-        elif self.config.dataset is "imagenet": # ----------------imagenet dataset------------------
-            transform = tv.transforms.Compose([
-                # tv.transforms.RandomResizedCrop(224),
-                tv.transforms.Resize(256),
-                tv.transforms.CenterCrop(224),
-                tv.transforms.ToTensor(),
-                tv.transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225],
-                ) # 标准化的过程为(input-mean)/std
-            ])
-            self.test_dataset = tv.datasets.ImageFolder(
-                self.config.dataset_root+'imagenet/img_val/', 
-                transform=transform
-            )
-            self.num_classes = 1000
-        else: 
-            print("Dataset undefined")
-            exit()
-
-        self.test_dataloader = torch.utils.data.DataLoader(
-            dataset=self.test_dataset,
-            batch_size=self.config.batch_size,
-            shuffle=False,
-            num_workers=self.config.num_workers,
-            pin_memory=True,
-        )
-
-        # step2: model
-        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.model))
-        print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
-        self.model = models.__dict__[self.config.model](num_classes=self.num_classes) # 从models中获取名为config.model的model
-        if len(self.config.gpu_idx_list) > 1:
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
-        self.model.to(self.device) # 模型转移到设备上
-        if self.config.load_model_path: # 加载目标模型参数
-            # self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device))
-            checkpoint = torch.load(self.config.load_model_path, map_location=self.device)
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            print("{:<30}  {:<8}".format('==> model epoch: ', checkpoint['epoch']))
-            print("{:<30}  {:<8}".format('==> model best acc1: ', checkpoint['best_acc1']))
-        # print(self.model)
-        # print_model_parameters(self.model)
-        # print_flops_params(self.model, self.config.dataset)
-
-        # step3: criterion
-        self.criterion = torch.nn.CrossEntropyLoss()
-
-        #step4: meters
-        self.loss_meter = AverageMeter() # 计算所有数的平均值和标准差，这里用来统计一个epoch中的平均值
-        self.top1_acc = AverageMeter()
-        self.top5_acc = AverageMeter()
-        self.batch_time = AverageMeter()
-        self.dataload_time = AverageMeter()
-
+            self.init_from_config(config_dic)
+        
     def run(self):
         print_flops_params(model=self.model)
         self.test()
@@ -166,7 +63,7 @@ class Tester(object):
                 self.batch_time.update(time.time() - end_time)
                 end_time = time.time()
 
-                done = (batch_index+1) * self.config.batch_size
+                done = (batch_index+1) * self.test_dataloader.batch_size
                 percentage = 100. * (batch_index+1) / len(self.test_dataloader)
                 time_str = time.strftime('%H:%M:%S')
                 print("\r"
@@ -179,7 +76,7 @@ class Tester(object):
                 "UTC+8: {time_str} ".format(
                     epoch=0 if epoch == None else epoch,
                     done=done,
-                    total_len=len(self.test_dataset),
+                    total_len=len(self.test_dataloader.dataset),
                     percentage=percentage,
                     loss_meter=self.loss_meter.avg,
                     top1=self.top1_acc.avg,
@@ -191,9 +88,95 @@ class Tester(object):
         print("")
         
         # visualize
-        if self.config.use_visdom:
+        if self.vis is not None:
             self.vis.plot('test_loss', self.loss_meter.avg, x=epoch)
             self.vis.plot('test_top1', self.top1_acc.avg, x=epoch)
+
+    def init_from_kwargs(self, **kwargs):
+        
+        print("| ----------------- Initializing Tester ------------------ |")
+        
+        self.config = Configuration()
+        self.config.update_config(kwargs) # 解析参数更新默认配置
+        if self.config.check_config(): raise # 检测路径、设备是否存在
+
+        # visdom
+        self.vis = None
+        if self.config.visdom:
+            self.vis = Visualizer(self.config.vis_env, self.config.vis_legend) # 初始化visdom
+
+        # device
+        if len(self.config.gpu_idx_list) > 0:
+            self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
+            print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
+        else:
+            self.device = torch.device('cpu')
+            print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
+
+        # Random Seed
+        if self.config.random_seed is None:
+            self.config.random_seed = random.randint(1, 10000)
+        random.seed(self.config.random_seed)
+        torch.manual_seed(self.config.random_seed)
+
+        # step1: data
+        _, self.test_dataloader, self.num_classes = get_dataloader(self.config)
+
+        # step2: model
+        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.arch))
+        print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
+        self.model = models.__dict__[self.config.arch](num_classes=self.num_classes) # 从models中获取名为config.arch的model
+        if len(self.config.gpu_idx_list) > 1:
+            self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
+        self.model.to(self.device) # 模型转移到设备上
+        if self.config.load_model_path: # 加载目标模型参数
+            # self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device))
+            checkpoint = torch.load(self.config.load_model_path, map_location=self.device)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            print("{:<30}  {:<8}".format('==> model epoch: ', checkpoint['epoch']))
+            print("{:<30}  {:<8}".format('==> model best acc1: ', checkpoint['best_acc1']))
+            # print(self.model)
+            # print_model_parameters(self.model)
+            # print_flops_params(self.model, self.config.dataset)
+
+        # step3: criterion
+        self.criterion = torch.nn.CrossEntropyLoss()
+
+        #step4: meters
+        self.loss_meter = AverageMeter() # 计算所有数的平均值和标准差，这里用来统计一个epoch中的平均值
+        self.top1_acc = AverageMeter()
+        self.top5_acc = AverageMeter()
+        self.batch_time = AverageMeter()
+        self.dataload_time = AverageMeter()
+
+    def init_from_config(self, config):
+    
+        # visdom
+        self.vis = config['vis']
+
+        # device
+        self.device = config['device']
+
+        # Random Seed
+        random.seed(config['seed'])
+        torch.manual_seed(config['seed'])
+
+        # step1: data
+        self.test_dataloader = config['dataloader']
+
+        # step2: model
+        self.model = config['model']
+
+        # step3: criterion
+        self.criterion = torch.nn.CrossEntropyLoss()
+
+        #step4: meters
+        self.loss_meter = AverageMeter() # 计算所有数的平均值和标准差，这里用来统计一个epoch中的平均值
+        self.top1_acc = AverageMeter()
+        self.top5_acc = AverageMeter()
+        self.batch_time = AverageMeter()
+        self.dataload_time = AverageMeter()
+
     
 
 if __name__ == "__main__":
@@ -204,7 +187,7 @@ if __name__ == "__main__":
         gpu_idx = "4", # choose gpu
         load_model_path='checkpoints/with_sparsity/cifar10_vgg_cfg_best.pth.tar',
         random_seed=1,
-        # use_visdom = True, # 使用visdom可视化训练过程
+        # visdom = True, # 使用visdom可视化训练过程
         # env='test_test',
         # print_config=True,
         # print_device=True,

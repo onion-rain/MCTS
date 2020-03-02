@@ -11,9 +11,23 @@ from ptflops import get_model_complexity_info
 import shutil
 
 
-__all__ = ['write_log', 'print_model_parameters', 'print_nonzeros', 
+__all__ = ['get_suffix', 'write_log', 'print_model_parameters', 'print_nonzeros', 
             'accuracy', 'get_path', 'AverageMeter', 'print_flops_params',
             'save_checkpoint']
+
+
+def get_suffix(config):
+    """
+    获取后缀字符串，用在checkpoin、visdom_envirionment、visdom_legend等的命名
+    args:
+        config(Configuration)
+            config.visdom
+    """
+    suffix = ''
+    if config.sr is True:
+        suffix = suffix.join('_sr')
+    return suffix
+
 
 
 def write_log(filename, content):

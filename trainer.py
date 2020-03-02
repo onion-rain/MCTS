@@ -6,14 +6,18 @@ import torch
 from utils.visualize import Visualizer
 from tqdm import tqdm
 from torch.nn import functional as F
-import torchvision as tv
+# import torchvision as tv
 import time
 import os
 import random
+import datetime
+import argparse
 
+from tester import Tester
 from config import Configuration
 import models
-from utils import accuracy, print_model_parameters, AverageMeter, get_path
+from utils import accuracy, print_model_parameters, AverageMeter, get_path, \
+            get_dataloader, get_suffix, print_flops_params, save_checkpoint
 
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
@@ -23,18 +27,24 @@ class Trainer(object):
     可通过传入config类来配置Trainer，这种情况下若要会用visdom必须传入vis类
     也可通过**kwargs配置Trainer
     """
-    def __init__(self, config=None, vis=None, **kwargs):
-        print("| ----------------- Initializing Trainer ----------------- |")
-        if config == None:
-            self.config = Configuration()
-            self.config.update_config(kwargs) # 解析参数更新默认配置
-            if self.config.check_config(): raise # 检测路径、设备是否存在
-            if self.config.use_visdom:
-                self.vis = Visualizer(self.config.env, self.config.legend) # 初始化visdom
-        else: 
-            self.config = config
-            self.vis = vis
+    def __init__(self, **kwargs):
 
+        print("| ----------------- Initializing Trainer ----------------- |")
+
+        self.config = Configuration()
+        self.config.update_config(kwargs) # 解析参数更新默认配置
+        if self.config.check_config(): raise # 检测路径、设备是否存在
+
+        self.suffix = get_suffix(self.config)
+        print('{:<30}  {:<8}'.format('==> suffix: ', self.suffix))
+
+        # 更新一些默认标志
+        self.start_epoch = 1
+        self.best_acc1 = 0
+        self.checkpoint = None
+        vis_clear = True
+
+        # device
         if len(self.config.gpu_idx_list) > 0:
             self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
             print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
@@ -42,87 +52,36 @@ class Trainer(object):
             self.device = torch.device('cpu')
             print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
 
-        # Random Seed
+        # Random Seed 
+        # (其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，而加载数据一般没有不用多线程的，这就有点尴尬了)
         if self.config.random_seed is None:
             self.config.random_seed = random.randint(1, 10000)
         random.seed(self.config.random_seed)
         torch.manual_seed(self.config.random_seed)
 
         # step1: data
-        print('{:<30}  {:<8}'.format('==> Preparing dataset: ', self.config.dataset))
-        if self.config.dataset.startswith("cifar"): # --------------cifar dataset------------------
-            transform = tv.transforms.Compose([
-                tv.transforms.RandomCrop(32, padding=4),
-                tv.transforms.RandomHorizontalFlip(),
-                tv.transforms.ToTensor(),
-                tv.transforms.Normalize(
-                    mean=[0.5, 0.5, 0.5], 
-                    std=[0.5, 0.5, 0.5],
-                ) # 标准化的过程为(input-mean)/std
-            ])
-            if self.config.dataset is "cifar10": # -----------------cifar10 dataset----------------
-                self.train_dataset = tv.datasets.CIFAR10(
-                    root=self.config.dataset_root, 
-                    train=True, 
-                    download=False,
-                    transform=transform,
-                )
-                self.num_classes = 10
-            elif self.config.dataset is "cifar100": # --------------cifar100 dataset----------------
-                self.train_dataset = tv.datasets.CIFAR100(
-                    root=self.config.dataset_root, 
-                    train=True, 
-                    download=False,
-                    transform=transform,
-                )
-                self.num_classes = 100
-            else: 
-                print("Dataset undefined")
-                exit()
-
-        elif self.config.dataset is "imagenet": # ----------------imagenet dataset------------------
-            transform = tv.transforms.Compose([
-                tv.transforms.RandomResizedCrop(224),
-                tv.transforms.RandomHorizontalFlip(),
-                tv.transforms.ToTensor(),
-                tv.transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225],
-                ) # 标准化的过程为(input-mean)/std
-            ])
-            self.train_dataset = tv.datasets.ImageFolder(
-                self.config.dataset_root+'imagenet/img_train/', 
-                transform=transform
-            )
-            self.num_classes = 1000
-        else: 
-            print("Dataset undefined")
-            exit()
-
-
-        self.train_dataloader = torch.utils.data.DataLoader(
-            dataset=self.train_dataset, 
-            batch_size=self.config.batch_size,
-            shuffle=True,
-            num_workers=self.config.num_workers,
-            pin_memory=True,
-            drop_last = self.config.dataloader_droplast,
-        )
+        self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
 
         # step2: model
-        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.model))
-        print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
-        self.model = models.__dict__[self.config.model](num_classes=self.num_classes) # 从models中获取名为config.model的model
+        print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
+        structure = None
+        if self.config.resume_path != '': # 断点续练hhh
+            checkpoint = torch.load(self.config.resume_path, map_location=self.device)
+            print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
+            if self.config.refine: # 根据structure加载剪枝后的模型结构
+                structure=checkpoint['structure']
+                print(structure)
+        self.model = models.__dict__[self.config.arch](structure=structure, num_classes=self.num_classes) # 从models中获取名为config.model的model
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
-        if self.config.load_model_path: # 加载目标模型参数
-            # self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device))
-            checkpoint = torch.load(self.config.load_model_path, map_location=self.device)
+        if checkpoint is not None:
+            self.start_epoch = checkpoint['epoch'] + 1
+            self.best_acc1 = checkpoint['best_acc1']
             self.model.load_state_dict(checkpoint['model_state_dict'])
-            print("{:<30}  {:<8}".format('==> model epoch: ', checkpoint['epoch']))
-            print("{:<30}  {:<8}".format('==> model best acc1: ', checkpoint['best_acc1']))
-            # config_state_dict = checkpoint['config_state_dict']
+            print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+            print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+            vis_clear = False # 断点续练则不清空visdom
             
         # exit(0)
         
@@ -133,11 +92,14 @@ class Trainer(object):
             momentum=self.config.momentum,
             weight_decay=self.config.weight_decay,
         )
+        if checkpoint is not None:
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        
         self.criterion = torch.nn.CrossEntropyLoss()
 
         self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
             optimizer=self.optimizer,
-            milestones=self.config.lr_scheduler_milestones, 
+            milestones=[self.config.max_epoch*0.5, self.config.max_epoch*0.75], 
             gamma=0.1,
             last_epoch=-1,
         )
@@ -149,20 +111,81 @@ class Trainer(object):
         self.batch_time = AverageMeter()
         self.dataload_time = AverageMeter()
         
-        if self.config.use_visdom:
+        
+        # step5: visdom
+        self.vis = None
+        if self.config.visdom:
             self.loss_vis = AverageMeter()
             self.top1_vis = AverageMeter()
+            if self.config.vis_env == '':
+                self.config.vis_env = self.config.dataset + '_' + self.config.arch + self.suffix
+            if self.config.vis_legend == '':
+                self.config.vis_legend = self.config.arch + self.suffix
+            self.vis = Visualizer(self.config.vis_env, self.config.vis_legend, clear=vis_clear) 
 
+        # step6: valuator
+        self.valuator = None
+        if self.config.valuate is True:
+            val_config_dic = {
+                'model': self.model,
+                'dataloader': self.val_dataloader,
+                'device': self.device,
+                'vis': self.vis,
+                'seed': self.config.random_seed
+            }
+            self.valuator = Tester(val_config_dic)
+
+    
+    def print_bar(self):
+        """calculate duration time"""
+        interval = datetime.datetime.now() - self.start_time
+        print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+            format(
+                model=self.config.arch,
+                dataset=self.config.dataset,
+                dh=interval.seconds//3600,
+                dm=interval.seconds%3600//60,
+                ds=interval.seconds%60,
+            )
+        )
 
     def run(self):
-        for epoch in range(1, self.config.max_epoch):
-            self.train(epoch)
 
-        # 训练结束保存最终模型
-        if self.config.save_model_path != None:
+        print("")
+        self.start_time = datetime.datetime.now()
+        name = (self.config.dataset + "_" + self.config.arch + self.suffix)
+        print_flops_params(model=self.model)
+
+        # initial test
+        if self.valuator is not None:
+            self.valuator.test(self.model, epoch=self.start_epoch-1)
+        self.print_bar()
+        print("")
+        for epoch in range(self.start_epoch, self.config.max_epoch+1):
+            # train & valuate
+            self.train(epoch=epoch)
+            if self.valuator is not None:
+                self.valuator.test(self.model, epoch=epoch)
+            self.print_bar()
+            print("")
+            
+            # save checkpoint
+            if self.valuator is not None:
+                is_best = self.valuator.top1_acc.avg > self.best_acc1
+                self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
+            else:
+                is_best = self.top1_acc.avg > self.best_acc1
+                self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
             if len(self.config.gpu_idx_list) > 1:
-                torch.save(self.model.module.state_dict(), self.config.save_model_path)
-            else: torch.save(self.model.state_dict(), self.config.save_model_path)
+                state_dict = self.model.module.state_dict()
+            else: state_dict = self.model.state_dict()
+            save_checkpoint({
+                'model': self.config.arch,
+                'epoch': epoch,
+                'model_state_dict': state_dict,
+                'best_acc1': self.best_acc1,
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            }, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
 
     def train(self, epoch=None):
         """
@@ -176,7 +199,7 @@ class Trainer(object):
         self.top5_acc.reset()
         self.batch_time.reset()
         self.dataload_time.reset()
-        if self.config.use_visdom:
+        if self.vis is not None:
             self.loss_vis.reset()
             self.top1_vis.reset()
 
@@ -200,7 +223,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
             loss.backward()
 
-            if self.config.sparsity:
+            if self.config.sr:
                 self.updateBN()
                 
             self.optimizer.step()
@@ -216,7 +239,7 @@ class Trainer(object):
             end_time = time.time()
 
             # print log
-            done = (batch_index+1) * self.config.batch_size
+            done = (batch_index+1) * self.train_dataloader.batch_size
             percentage = 100. * (batch_index+1) / len(self.train_dataloader)
             # pbar.set_description(
             print("\r"
@@ -229,7 +252,7 @@ class Trainer(object):
                 "lr   : {lr:0.1e} ".format(
                     epoch=0 if epoch == None else epoch,
                     done=done,
-                    total_len=len(self.train_dataset),
+                    total_len=len(self.train_dataloader.dataset),
                     percentage=percentage,
                     loss_meter=self.loss_meter.avg,
                     top1=self.top1_acc.avg,
@@ -240,11 +263,11 @@ class Trainer(object):
             )
 
             # visualize
-            if self.config.use_visdom:
+            if self.vis is not None:
                 self.loss_vis.update(loss.item(), input.size(0))
                 self.top1_vis.update(prec1.data.cpu(), input.size(0))
 
-                if (batch_index % self.config.plot_interval == self.config.plot_interval-1):
+                if (batch_index % self.config.vis_interval == self.config.vis_interval-1):
                     vis_x = epoch-1+percentage/100
                     self.vis.plot('train_loss', self.loss_vis.avg, x=vis_x)
                     self.vis.plot('train_top1', self.top1_vis.avg, x=vis_x)
@@ -254,13 +277,13 @@ class Trainer(object):
         print("")
 
         # visualize
-        if self.config.use_visdom:
+        if self.vis is not None:
             self.vis.log(
                 "epoch: {epoch},  lr: {lr}, <br>\
                 train_loss: {train_loss}, <br>\
                 train_top1: {train_top1}, <br>"
                 .format(
-                    lr=self.config.lr,
+                    lr=self.optimizer.param_groups[0]['lr'],
                     epoch=epoch, 
                     train_loss=self.loss_meter.avg,
                     train_top1=self.top1_acc.avg,
@@ -275,24 +298,86 @@ class Trainer(object):
         for module in self.model.modules():
             if isinstance(module, torch.nn.BatchNorm2d):
                 # torch.sign(module.weight.data)是对sparsity-induced penalty(g(γ))求导的结果
-                module.weight.grad.data.add_(self.config.sparsity_lambda * torch.sign(module.weight.data))  # L1
+                module.weight.grad.data.add_(self.config.sr_lambda * torch.sign(module.weight.data))  # L1
 
-
+# train vgg with sparsity-regularization
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='network trainer')
+    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='vgg19_bn_cifar',
+                        choices=models.ALL_MODEL_NAMES,
+                        help='model architecture: ' +
+                        ' | '.join(name for name in models.ALL_MODEL_NAMES) +
+                        ' (default: resnet18)')
+    parser.add_argument('--dataset', type=str, default='cifar10',
+                        help='training dataset (default: cifar10)')
+    parser.add_argument('--workers', type=int, default=10, metavar='N',
+                        help='number of data loading workers (default: 10)')
+    parser.add_argument('--batch-size', type=int, default=100, metavar='N',
+                        help='input batch size for training (default: 100)')
+    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+                        help='input batch size for testing (default: 1000)')
+    parser.add_argument('--epochs', type=int, default=150, metavar='N',
+                        help='number of epochs to train (default: 150)')
+    parser.add_argument('--lr', type=float, default=1e-1, metavar='LR',
+                        help='initial learning rate (default: 1e-1)')
+    parser.add_argument('--weight-decay', '-wd', dest='weight_decay', type=float,
+                        default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
+    parser.add_argument('--gpu', type=str, default='0',
+                        help='training GPU index(default:"0",which means use GPU0')
+    parser.add_argument('--seed', type=int, default=1, metavar='S',
+                        help='random seed (default: 1)')
+    parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
+                        help='SGD momentum (default: 0.9)')
+    parser.add_argument('--valuate', action='store_true',
+                        help='valuate each training epoch')
+    parser.add_argument('--resume-path', '-rp', dest='resume_path', type=str, default='',
+                        metavar='PATH', help='path to latest checkpoint (default: none)')
+
+    parser.add_argument('--refine', action='store_true',
+                        help='refine from pruned model, use construction to build the model')
+    parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
+                        help='train with channel sparsity regularization')
+    parser.add_argument('--sr-lambda', dest='sr_lambda', type=float, default=1e-4,
+                        help='scale sparse rate (default: 1e-4)')
+
+    parser.add_argument('--visdom', dest='visdom', action='store_true',
+                        help='visualize the training process using visdom')
+    parser.add_argument('--vis-env', type=str, default='', metavar='ENV',
+                        help='visdom environment (default: "", which means env is automatically set to args.dataset + "_" + args.arch)')
+    parser.add_argument('--vis-legend', type=str, default='', metavar='LEGEND',
+                        help='refine from pruned model (default: "", which means env is automatically set to args.arch)')
+    parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
+                        help='visdom plot interval batchs (default: 1e-4)')
+    args = parser.parse_args()
+
+    # debug用
+    # args.workers = 0
+
+
     trainer = Trainer(
-        max_epoch=150,
-        batch_size=100,
-        lr=1e-2,
-        lr_scheduler_milestones=[50, 110],
-        weight_decay=1e-4,
-        momentum=0.9,
-        model='test',
-        dataset="imagenet",
-        gpu_idx = "0", # choose gpu
-        random_seed=2,
-        # num_workers = 5, # 使用多进程加载数据
+        arch=args.arch,
+        dataset=args.dataset,
+        num_workers = args.workers, # 使用多进程加载数据
+        batch_size=args.batch_size,
+        max_epoch=args.epochs,
+        lr=args.lr,
+        gpu_idx = args.gpu, # choose gpu
+        weight_decay=args.weight_decay,
+        momentum=args.momentum,
+        random_seed=args.seed,
+        valuate=args.valuate,
+        resume_path=args.resume_path,
+
+        sr=args.sr,
+        sr_lambda=args.sr_lambda,
+        refine=args.refine,
+
+        visdom = args.visdom, # 使用visdom可视化训练过程
+        vis_env=args.vis_env,
+        vis_legend=args.vis_legend,
+        vis_interval=args.vis_interval,
     )
-    print(trainer.model)
-    exit(0)
-    # trainer.run()
+    trainer.run()
     print("end")
+

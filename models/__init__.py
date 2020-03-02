@@ -1,24 +1,27 @@
-from .tv.alexnet import *
-from .tv.resnet import *
-from .tv.resnext import *
-from .tv.densenet import *
-# from .tv.vgg import *
+from .cifar import *
+from .tv import *
+from .misc import *
 
+from . import cifar
+from . import tv
+from . import misc
 
-from .cifar.resnet_cifar import *
-from .cifar.alexnet_cifar import *
-from .cifar.vgg_cifar import *
-from .cifar.resnext_cifar import *
-from .cifar.resnext_cifar_o import *
-from .cifar.densenet_cifar import *
-from .cifar.mobilenet_cifar import *
-from .cifar.shufflenet_cifar import *
+CIFAR_MODEL_NAMES = sorted(name for name in cifar.__dict__
+                            if name.islower()
+                            and not name.startswith("__")
+                            and callable(cifar.__dict__[name]))
+                            
+TV_MODEL_NAMES = sorted(name for name in tv.__dict__
+                            if name.islower()
+                            and not name.startswith("__")
+                            and callable(tv.__dict__[name]))
+                            
+MISC_MODEL_NAMES = sorted(name for name in misc.__dict__
+                            if name.islower()
+                            and not name.startswith("__")
+                            and callable(misc.__dict__[name]))
 
-
-from .TransformerNet import TransformerNet
-from .GAN_models import Model_Generator, Model_Discriminator
-from .PoetryNet import PoetryNet
-from .LeNet import LeNet, LeNet_5
-from .test import *
-from .nin import *
-from .nin_gc import *
+ALL_MODEL_NAMES = sorted(map(lambda s: s.lower(), 
+                            set(CIFAR_MODEL_NAMES + TV_MODEL_NAMES + MISC_MODEL_NAMES)))
+                            
+                            

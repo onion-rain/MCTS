@@ -5,41 +5,50 @@ from pathlib import Path
 class Configuration(object):
     '''
     使用范例：
-    import models
-    from config import Configuration
+        import models
+        from config import Configuration
 
-    config = Configuration()\n
-    lr = config.lr\n
-    model = getattr(models, config.model)\n
-    dataset = DogCat_dataset(config.train_data_root)\n
+        config = Configuration()\n
+        lr = config.lr\n
+        model = getattr(models, config.arch)\n
+        dataset = DogCat_dataset(config.train_data_root)\n
     '''
-    use_visdom = False
-    env = 'main' # visdom 环境
-    legend = None # visdom 图例名称，为None从取env第一个"_"之后的字符串作为legend
-    model = 'resnet34' # 要训练的模型，名字必须与models/__init__.py中的名字一致
+
+    arch = 'resnet34' # 要训练的网络结构，名字必须与models/__init__.py中的名字一致
     gpu_idx = "" # choose gpu
-    num_workers = 0 # 默认不使用多进程加载数据，便于调试
-    plot_interval = 20 # visdom plot info every N batch
     max_epoch = 100
-    batch_size = 100
-    lr = 1e-2 # initial learning rate
+    lr = 1e-1 # initial learning rate
     lr_decay = 0.2 # when val_loss increase, lr = lr*lr_decay
     random_seed = None
-    print_config = False
-    print_device = False
     weight_decay = 5e-4
     momentum = 0.9
-    lr_scheduler_milestones = [100, 150]
-    dataloader_droplast = False
-    dataset = "cifar10" # Dataset can only be cifar10 or cifar100 or imagenet
-    
-    sparsity = False
-    sparsity_lambda = 1e-4
-    slim_percent = 0.1
+    valuate = False # 每训练一个epoch进行一次valuate
+    print_config = False
+    print_device = False
+    resume_path = '' # 断点续练hhh
 
+    # test专用
+    load_model_path = None # 加载预训练参数的路径
+    
+    # dataloader config
+    dataset = "cifar10" # Dataset can only be cifar10 or cifar100 or imagenet
     dataset_root = '/home/xueruini/onion_rain/pytorch/dataset/' # 训练集存放路径
-    load_model_path = None # 加载预训练的模型的路径，为None代表不加载
-    save_model_path = None
+    batch_size = 100
+    num_workers = 0 # 默认不使用多进程加载数据，便于调试
+    droplast = False
+
+    # visdom
+    visdom = False
+    vis_env = 'main' # visdom 环境
+    vis_legend = None # visdom 图例名称，为None从取env第一个"_"之后的字符串作为legend
+    vis_interval = 20 # visdom plot info every N batch
+
+    # slimming
+    sr = False
+    sr_lambda = 1e-4
+    slim_percent = 0.1
+    refine = False # 是否根据structure加载剪枝后的模型结构
+
     
 
     def update_config(self, kwargs):
@@ -72,10 +81,10 @@ class Configuration(object):
         '''
         自动检测config配置是否合理
         '''
-        self.multi_gpus = False
+        # self.multi_gpus = False
         self.gpu_idx_list = self.sting2list(self.gpu_idx)
-        if len(self.gpu_idx_list) > 1:
-            self.multi_gpus = True
+        # if len(self.gpu_idx_list) > 1:
+        #     self.multi_gpus = True
         errors = 0
 
         if torch.cuda.is_available():
@@ -96,14 +105,19 @@ class Configuration(object):
                     If you are running on a CPU-only machine, please change config.use_gpu to False.")
                 errors += 1
         
-        if not self.dataset_root == None:
+        if not (self.dataset_root == None or self.dataset_root == ''):
             if not Path(self.dataset_root).exists():
                 print("config error: No such file or directory: '{}'".format(self.dataset_root))
                 errors += 1
 
-        if not self.load_model_path == None:
+        if not (self.load_model_path == None or self.load_model_path == ''):
             if not Path(self.load_model_path).exists():
                 print("config error: No such file or directory: '{}'".format(self.load_model_path))
+                errors += 1
+
+        if not (self.resume_path == None or self.resume_path == ''):
+            if not Path(self.resume_path).exists():
+                print("config error: No such file or directory: '{}'".format(self.resume_path))
                 errors += 1
         
         if errors != 0: print("config errors : {}".format(errors))

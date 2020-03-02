@@ -57,9 +57,9 @@ class Slimmer(object):
             exit()
 
         # load model
-        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.model))
+        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.arch))
         print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
-        self.model = models.__dict__[self.config.model](num_classes=self.num_classes) # 从models中获取名为config.model的model
+        self.model = models.__dict__[self.config.arch](num_classes=self.num_classes) # 从models中获取名为config.arch的model
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
@@ -175,8 +175,8 @@ class Slimmer(object):
         # print(cfg_mask)
         
         # 构建新model
-        print('{:<30}  {:<8}'.format('==> creating new model: ', self.config.model))
-        self.slimmed_model = models.__dict__[self.config.model](structure=cfg_structure, num_classes=self.num_classes) # 根据cfg构建新的model
+        print('{:<30}  {:<8}'.format('==> creating new model: ', self.config.arch))
+        self.slimmed_model = models.__dict__[self.config.arch](structure=cfg_structure, num_classes=self.num_classes) # 根据cfg构建新的model
         if len(self.config.gpu_idx_list) > 1:
             self.slimmed_model = torch.nn.DataParallel(self.slimmed_model, device_ids=self.config.gpu_idx_list)
         self.slimmed_model.to(self.device) # 模型转移到设备上

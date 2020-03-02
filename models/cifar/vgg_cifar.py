@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 __all__ = [
-    'VGG_cifar', 'vgg_cfg',
+    'VGG_cifar',
     'vgg11_cifar', 'vgg11_bn_cifar', 
     'vgg13_cifar', 'vgg13_bn_cifar', 
     'vgg16_cifar', 'vgg16_bn_cifar',
@@ -70,8 +70,9 @@ structures = {
 def vgg11_cifar(structure=None, **kwargs):
     r"""VGG 11-layer model (configuration "A") from
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    可通过structure更改结构，最后的全连接层改为一层
     """
-    if structure is not None:
+    if structure is None:
         structure = structures['A']
     return VGG_cifar(structure, False, **kwargs)
 
@@ -79,8 +80,9 @@ def vgg11_cifar(structure=None, **kwargs):
 def vgg11_bn_cifar(structure=None, **kwargs):
     r"""VGG 11-layer model (configuration "A") with batch normalization
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    可通过structure更改结构，最后的全连接层改为一层
     """
-    if structure is not None:
+    if structure is None:
         structure = structures['A']
     return VGG_cifar(structure, True, **kwargs)
 
@@ -88,8 +90,9 @@ def vgg11_bn_cifar(structure=None, **kwargs):
 def vgg13_cifar(structure=None, **kwargs):
     r"""VGG 13-layer model (configuration "B")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    可通过structure更改结构，最后的全连接层改为一层
     """
-    if structure is not None:
+    if structure is None:
         structure = structures['B']
     return VGG_cifar(structure, False, **kwargs)
 
@@ -97,8 +100,9 @@ def vgg13_cifar(structure=None, **kwargs):
 def vgg13_bn_cifar(structure=None, **kwargs):
     r"""VGG 13-layer model (configuration "B") with batch normalization
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    可通过structure更改结构，最后的全连接层改为一层
     """
-    if structure is not None:
+    if structure is None:
         structure = structures['B']
     return VGG_cifar(structure, True, **kwargs)
 
@@ -106,8 +110,9 @@ def vgg13_bn_cifar(structure=None, **kwargs):
 def vgg16_cifar(structure=None, **kwargs):
     r"""VGG 16-layer model (configuration "D")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    可通过structure更改结构，最后的全连接层改为一层
     """
-    if structure is not None:
+    if structure is None:
         structure = structures['D']
     return VGG_cifar(structure, False, **kwargs)
 
@@ -115,8 +120,9 @@ def vgg16_cifar(structure=None, **kwargs):
 def vgg16_bn_cifar(structure=None, **kwargs):
     r"""VGG 16-layer model (configuration "D") with batch normalization
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    可通过structure更改结构，最后的全连接层改为一层
     """
-    if structure is not None:
+    if structure is None:
         structure = structures['D']
     return VGG_cifar(structure, True, **kwargs)
 
@@ -124,8 +130,9 @@ def vgg16_bn_cifar(structure=None, **kwargs):
 def vgg19_cifar(structure=None, **kwargs):
     r"""VGG 19-layer model (configuration "E")
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    可通过structure更改结构，最后的全连接层改为一层
     """
-    if structure is not None:
+    if structure is None:
         structure = structures['E']
     return VGG_cifar(structure, False, **kwargs)
 
@@ -133,13 +140,8 @@ def vgg19_cifar(structure=None, **kwargs):
 def vgg19_bn_cifar(structure=None, **kwargs):
     r"""VGG 19-layer model (configuration 'E') with batch normalization
     `"Very Deep Convolutional Networks For Large-Scale Image Recognition" <https://arxiv.org/pdf/1409.1556.pdf>`_
+    可通过structure更改结构，最后的全连接层改为一层
     """
-    if structure is not None:
-        structure = structures['E']
-    return VGG_cifar(structure, True, **kwargs)
-
-def vgg_cfg(structure=None, **kwargs):
-    """默认VGG19BN，可通过structure更改结构"""
     if structure is None:
         structure = structures['E']
     return VGG_cifar(structure, True, **kwargs)
