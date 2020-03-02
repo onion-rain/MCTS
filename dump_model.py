@@ -1,6 +1,4 @@
-# import ssl
-# #全局取消证书验证
-# ssl._create_default_https_context = ssl._create_unverified_context
+# 该文件通常用来加载.pth.tar文件以供debug
 
 import torch
 import warnings
@@ -19,10 +17,12 @@ def dump_model(model_name=None,
     checkpoint = torch.load(checkpoint_path)
     if model_structure is None:
         model_structure = checkpoint['structure']
+        print(model_structure)
     model = models.__dict__[model_name](structure=model_structure, num_classes=num_classes)
     model.load_state_dict(checkpoint['model_state_dict'])
     
-    torch.save(model, save_path)
+    if save_path is not None:
+        torch.save(model, save_path)
 
         # exit(0)
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     dump_model(
         model_name='vgg_cfg', 
         model_structure=None,
-        checkpoint_path='slimmed_checkpoints/slimmed_ratio0.7_cifar10_vgg_cfg_checkpoint.pth.tar',
-        num_classes=10,
-        save_path='VGG19BN_slimmed0.7_10.0.pth'
+        checkpoint_path='checkpoints/cifar10_vgg19_bn_cifar_sr_refine_best.pth.tar',
+        # num_classes=10,
+        # save_path='VGG19BN_slimmed0.7_10.0.pth'
     )

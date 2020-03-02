@@ -4,6 +4,7 @@ from tqdm import tqdm
 import torchvision as tv
 import time
 import random
+import argparse
 
 from config import Configuration
 import models
@@ -123,21 +124,26 @@ class Tester(object):
         _, self.test_dataloader, self.num_classes = get_dataloader(self.config)
 
         # step2: model
-        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.arch))
-        print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
-        self.model = models.__dict__[self.config.arch](num_classes=self.num_classes) # 从models中获取名为config.arch的model
+        print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
+        structure = None
+        if self.config.resume_path != '': # 断点续练hhh
+            checkpoint = torch.load(self.config.resume_path, map_location=self.device)
+            print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
+            if self.config.refine: # 根据structure加载剪枝后的模型结构
+                structure=checkpoint['structure']
+                print(structure)
+        else: 
+            print("你test不加载模型测锤子??")
+            exit(0)
+        self.model = models.__dict__[self.config.arch](structure=structure, num_classes=self.num_classes) # 从models中获取名为config.model的model
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
-        if self.config.load_model_path: # 加载目标模型参数
-            # self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device))
-            checkpoint = torch.load(self.config.load_model_path, map_location=self.device)
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            print("{:<30}  {:<8}".format('==> model epoch: ', checkpoint['epoch']))
-            print("{:<30}  {:<8}".format('==> model best acc1: ', checkpoint['best_acc1']))
-            # print(self.model)
-            # print_model_parameters(self.model)
-            # print_flops_params(self.model, self.config.dataset)
+        # if checkpoint is not None:
+        self.best_acc1 = checkpoint['best_acc1']
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+        print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
 
         # step3: criterion
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -148,6 +154,7 @@ class Tester(object):
         self.top5_acc = AverageMeter()
         self.batch_time = AverageMeter()
         self.dataload_time = AverageMeter()
+
 
     def init_from_config(self, config):
     
@@ -180,18 +187,68 @@ class Tester(object):
     
 
 if __name__ == "__main__":
-    tester = Tester(
-        batch_size=200,
-        model='vgg_cfg',
-        dataset="cifar10",
-        gpu_idx = "4", # choose gpu
-        load_model_path='checkpoints/with_sparsity/cifar10_vgg_cfg_best.pth.tar',
-        random_seed=1,
-        # visdom = True, # 使用visdom可视化训练过程
-        # env='test_test',
-        # print_config=True,
-        # print_device=True,
-        num_workers = 10, # 使用多进程加载数据
-    )
+
+    parser = argparse.ArgumentParser(description='network tester')
+    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='vgg19_bn_cifar',
+                        choices=models.ALL_MODEL_NAMES,
+                        help='model architecture: ' +
+                        ' | '.join(name for name in models.ALL_MODEL_NAMES) +
+                        ' (default: resnet18)')
+    parser.add_argument('--dataset', type=str, default='cifar10',
+                        help='training dataset (default: cifar10)')
+    parser.add_argument('--workers', type=int, default=10, metavar='N',
+                        help='number of data loading workers (default: 10)')
+    parser.add_argument('--batch-size', type=int, default=100, metavar='N',
+                        help='input batch size for training (default: 100)')
+    # parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+    #                     help='input batch size for testing (default: 1000)')
+    parser.add_argument('--epochs', type=int, default=150, metavar='N',
+                        help='number of epochs to train (default: 150)')
+    parser.add_argument('--learning-rate', '-lr', dest='lr', type=float, default=1e-1, 
+                        metavar='LR', help='initial learning rate (default: 1e-1)')
+    parser.add_argument('--weight-decay', '-wd', dest='weight_decay', type=float,
+                        default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
+    parser.add_argument('--gpu', type=str, default='0',
+                        help='training GPU index(default:"0",which means use GPU0')
+    parser.add_argument('--seed', type=int, default=1, metavar='S',
+                        help='random seed (default: 1)')
+    parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
+                        help='SGD momentum (default: 0.9)')
+    parser.add_argument('--valuate', action='store_true',
+                        help='valuate each training epoch')
+    parser.add_argument('--resume-path', '-rp', dest='resume_path', type=str, default='',
+                        metavar='PATH', help='path to latest checkpoint (default: none)')
+    parser.add_argument('--refine', action='store_true',
+                        help='refine from pruned model, use construction to build the model')
+    args = parser.parse_args()
+
+
+    if args.resume_path != '':
+        tester = Tester(
+            arch=args.arch,
+            dataset=args.dataset,
+            num_workers = args.workers, # 使用多进程加载数据
+            batch_size=args.batch_size,
+            max_epoch=args.epochs,
+            lr=args.lr,
+            gpu_idx = args.gpu, # choose gpu
+            weight_decay=args.weight_decay,
+            momentum=args.momentum,
+            random_seed=args.seed,
+            valuate=args.valuate,
+            resume_path=args.resume_path,
+            refine=args.refine,
+        )
+    else:
+        tester = Tester(
+            batch_size=1000,
+            arch='vgg19_bn_cifar',
+            dataset="cifar10",
+            gpu_idx = "4", # choose gpu
+            resume_path='checkpoints/cifar10_vgg19_bn_cifar_sr_refine_best.pth.tar',
+            random_seed=1,
+            refine=True,
+            num_workers = 10, # 使用多进程加载数据
+        )
     tester.run()
     print("end")

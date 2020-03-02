@@ -25,7 +25,11 @@ def get_suffix(config):
     """
     suffix = ''
     if config.sr is True:
-        suffix = suffix.join('_sr')
+        suffix += '_sr'
+
+    if config.refine is True:
+        suffix += '_refine'
+
     return suffix
 
 

@@ -12,10 +12,15 @@ import os
 import random
 import numpy as np
 import copy
+import argparse
 
+from tester import Tester
 from config import Configuration
 import models
-from utils import accuracy, print_model_parameters, AverageMeter, get_path
+from utils import accuracy, print_model_parameters, AverageMeter, get_path, \
+            get_dataloader, get_suffix, print_flops_params, save_checkpoint
+
+
 
 class Slimmer(object):
     """
@@ -23,14 +28,22 @@ class Slimmer(object):
     并且事先进行稀疏训练，
     并且全连接层前要将左右特征图池化为1x1，即最终卷积输出的通道数即为全连接层输入通道数
     """
-    def __init__(self, config=None, vis=None, **kwargs):
-        print("| ----------------- Initializing Slimmer ----------------- |")
-        if config == None:
-            self.config = Configuration()
-            self.config.update_config(kwargs) # 解析参数更新默认配置
-            if self.config.check_config(): raise # 检测路径、设备是否存在
-        else: self.config = config
+    def __init__(self, **kwargs):
 
+        print("| ----------------- Initializing Slimmer ----------------- |")
+
+        self.config = Configuration()
+        self.config.update_config(kwargs) # 解析参数更新默认配置
+        if self.config.check_config(): raise # 检测路径、设备是否存在
+
+        self.suffix = get_suffix(self.config)
+        print('{:<30}  {:<8}'.format('==> suffix: ', self.suffix))
+
+        # 更新一些默认标志
+        self.best_acc1 = 0
+        self.checkpoint = None
+
+        # device
         if len(self.config.gpu_idx_list) > 0:
             self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
             print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
@@ -38,49 +51,91 @@ class Slimmer(object):
             self.device = torch.device('cpu')
             print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
 
-        # Random Seed
+        # Random Seed 
+        # (其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，而加载数据一般没有不用多线程的，这就有点尴尬了)
         if self.config.random_seed is None:
             self.config.random_seed = random.randint(1, 10000)
         random.seed(self.config.random_seed)
         torch.manual_seed(self.config.random_seed)
 
-        #data
-        print('{:<30}  {:<8}'.format('==> Preparing dataset: ', self.config.dataset))
-        if self.config.dataset is "cifar10":
-            self.num_classes = 10
-        elif self.config.dataset is "cifar100":
-            self.num_classes = 100
-        elif self.config.dataset is "imagenet":
-            self.num_classes = 1000
-        else: 
-            print("Dataset undefined")
-            exit()
+        # step1: data
+        _, self.val_dataloader, self.num_classes = get_dataloader(self.config)
 
-        # load model
-        print('{:<30}  {:<8}'.format('==> creating model: ', self.config.arch))
-        print('{:<30}  {:<8}'.format('==> loading model: ', self.config.load_model_path if self.config.load_model_path != None else 'None'))
-        self.model = models.__dict__[self.config.arch](num_classes=self.num_classes) # 从models中获取名为config.arch的model
+        # step2: model
+        print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
+        structure = None
+        if self.config.resume_path != '': # 断点续练hhh
+            checkpoint = torch.load(self.config.resume_path, map_location=self.device)
+            print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
+            if self.config.refine: # 根据structure加载剪枝后的模型结构
+                structure=checkpoint['structure']
+                print(structure)
+        else: 
+            print("你剪枝不加载模型剪锤子??")
+            exit(0)
+        self.model = models.__dict__[self.config.arch](structure=structure, num_classes=self.num_classes) # 从models中获取名为config.model的model
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
-        if self.config.load_model_path: # 加载目标模型参数
-            # self.model.load_state_dict(torch.load(self.config.load_model_path, map_location=self.device))
-            checkpoint = torch.load(self.config.load_model_path, map_location=self.device)
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-        # print(self.model)
-        # print_model_parameters(self.model)
+        # if checkpoint is not None:
+        self.best_acc1 = checkpoint['best_acc1']
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+        print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+            
+        # exit(0)
+
+        # step6: valuator
+        self.vis = None
+        self.valuator = None
+        if self.config.valuate is True:
+            val_config_dic = {
+                'model': self.model,
+                'dataloader': self.val_dataloader,
+                'device': self.device,
+                'vis': self.vis,
+                'seed': self.config.random_seed
+            }
+            self.valuator = Tester(val_config_dic)
 
 
     def run(self):
 
-        self.slim()
+        print("")
+        print("| -------------------- original model -------------------- |")
+        self.valuator.test(self.model)
+        print_flops_params(self.valuator.model, self.config.dataset)
+        # print_model_parameters(self.valuator.model)
 
-        # # save last model
-        # if self.config.save_model_path is None:
-        #     self.config.save_model_path = "slimmed_" + self.config.load_model_path
-        # if len(self.config.gpu_idx_list) > 1:
-        #     torch.save(self.model.module.state_dict(), self.config.save_model_path)
-        # else: torch.save(self.model.state_dict(), self.config.save_model_path)
+        print("")
+        print("| ----------------- simple slimming model ---------------- |")
+        self.simple_slim()
+        self.valuator.test(self.simple_slimmed_model)
+        print_flops_params(self.valuator.model, self.config.dataset)
+        # print_nonzeros(self.valuator.model)
+
+        print("")
+        print("| -------------------- slimming model -------------------- |")
+        structure = self.slim()
+        self.valuator.test(self.slimmed_model)
+        print_flops_params(self.valuator.model, self.config.dataset)
+
+        # save slimmed model
+        name = ('slimmed_ratio' + str(self.config.slim_percent) 
+                + '_' + self.config.dataset 
+                + "_" + self.config.arch
+                + self.suffix)
+        if len(self.config.gpu_idx_list) > 1:
+            state_dict = self.slimmed_model.module.state_dict()
+        else: state_dict = self.slimmed_model.state_dict()
+        path = save_checkpoint({
+            'structure': structure,
+            'ratio': self.slim_ratio,
+            'model_state_dict': state_dict,
+            'best_acc1': self.valuator.top1_acc.avg,
+        }, file_root='slimmed_checkpoints/', file_name=name)
+        print('{:<30}  {}'.format('==> save path: ', path))
+
 
     def simple_slim(self, slim_percent=None):
         """
@@ -231,14 +286,93 @@ class Slimmer(object):
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='network slimmer')
+    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='vgg19_bn_cifar',
+                        choices=models.ALL_MODEL_NAMES,
+                        help='model architecture: ' +
+                        ' | '.join(name for name in models.ALL_MODEL_NAMES) +
+                        ' (default: resnet18)')
+    parser.add_argument('--dataset', type=str, default='cifar10',
+                        help='training dataset (default: cifar10)')
+    parser.add_argument('--workers', type=int, default=10, metavar='N',
+                        help='number of data loading workers (default: 10)')
+    parser.add_argument('--batch-size', type=int, default=100, metavar='N',
+                        help='input batch size for training (default: 100)')
+    # parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+    #                     help='input batch size for testing (default: 1000)')
+    parser.add_argument('--epochs', type=int, default=150, metavar='N',
+                        help='number of epochs to train (default: 150)')
+    parser.add_argument('--lr', type=float, default=1e-1, metavar='LR',
+                        help='initial learning rate (default: 1e-1)')
+    parser.add_argument('--weight-decay', '-wd', dest='weight_decay', type=float,
+                        default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
+    parser.add_argument('--gpu', type=str, default='0',
+                        help='training GPU index(default:"0",which means use GPU0')
+    parser.add_argument('--seed', type=int, default=1, metavar='S',
+                        help='random seed (default: 1)')
+    parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
+                        help='SGD momentum (default: 0.9)')
+    parser.add_argument('--valuate', action='store_true',
+                        help='valuate each training epoch')
+    parser.add_argument('--resume-path', '-rp', dest='resume_path', type=str, default='',
+                        metavar='PATH', help='path to latest checkpoint (default: none)')
+    parser.add_argument('--refine', action='store_true',
+                        help='refine from pruned model, use construction to build the model')
+
+    parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
+                        help='train with channel sparsity regularization')
+    parser.add_argument('--sr-lambda', dest='sr_lambda', type=float, default=1e-4,
+                        help='scale sparse rate (default: 1e-4)')
+    parser.add_argument('--slim-percent', type=float, default=0.7, metavar='N',
+                        help='slim percent(default: 0.7)')
+
+    parser.add_argument('--visdom', dest='visdom', action='store_true',
+                        help='visualize the training process using visdom')
+    parser.add_argument('--vis-env', type=str, default='', metavar='ENV',
+                        help='visdom environment (default: "", which means env is automatically set to args.dataset + "_" + args.arch)')
+    parser.add_argument('--vis-legend', type=str, default='', metavar='LEGEND',
+                        help='refine from pruned model (default: "", which means env is automatically set to args.arch)')
+    parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
+                        help='visdom plot interval batchs (default: 1e-4)')
+    args = parser.parse_args()
+
+
     slimmer = Slimmer(
-        model='nin',
-        dataset="cifar10",
-        gpu_idx = "5", # choose gpu
-        random_seed=2,
-        load_model_path="checkpoints/cifar10_nin_epoch123_acc90.83.pth",
-        # num_workers = 5, # 使用多进程加载数据
-        slim_percent=0.5,
+        arch=args.arch,
+        dataset=args.dataset,
+        num_workers = args.workers, # 使用多进程加载数据
+        batch_size=args.batch_size,
+        max_epoch=args.epochs,
+        lr=args.lr,
+        gpu_idx = args.gpu, # choose gpu
+        weight_decay=args.weight_decay,
+        momentum=args.momentum,
+        random_seed=args.seed,
+        valuate=args.valuate,
+        resume_path=args.resume_path,
+        refine=args.refine,
+
+        sr=args.sr,
+        sr_lambda=args.sr_lambda,
+        slim_percent=args.slim_percent,
+
+        visdom = args.visdom, # 使用visdom可视化训练过程
+        vis_env=args.vis_env,
+        vis_legend=args.vis_legend,
+        vis_interval=args.vis_interval,
     )
     slimmer.run()
     print("end")
+
+    # slimmer = slimmer(
+    #     model='nin',
+    #     dataset="cifar10",
+    #     gpu_idx = "5", # choose gpu
+    #     random_seed=2,
+    #     load_model_path="checkpoints/cifar10_nin_epoch123_acc90.83.pth",
+    #     # num_workers = 5, # 使用多进程加载数据
+    #     slim_percent=0.5,
+    # )
+    # slimmer.run()
+    # print("end")

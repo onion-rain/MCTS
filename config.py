@@ -26,6 +26,7 @@ class Configuration(object):
     print_config = False
     print_device = False
     resume_path = '' # 断点续练hhh
+    refine = False # 是否根据structure加载剪枝后的模型结构
 
     # test专用
     load_model_path = None # 加载预训练参数的路径
@@ -46,8 +47,7 @@ class Configuration(object):
     # slimming
     sr = False
     sr_lambda = 1e-4
-    slim_percent = 0.1
-    refine = False # 是否根据structure加载剪枝后的模型结构
+    slim_percent = 0.7
 
     
 

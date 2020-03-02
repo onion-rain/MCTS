@@ -22,11 +22,8 @@ from utils import accuracy, print_model_parameters, AverageMeter, get_path, \
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
+
 class Trainer(object):
-    """
-    可通过传入config类来配置Trainer，这种情况下若要会用visdom必须传入vis类
-    也可通过**kwargs配置Trainer
-    """
     def __init__(self, **kwargs):
 
         print("| ----------------- Initializing Trainer ----------------- |")
@@ -64,23 +61,25 @@ class Trainer(object):
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        structure = None
+        self.structure = None
         if self.config.resume_path != '': # 断点续练hhh
             checkpoint = torch.load(self.config.resume_path, map_location=self.device)
             print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
             if self.config.refine: # 根据structure加载剪枝后的模型结构
-                structure=checkpoint['structure']
-                print(structure)
-        self.model = models.__dict__[self.config.arch](structure=structure, num_classes=self.num_classes) # 从models中获取名为config.model的model
+                self.structure=checkpoint['structure']
+                print(self.structure)
+        self.model = models.__dict__[self.config.arch](structure=self.structure, num_classes=self.num_classes) # 从models中获取名为config.model的model
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
         if checkpoint is not None:
-            self.start_epoch = checkpoint['epoch'] + 1
-            self.best_acc1 = checkpoint['best_acc1']
+            if 'epoch' in checkpoint.keys():
+                self.start_epoch = checkpoint['epoch'] + 1
+                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+            if 'best_acc1' in checkpoint.keys():
+                self.best_acc1 = checkpoint['best_acc1']
+                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
             self.model.load_state_dict(checkpoint['model_state_dict'])
-            print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-            print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
             vis_clear = False # 断点续练则不清空visdom
             
         # exit(0)
@@ -93,7 +92,8 @@ class Trainer(object):
             weight_decay=self.config.weight_decay,
         )
         if checkpoint is not None:
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            if 'optimizer_state_dict' in checkpoint.keys():
+                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         
         self.criterion = torch.nn.CrossEntropyLoss()
 
@@ -179,13 +179,16 @@ class Trainer(object):
             if len(self.config.gpu_idx_list) > 1:
                 state_dict = self.model.module.state_dict()
             else: state_dict = self.model.state_dict()
-            save_checkpoint({
+            save_dict = {
                 'model': self.config.arch,
                 'epoch': epoch,
                 'model_state_dict': state_dict,
                 'best_acc1': self.best_acc1,
                 'optimizer_state_dict': self.optimizer.state_dict(),
-            }, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
+            }
+            if self.structure is not None:
+                save_dict['structure'] = self.structure
+            save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
 
     def train(self, epoch=None):
         """
@@ -300,7 +303,7 @@ class Trainer(object):
                 # torch.sign(module.weight.data)是对sparsity-induced penalty(g(γ))求导的结果
                 module.weight.grad.data.add_(self.config.sr_lambda * torch.sign(module.weight.data))  # L1
 
-# train vgg with sparsity-regularization
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='network trainer')
@@ -315,12 +318,12 @@ if __name__ == "__main__":
                         help='number of data loading workers (default: 10)')
     parser.add_argument('--batch-size', type=int, default=100, metavar='N',
                         help='input batch size for training (default: 100)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                        help='input batch size for testing (default: 1000)')
+    # parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
+    #                     help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=150, metavar='N',
                         help='number of epochs to train (default: 150)')
-    parser.add_argument('--lr', type=float, default=1e-1, metavar='LR',
-                        help='initial learning rate (default: 1e-1)')
+    parser.add_argument('--learning-rate', '-lr', dest='lr', type=float, default=1e-1, 
+                        metavar='LR', help='initial learning rate (default: 1e-1)')
     parser.add_argument('--weight-decay', '-wd', dest='weight_decay', type=float,
                         default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
     parser.add_argument('--gpu', type=str, default='0',
@@ -333,9 +336,9 @@ if __name__ == "__main__":
                         help='valuate each training epoch')
     parser.add_argument('--resume-path', '-rp', dest='resume_path', type=str, default='',
                         metavar='PATH', help='path to latest checkpoint (default: none)')
-
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
+
     parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
     parser.add_argument('--sr-lambda', dest='sr_lambda', type=float, default=1e-4,
@@ -368,10 +371,10 @@ if __name__ == "__main__":
         random_seed=args.seed,
         valuate=args.valuate,
         resume_path=args.resume_path,
+        refine=args.refine,
 
         sr=args.sr,
         sr_lambda=args.sr_lambda,
-        refine=args.refine,
 
         visdom = args.visdom, # 使用visdom可视化训练过程
         vis_env=args.vis_env,
