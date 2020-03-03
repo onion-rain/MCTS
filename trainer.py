@@ -7,6 +7,7 @@ from utils.visualize import Visualizer
 from tqdm import tqdm
 from torch.nn import functional as F
 # import torchvision as tv
+import numpy as np
 import time
 import os
 import random
@@ -51,10 +52,15 @@ class Trainer(object):
 
         # Random Seed 
         # (其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，而加载数据一般没有不用多线程的，这就有点尴尬了)
-        if self.config.random_seed is None:
-            self.config.random_seed = random.randint(1, 10000)
-        random.seed(self.config.random_seed)
-        torch.manual_seed(self.config.random_seed)
+        if self.config.deterministic:
+            if self.config.num_workers > 1:
+                print("ERROR: Setting --deterministic requires setting --workers to 0 or 1")
+            random.seed(0)
+            torch.manual_seed(0)
+            np.random.seed(self.config.random_seed)
+            torch.backends.cudnn.deterministic = True
+        else: 
+            cudnn.benchmark = True # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
 
         # step1: data
         self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
@@ -328,8 +334,8 @@ if __name__ == "__main__":
                         default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
     parser.add_argument('--gpu', type=str, default='0',
                         help='training GPU index(default:"0",which means use GPU0')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
+    parser.add_argument('--deterministic', '--det', action='store_true',
+                    help='Ensure deterministic execution for re-producible results.')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='SGD momentum (default: 0.9)')
     parser.add_argument('--valuate', action='store_true',
@@ -368,7 +374,7 @@ if __name__ == "__main__":
         gpu_idx = args.gpu, # choose gpu
         weight_decay=args.weight_decay,
         momentum=args.momentum,
-        random_seed=args.seed,
+        deterministic=args.deterministic,
         valuate=args.valuate,
         resume_path=args.resume_path,
         refine=args.refine,

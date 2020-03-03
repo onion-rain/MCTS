@@ -19,7 +19,6 @@ class Configuration(object):
     max_epoch = 100
     lr = 1e-1 # initial learning rate
     lr_decay = 0.2 # when val_loss increase, lr = lr*lr_decay
-    random_seed = None
     weight_decay = 5e-4
     momentum = 0.9
     valuate = False # 每训练一个epoch进行一次valuate
@@ -27,6 +26,8 @@ class Configuration(object):
     print_device = False
     resume_path = '' # 断点续练hhh
     refine = False # 是否根据structure加载剪枝后的模型结构
+    deterministic = False # 结论确定，若为True则在相同pytorch版本和相同随机种子相同workers情况下结果可复现
+    random_seed = 0
 
     # test专用
     load_model_path = None # 加载预训练参数的路径

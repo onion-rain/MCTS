@@ -2,6 +2,7 @@ import torch
 from utils.visualize import Visualizer
 from tqdm import tqdm
 import torchvision as tv
+import numpy as np
 import time
 import random
 import argparse
@@ -115,10 +116,10 @@ class Tester(object):
             print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
 
         # Random Seed
-        if self.config.random_seed is None:
-            self.config.random_seed = random.randint(1, 10000)
-        random.seed(self.config.random_seed)
-        torch.manual_seed(self.config.random_seed)
+        random.seed(0)
+        torch.manual_seed(0)
+        np.random.seed(self.config.random_seed)
+        torch.backends.cudnn.deterministic = True
 
         # step1: data
         _, self.test_dataloader, self.num_classes = get_dataloader(self.config)
@@ -210,8 +211,6 @@ if __name__ == "__main__":
                         default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
     parser.add_argument('--gpu', type=str, default='0',
                         help='training GPU index(default:"0",which means use GPU0')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='SGD momentum (default: 0.9)')
     parser.add_argument('--valuate', action='store_true',
@@ -234,7 +233,6 @@ if __name__ == "__main__":
             gpu_idx = args.gpu, # choose gpu
             weight_decay=args.weight_decay,
             momentum=args.momentum,
-            random_seed=args.seed,
             valuate=args.valuate,
             resume_path=args.resume_path,
             refine=args.refine,
@@ -246,7 +244,6 @@ if __name__ == "__main__":
             dataset="cifar10",
             gpu_idx = "4", # choose gpu
             resume_path='checkpoints/cifar10_vgg19_bn_cifar_sr_refine_best.pth.tar',
-            random_seed=1,
             refine=True,
             num_workers = 10, # 使用多进程加载数据
         )

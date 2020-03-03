@@ -52,11 +52,10 @@ class Slimmer(object):
             print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
 
         # Random Seed 
-        # (其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，而加载数据一般没有不用多线程的，这就有点尴尬了)
-        if self.config.random_seed is None:
-            self.config.random_seed = random.randint(1, 10000)
-        random.seed(self.config.random_seed)
-        torch.manual_seed(self.config.random_seed)
+        random.seed(0)
+        torch.manual_seed(0)
+        np.random.seed(self.config.random_seed)
+        torch.backends.cudnn.deterministic = True
 
         # step1: data
         _, self.val_dataloader, self.num_classes = get_dataloader(self.config)
@@ -305,22 +304,20 @@ if __name__ == "__main__":
                         help='number of epochs to train (default: 150)')
     parser.add_argument('--lr', type=float, default=1e-1, metavar='LR',
                         help='initial learning rate (default: 1e-1)')
-    parser.add_argument('--weight-decay', '-wd', dest='weight_decay', type=float,
+    parser.add_argument('--weight-decay', '--wd', dest='weight_decay', type=float,
                         default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
     parser.add_argument('--gpu', type=str, default='0',
                         help='training GPU index(default:"0",which means use GPU0')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='SGD momentum (default: 0.9)')
     parser.add_argument('--valuate', action='store_true',
                         help='valuate each training epoch')
-    parser.add_argument('--resume-path', '-rp', dest='resume_path', type=str, default='',
+    parser.add_argument('--resume-path', '--rp', dest='resume_path', type=str, default='',
                         metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
 
-    parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
+    parser.add_argument('--sparsity-regularization', '--sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
     parser.add_argument('--sr-lambda', dest='sr_lambda', type=float, default=1e-4,
                         help='scale sparse rate (default: 1e-4)')
@@ -348,7 +345,6 @@ if __name__ == "__main__":
         gpu_idx = args.gpu, # choose gpu
         weight_decay=args.weight_decay,
         momentum=args.momentum,
-        random_seed=args.seed,
         valuate=args.valuate,
         resume_path=args.resume_path,
         refine=args.refine,
@@ -369,7 +365,6 @@ if __name__ == "__main__":
     #     model='nin',
     #     dataset="cifar10",
     #     gpu_idx = "5", # choose gpu
-    #     random_seed=2,
     #     load_model_path="checkpoints/cifar10_nin_epoch123_acc90.83.pth",
     #     # num_workers = 5, # 使用多进程加载数据
     #     slim_percent=0.5,
