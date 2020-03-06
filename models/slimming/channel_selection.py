@@ -29,3 +29,14 @@ class channel_selection(nn.Module):
             selected_index = np.resize(selected_index, (1,))
         output = input_tensor[:, selected_index, :, :]
         return output
+
+
+
+
+class shortcut_slim(nn.Module):
+    def __init__(self, shortcut):
+        super(shortcut_slim, self).__init__()
+        self.shortcut = shortcut
+    
+    def forward(self, x):
+        return self.shortcut(x)

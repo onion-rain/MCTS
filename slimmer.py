@@ -19,7 +19,7 @@ from config import Configuration
 import models
 from utils import accuracy, print_model_parameters, AverageMeter, get_path, \
             get_dataloader, get_suffix, print_flops_params, save_checkpoint, print_nonzeros
-from models.slimming.channel_selection import channel_selection
+from models.slimming.channel_selection import channel_selection, shortcut_slim
 
 
 class Slimmer(object):
@@ -262,12 +262,8 @@ class Slimmer(object):
         self.slim_ratio = slimmed_num/len(bn_abs_weghts)
         print('{:<30}  {:.4f}%'.format('==> slim ratio: ', self.slim_ratio*100))
         # print(self.slimmed_model)
-
         # torch.save(self.slimmed_model, 'slimmed_model.pth')
         # exit(0)
-
-        original_modules = list(original_model.modules())
-        slimmed_modules = list(self.slimmed_model.modules())
 
         # 将参数复制到新模型
         layer_id_in_cfg = 0 # 用来更新mask
@@ -275,14 +271,21 @@ class Slimmer(object):
         conv_in_channels_mask = torch.ones(3)
         conv_out_channels_mask = cfg_mask[layer_id_in_cfg]
         # 其实就是block之间的通道不能剪，用channel selection代替，其他都可以剪
+
+        original_modules = list(original_model.modules())
+        slimmed_modules = list(self.slimmed_model.modules())
+        # 此处不能用下面表达式，因为它给出的module顺序瞎几把乱出
         for layer_index, [module0, module1] in enumerate(zip(original_model.modules(), self.slimmed_model.modules())):
-            if isinstance(module0, torch.nn.Conv2d):
+            if isinstance(module0, shortcut_slim):
+                # 虽然也属于conv2d，不过这儿先拿出来好处理
+                if isinstance(module0, torch.nn.Conv2d):
+                    module1.weight.data = module0.weight.data.clone()
+            elif isinstance(module0, torch.nn.Conv2d):
                 if conv_count == 0: # 整个网络第一层卷积不剪
                     module1.weight.data = module0.weight.data.clone()
                     conv_count += 1
-                elif isinstance(original_modules[layer_index-1], channel_selection) or isinstance(original_modules[layer_index-1], torch.nn.BatchNorm2d):
-                    # 上一层是channel_selection 或 bn层，说明是bottleneck内部的卷积
-                    conv_count += 1
+                elif isinstance(original_modules[layer_index-1], torch.nn.ReLU) and not isinstance(original_modules[layer_index+1], shortcut_slim):
+                    # 上一层是relu, 下一层不是shortcut, bottleneck内部的卷积
                     idx0 = np.squeeze(np.argwhere(np.asarray(conv_in_channels_mask.cpu().numpy()))) # 从掩模计算出需要保留的权重下标
                     idx1 = np.squeeze(np.argwhere(np.asarray(conv_out_channels_mask.cpu().numpy())))
                     # print('conv: in channels: {:d}, out chennels:{:d}'.format(idx0.shape[0], idx1.shape[0]))
@@ -295,11 +298,15 @@ class Slimmer(object):
                         idx1 = np.resize(idx1, (1,))
                     # 剪
                     w = module0.weight.data[:, idx0, :, :].clone() # 剪输入通道
-                    if conv_count % 3 != 1:# bottleneck最后一个卷积不能剪输出通道
-                        w = w[idx1, :, :, :].clone() # 剪输出通道
+                    w = w[idx1, :, :, :].clone() # 剪输出通道
                     module1.weight.data = w.clone()
-                else: # shortcut上的1x1卷积，这玩意不剪
-                    module1.weight.data = module0.weight.data.clone()
+                elif isinstance(original_modules[layer_index+1], shortcut_slim):
+                    # block最后一个卷积，输出通道数要和原模型一样，只剪输入通道
+                    idx0 = np.squeeze(np.argwhere(np.asarray(conv_in_channels_mask.cpu().numpy()))) # 从掩模计算出需要保留的权重下标
+                    if idx0.size == 1:
+                        idx0 = np.resize(idx0, (1,))
+                    w = module0.weight.data[:, idx0, :, :].clone() # 剪输入通道
+                    module1.weight.data = w.clone()
             elif isinstance(module0, torch.nn.BatchNorm2d):
                 idx1 = np.squeeze(np.argwhere(np.asarray(conv_out_channels_mask.cpu().numpy()))) # np.argwhere()返回非零元素下标
                 if isinstance(original_modules[layer_index+1], channel_selection):
@@ -308,7 +315,7 @@ class Slimmer(object):
                     module1.bias.data = module0.bias.data.clone()
                     module1.running_mean = module0.running_mean.clone()
                     module1.running_var = module0.running_var.clone()
-                    # 我们要搞channel_selection层
+                    # 我们要剪channel_selection层
                     module2 = slimmed_modules[layer_index+1]
                     module2.indexes.data.zero_() # 全归零
                     module2.indexes.data[idx1] = 1.0 # 选择性置一

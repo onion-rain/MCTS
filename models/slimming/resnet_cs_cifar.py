@@ -2,14 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .channel_selection import channel_selection
+from .channel_selection import channel_selection, shortcut_slim
 
 # cs means channel select
 # 用于cifar数据集stage = 3
 
 
 __all__ = ['resnet20_cs', 'resnet32_cs', 'resnet44_cs', 'resnet56_cs', 'resnet110_cs', 'resnet1202_cs']
-
 
 
 def conv3x3(in_channels, out_channels, stride=1, groups=1, dilation=1):
@@ -23,7 +22,7 @@ def conv1x1(in_channels, out_channels, stride=1):
 
 
 class Basicblock(nn.Module):
-    def __init__(self, in_channels, cfg, stride=1):
+    def __init__(self, in_channels, out_channels, cfg, stride=1):
         # 此处in_channels不能用cfg[0]代替，因为此处与其他block相接，不能直接删除通道，要用channel_selection来选择通道
         super(Basicblock, self).__init__()
         self.norm1 = nn.BatchNorm2d(in_channels)
@@ -33,14 +32,14 @@ class Basicblock(nn.Module):
         
         self.norm2 = nn.BatchNorm2d(cfg[1])
         self.relu2 = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(cfg[1], cfg[2], stride=stride)
+        self.conv2 = conv3x3(cfg[1], out_channels, stride=stride)
 
 
-        if stride != 1 or cfg[0] != cfg[2]:
+        if stride != 1 or in_channels != out_channels:
             """用一个1*1的卷积核缩小特征尺寸"""
-            self.shortcut = conv1x1(cfg[0], cfg[2], stride=stride)
+            self.shortcut = shortcut_slim(conv1x1(in_channels, out_channels, stride=stride))
         else:
-            self.shortcut = nn.Sequential()
+            self.shortcut = shortcut_slim(nn.Sequential())
 
     def forward(self, x):
         shortcut = self.shortcut(x)
@@ -59,8 +58,9 @@ class Basicblock(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    def __init__(self, in_channels, cfg, stride=1):
-        # 此处in_channels不能用cfg[0]代替，因为此处与其他block相接，不能直接删除通道，要用channel_selection来选择通道
+    def __init__(self, in_channels, out_channels, cfg, stride=1):
+        # 此处in_channels, out_channels不能用cfg[0],cfg[3]代替，因为此处与其他block相接，不能直接删除通道，
+        # in_channels要用channel_selection来选择通道,out_channels要与原网络相同
         super(Bottleneck, self).__init__()
         self.norm1 = nn.BatchNorm2d(in_channels)
         self.select = channel_selection(in_channels)
@@ -73,14 +73,14 @@ class Bottleneck(nn.Module):
 
         self.norm3 = nn.BatchNorm2d(cfg[2])
         self.relu3 = nn.ReLU(inplace=True)
-        self.conv3 = conv1x1(cfg[2], cfg[3], stride=1)
+        self.conv3 = conv1x1(cfg[2], out_channels, stride=1)
 
 
-        if stride != 1 or cfg[0] != cfg[3]:
+        if stride != 1 or in_channels != out_channels:
             """用一个1*1的卷积核缩小特征尺寸"""
-            self.shortcut = conv1x1(cfg[0], cfg[3], stride=stride)
+            self.shortcut = shortcut_slim(conv1x1(in_channels, out_channels, stride=stride))
         else:
-            self.shortcut = nn.Sequential()
+            self.shortcut = shortcut_slim(nn.Sequential())
 
     def forward(self, x):
         shortcut = self.shortcut(x)
@@ -131,19 +131,17 @@ class ResNet_cs(nn.Module):
         self.block_count = 0
         if cfg is None:
             cfg = self.cfg_original
+            cfg = [item for sub_list in cfg for item in sub_list]
         # 展平
-        cfg = [item for sub_list in cfg for item in sub_list]
         self.cfg_original = [item for sub_list in self.cfg_original for item in sub_list]
-
-        in_channels_cfg = [16, ]
 
         self.conv1 = conv3x3(3, 16, stride=1)
         self.relu1 = nn.ReLU(inplace=True)
-        self.stage_1 = self._make_layer(block, n, cfg=cfg[0:self.nconv*n+1], stride=1)
-        self.stage_2 = self._make_layer(block, n, cfg=cfg[self.nconv*n:2*self.nconv*n+1], stride=2)
-        self.stage_3 = self._make_layer(block, n, cfg=cfg[2*self.nconv*n:3*self.nconv*n+1], stride=2)
-        self.norm2 = nn.BatchNorm2d(cfg[-1])
-        self.select = channel_selection(cfg[-1])
+        self.stage_1 = self._make_layer(block, n, cfg=cfg[0:self.nconv*n], stride=1)
+        self.stage_2 = self._make_layer(block, n, cfg=cfg[self.nconv*n:2*self.nconv*n], stride=2)
+        self.stage_3 = self._make_layer(block, n, cfg=cfg[2*self.nconv*n:3*self.nconv*n], stride=2)
+        self.norm2 = nn.BatchNorm2d(self.cfg_original[-1])
+        self.select = channel_selection(self.cfg_original[-1])
         self.relu2 = nn.ReLU(inplace=True)
         self.pool2 = nn.AdaptiveAvgPool2d((1, 1)) # 输出尺寸为1*1
 
@@ -158,12 +156,21 @@ class ResNet_cs(nn.Module):
 
     def _make_layer(self, block, num_blocks, cfg, stride):
         layers = []
-        layers.append(block(self.cfg_original[self.block_count], cfg[0:4], stride=stride)) # 每个stage只有第一个block的stride不为1来改变特征图大小
+        layers.append(block(self.cfg_original[self.block_count], 
+                            self.cfg_original[self.block_count+self.nconv],
+                            cfg=cfg[0:3], 
+                            stride=stride)) # 每个stage只有第一个block的stride不为1来改变特征图大小
         self.block_count += self.nconv
         for i in range(1, num_blocks-1):
-            layers.append(block(self.cfg_original[self.block_count], cfg[self.nconv*i : self.nconv*(i+1)+1], stride=1))
+            layers.append(block(self.cfg_original[self.block_count], 
+                                self.cfg_original[self.block_count+self.nconv],
+                                cfg=cfg[self.nconv*i : self.nconv*(i+1)], 
+                                stride=1))
             self.block_count += self.nconv
-        layers.append(block(self.cfg_original[self.block_count], cfg[self.nconv*(num_blocks-1):], stride=1))
+        layers.append(block(self.cfg_original[self.block_count], 
+                            self.cfg_original[self.block_count+self.nconv],
+                            cfg=cfg[self.nconv*(num_blocks-1):], 
+                            stride=1))
         self.block_count += self.nconv
         return nn.Sequential(*layers)
 
