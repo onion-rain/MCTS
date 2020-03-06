@@ -23,6 +23,8 @@ from utils import accuracy, print_model_parameters, AverageMeter, get_path, \
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class Trainer(object):
     def __init__(self, **kwargs):
@@ -32,12 +34,15 @@ class Trainer(object):
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
         if self.config.check_config(): raise # 检测路径、设备是否存在
+        print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
+        print('{:<30}  {:<8}'.format('==> srlambda: ', self.config.sr_lambda))
+        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
 
         self.suffix = get_suffix(self.config)
         print('{:<30}  {:<8}'.format('==> suffix: ', self.suffix))
 
         # 更新一些默认标志
-        self.start_epoch = 1
+        self.start_epoch = 0
         self.best_acc1 = 0
         self.checkpoint = None
         vis_clear = True
@@ -60,27 +65,28 @@ class Trainer(object):
             np.random.seed(self.config.random_seed)
             torch.backends.cudnn.deterministic = True
         else: 
-            cudnn.benchmark = True # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
+            torch.backends.cudnn.benchmark = True # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
 
         # step1: data
         self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        self.structure = None
+        self.cfg = None
+        checkpoint = None
         if self.config.resume_path != '': # 断点续练hhh
             checkpoint = torch.load(self.config.resume_path, map_location=self.device)
             print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
-            if self.config.refine: # 根据structure加载剪枝后的模型结构
-                self.structure=checkpoint['structure']
-                print(self.structure)
-        self.model = models.__dict__[self.config.arch](structure=self.structure, num_classes=self.num_classes) # 从models中获取名为config.model的model
+            if self.config.refine: # 根据cfg加载剪枝后的模型结构
+                self.cfg=checkpoint['cfg']
+                print(self.cfg)
+        self.model = models.__dict__[self.config.arch](cfg=self.cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
         if checkpoint is not None:
             if 'epoch' in checkpoint.keys():
-                self.start_epoch = checkpoint['epoch'] + 1
+                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
                 print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
             if 'best_acc1' in checkpoint.keys():
                 self.best_acc1 = checkpoint['best_acc1']
@@ -107,7 +113,7 @@ class Trainer(object):
             optimizer=self.optimizer,
             milestones=[self.config.max_epoch*0.5, self.config.max_epoch*0.75], 
             gamma=0.1,
-            last_epoch=-1,
+            last_epoch=self.start_epoch-1, # 我的训练epoch从1开始，而pytorch要通过当前epoch是否等于0判断是不是resume
         )
         
         # step4: meters
@@ -167,7 +173,7 @@ class Trainer(object):
             self.valuator.test(self.model, epoch=self.start_epoch-1)
         self.print_bar()
         print("")
-        for epoch in range(self.start_epoch, self.config.max_epoch+1):
+        for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
             self.train(epoch=epoch)
             if self.valuator is not None:
@@ -192,9 +198,10 @@ class Trainer(object):
                 'best_acc1': self.best_acc1,
                 'optimizer_state_dict': self.optimizer.state_dict(),
             }
-            if self.structure is not None:
-                save_dict['structure'] = self.structure
+            if self.cfg is not None:
+                save_dict['cfg'] = self.cfg
             save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
+        print("{}{}".format("best_acc1: ", self.best_acc1))
 
     def train(self, epoch=None):
         """
@@ -277,7 +284,7 @@ class Trainer(object):
                 self.top1_vis.update(prec1.data.cpu(), input.size(0))
 
                 if (batch_index % self.config.vis_interval == self.config.vis_interval-1):
-                    vis_x = epoch-1+percentage/100
+                    vis_x = epoch+percentage/100
                     self.vis.plot('train_loss', self.loss_vis.avg, x=vis_x)
                     self.vis.plot('train_top1', self.top1_vis.avg, x=vis_x)
                     self.loss_vis.reset()
@@ -300,7 +307,7 @@ class Trainer(object):
             )
         
         # update learning rate
-        self.lr_scheduler.step()
+        self.lr_scheduler.step(epoch=epoch)
 
     # additional subgradient descent on the sparsity-induced penalty term
     def updateBN(self):
@@ -328,7 +335,7 @@ if __name__ == "__main__":
     #                     help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=150, metavar='N',
                         help='number of epochs to train (default: 150)')
-    parser.add_argument('--learning-rate', '-lr', dest='lr', type=float, default=1e-1, 
+    parser.add_argument('--lr', dest='lr', type=float, default=1e-1, 
                         metavar='LR', help='initial learning rate (default: 1e-1)')
     parser.add_argument('--weight-decay', '-wd', dest='weight_decay', type=float,
                         default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
@@ -340,15 +347,15 @@ if __name__ == "__main__":
                         help='SGD momentum (default: 0.9)')
     parser.add_argument('--valuate', action='store_true',
                         help='valuate each training epoch')
-    parser.add_argument('--resume-path', '-rp', dest='resume_path', type=str, default='',
+    parser.add_argument('--resume', dest='resume_path', type=str, default='',
                         metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
 
     parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
-    parser.add_argument('--sr-lambda', dest='sr_lambda', type=float, default=1e-4,
-                        help='scale sparse rate (default: 1e-4)')
+    parser.add_argument('--srl', dest='sr_lambda', type=float, default=1e-4,
+                        help='scale sparse rate (default: 1e-4), suggest 1e-4 for vgg, 1e-5 for resnet/densenet')
 
     parser.add_argument('--visdom', dest='visdom', action='store_true',
                         help='visualize the training process using visdom')

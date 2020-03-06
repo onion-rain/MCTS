@@ -11,11 +11,18 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "--arch", "vgg19_bn_cifar",
+                //train
+                "--workers", "1",
+                "--arch", "resnet20_cs",
                 "--dataset", "cifar10",
                 "--gpu", "5",
                 "--valuate",
-                "-rp", "checkpoints/cifar10_vgg19_bn_cifar_checkpoint.pth.tar",
+
+                // //prune
+                // "--workers", "1", 
+                // "--resume", "checkpoints/cifar10_resnet20_cs_sr_best.pth.tar",
+                // "--arch", "resnet20_cs", 
+                // "--slim", "0.4", 
             ],
         },
     ]

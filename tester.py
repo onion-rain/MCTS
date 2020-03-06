@@ -9,7 +9,8 @@ import argparse
 
 from config import Configuration
 import models
-from utils import accuracy, print_model_parameters, AverageMeter, print_flops_params, get_dataloader
+from utils import accuracy, print_model_parameters, AverageMeter, print_flops_params, \
+                    get_dataloader, print_model_param_nums, print_model_param_flops
 
 class Tester(object):
     """
@@ -24,6 +25,8 @@ class Tester(object):
             self.init_from_config(config_dic)
         
     def run(self):
+        print_model_param_flops(model=self.model, input_res=32, device=self.device)
+        print_model_param_nums(model=self.model)
         print_flops_params(model=self.model)
         self.test()
 
@@ -101,6 +104,7 @@ class Tester(object):
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
         if self.config.check_config(): raise # 检测路径、设备是否存在
+        print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
 
         # visdom
         self.vis = None
@@ -126,17 +130,17 @@ class Tester(object):
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        structure = None
+        cfg = None
         if self.config.resume_path != '': # 断点续练hhh
             checkpoint = torch.load(self.config.resume_path, map_location=self.device)
             print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
-            if self.config.refine: # 根据structure加载剪枝后的模型结构
-                structure=checkpoint['structure']
-                print(structure)
+            if self.config.refine: # 根据cfg加载剪枝后的模型结构
+                cfg=checkpoint['cfg']
+                print(cfg)
         else: 
             print("你test不加载模型测锤子??")
             exit(0)
-        self.model = models.__dict__[self.config.arch](structure=structure, num_classes=self.num_classes) # 从models中获取名为config.model的model
+        self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
@@ -245,7 +249,7 @@ if __name__ == "__main__":
             gpu_idx = "4", # choose gpu
             resume_path='checkpoints/cifar10_vgg19_bn_cifar_sr_refine_best.pth.tar',
             refine=True,
-            num_workers = 10, # 使用多进程加载数据
+            # num_workers = 10, # 使用多进程加载数据
         )
     tester.run()
     print("end")

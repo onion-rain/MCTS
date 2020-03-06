@@ -28,7 +28,7 @@ def dump_model(model_name=None,
 
 if __name__ == "__main__":
     dump_model(
-        model_name='vgg_cfg', 
+        model_name='vgg19_bn_cifar', 
         model_structure=None,
         checkpoint_path='checkpoints/cifar10_vgg19_bn_cifar_sr_refine_best.pth.tar',
         # num_classes=10,
