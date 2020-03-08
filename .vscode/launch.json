@@ -11,18 +11,28 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                // //train
-                // "--workers", "1",
-                // "--arch", "resnet20_cs",
-                // "--dataset", "cifar10",
-                // "--gpu", "5",
-                // "--valuate",
+                "--workers", "1",
 
-                //prune
-                "--workers", "1", 
-                "--resume", "checkpoints/cifar10_resnet20_cs_sr_best.pth.tar",
-                "--arch", "resnet20_cs", 
-                "--slim", "0.4", 
+                //train
+                "--arch", "resnet20",
+                "--dataset", "cifar10",
+                "--gpu", "5",
+                "--valuate",
+                
+                // //slimming
+                // "--arch", "resnet20_cs",
+                // "--gpu", "4",
+                // "--resume", "checkpoints/basline_sr/cifar10_resnet20_cs_sr_best.pth.tar",
+                // "--slim", "0.5",
+
+                // //weight prune
+                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
+                // "--arch", "vgg16_bn_cifar",
+                
+                // //l1 filter prune
+                // "--arch", "vgg16_bn_cifar",
+                // "--gpu", "4",
+                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
             ],
         },
     ]

@@ -36,7 +36,7 @@ class Configuration(object):
     dataset = "cifar10" # Dataset can only be cifar10 or cifar100 or imagenet
     dataset_root = '/home/xueruini/onion_rain/pytorch/dataset/' # 训练集存放路径
     batch_size = 100
-    num_workers = 0 # 默认不使用多进程加载数据，便于调试
+    num_workers = 1 # 默认便于调试
     droplast = False
 
     # visdom
@@ -49,6 +49,9 @@ class Configuration(object):
     sr = False
     sr_lambda = 1e-4
     slim_percent = 0.7
+
+    # filter prune
+    prune_percent = 0.5
 
     
 

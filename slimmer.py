@@ -17,10 +17,11 @@ import argparse
 from tester import Tester
 from config import Configuration
 import models
-from utils import accuracy, print_model_parameters, AverageMeter, get_path, \
-            get_dataloader, get_suffix, print_flops_params, save_checkpoint, print_nonzeros
-from models.slimming.channel_selection import channel_selection, shortcut_slim
+from utils import *
+from models.cifar.utils import channel_selection, shortcut_package
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class Slimmer(object):
     """
@@ -140,8 +141,8 @@ class Slimmer(object):
         print_flops_params(self.valuator.model, self.config.dataset)
 
         # save slimmed model
-        name = ('slimmed_ratio' + str(self.config.slim_percent) 
-                + '_' + self.config.dataset 
+        name = ('slimmed_ratio' + str(self.config.slim_percent)
+                + '_' + self.config.dataset
                 + "_" + self.config.arch
                 + self.suffix)
         if len(self.config.gpu_idx_list) > 1:
@@ -152,7 +153,7 @@ class Slimmer(object):
             'ratio': self.slim_ratio,
             'model_state_dict': state_dict,
             'best_acc1': self.valuator.top1_acc.avg,
-        }, file_root='checkpoints/', file_name=name)
+        }, file_root='checkpoints/slimmed/', file_name=name)
         print('{:<30}  {}'.format('==> slimmed model save path: ', path))
 
 
@@ -188,11 +189,6 @@ class Slimmer(object):
                     error_str = 'Slim Error: layer' + str(layer_index) + ": " + module._get_name() + ': remain_out_channels = 0! turn down the slim_percent!'
                     print(error_str)
                     raise
-
-
-                # print(weight_copy)##############################################
-
-
                 slimmed_num += (mask.shape[0] - torch.sum(mask))
                 module.weight.data.mul_(mask)
                 module.bias.data.mul_(mask)
@@ -276,7 +272,7 @@ class Slimmer(object):
         slimmed_modules = list(self.slimmed_model.modules())
         # 此处不能用下面表达式，因为它给出的module顺序瞎几把乱出
         for layer_index, [module0, module1] in enumerate(zip(original_model.modules(), self.slimmed_model.modules())):
-            if isinstance(module0, shortcut_slim):
+            if isinstance(module0, shortcut_package):
                 # 虽然也属于conv2d，不过这儿先拿出来好处理
                 if isinstance(module0, torch.nn.Conv2d):
                     module1.weight.data = module0.weight.data.clone()
@@ -284,7 +280,7 @@ class Slimmer(object):
                 if conv_count == 0: # 整个网络第一层卷积不剪
                     module1.weight.data = module0.weight.data.clone()
                     conv_count += 1
-                elif isinstance(original_modules[layer_index-1], torch.nn.ReLU) and not isinstance(original_modules[layer_index+1], shortcut_slim):
+                elif isinstance(original_modules[layer_index-1], torch.nn.ReLU) and not isinstance(original_modules[layer_index+1], shortcut_package):
                     # 上一层是relu, 下一层不是shortcut, bottleneck内部的卷积
                     idx0 = np.squeeze(np.argwhere(np.asarray(conv_in_channels_mask.cpu().numpy()))) # 从掩模计算出需要保留的权重下标
                     idx1 = np.squeeze(np.argwhere(np.asarray(conv_out_channels_mask.cpu().numpy())))
@@ -300,7 +296,7 @@ class Slimmer(object):
                     w = module0.weight.data[:, idx0, :, :].clone() # 剪输入通道
                     w = w[idx1, :, :, :].clone() # 剪输出通道
                     module1.weight.data = w.clone()
-                elif isinstance(original_modules[layer_index+1], shortcut_slim):
+                elif isinstance(original_modules[layer_index+1], shortcut_package):
                     # block最后一个卷积，输出通道数要和原模型一样，只剪输入通道
                     idx0 = np.squeeze(np.argwhere(np.asarray(conv_in_channels_mask.cpu().numpy()))) # 从掩模计算出需要保留的权重下标
                     if idx0.size == 1:

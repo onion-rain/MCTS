@@ -1,17 +1,19 @@
-# from .cifar import *
+from .cifar import *
 # from .tv import *
 # from .misc import *
-from .slimming import *
+# from .slimming import *
+# from .filter_prune import *
 
-# from . import cifar
+from . import cifar
 # from . import tv
 # from . import misc
-from . import slimming
+# from . import slimming
+# from . import filter_prune
 
-# CIFAR_MODEL_NAMES = sorted(name for name in cifar.__dict__
-#                             if name.islower()
-#                             and not name.startswith("__")
-#                             and callable(cifar.__dict__[name]))
+CIFAR_MODEL_NAMES = sorted(name for name in cifar.__dict__
+                            if name.islower()
+                            and not name.startswith("__")
+                            and callable(cifar.__dict__[name]))
                             
 # TV_MODEL_NAMES = sorted(name for name in tv.__dict__
 #                             if name.islower()
@@ -23,12 +25,15 @@ from . import slimming
 #                             and not name.startswith("__")
 #                             and callable(misc.__dict__[name]))
                             
-SLIMMING_MODEL_NAMES = sorted(name for name in slimming.__dict__
-                            if name.islower()
-                            and not name.startswith("__")
-                            and callable(slimming.__dict__[name]))
+# SLIMMING_MODEL_NAMES = sorted(name for name in slimming.__dict__
+#                             if name.islower()
+#                             and not name.startswith("__")
+#                             and callable(slimming.__dict__[name]))
+                            
+# FILTER_PRUNE_MODEL_NAMES = sorted(name for name in filter_prune.__dict__
+#                             if name.islower()
+#                             and not name.startswith("__")
+#                             and callable(filter_prune.__dict__[name]))
 
 ALL_MODEL_NAMES = sorted(map(lambda s: s.lower(), 
-                            set(SLIMMING_MODEL_NAMES)))
-                            
-                            
+                            set(CIFAR_MODEL_NAMES)))

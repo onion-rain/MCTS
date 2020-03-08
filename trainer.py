@@ -88,11 +88,12 @@ class Trainer(object):
             if 'epoch' in checkpoint.keys():
                 self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
                 print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+                if checkpoint['epoch'] > -1:
+                    vis_clear = False # 不清空visdom已有visdom env里的内容
             if 'best_acc1' in checkpoint.keys():
                 self.best_acc1 = checkpoint['best_acc1']
                 print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
             self.model.load_state_dict(checkpoint['model_state_dict'])
-            vis_clear = False # 断点续练则不清空visdom
             
         # exit(0)
         
@@ -364,7 +365,9 @@ if __name__ == "__main__":
     parser.add_argument('--vis-legend', type=str, default='', metavar='LEGEND',
                         help='refine from pruned model (default: "", which means env is automatically set to args.arch)')
     parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
-                        help='visdom plot interval batchs (default: 1e-4)')
+                        help='visdom plot interval batchs (default: 50)')
+    # parser.add_argument('--nclear', dest='nclear', action='store_true',
+    #                     help='if set this true, the wisdom env will not be cleared before training.')
     args = parser.parse_args()
 
     # debug用

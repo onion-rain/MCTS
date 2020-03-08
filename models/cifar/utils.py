@@ -1,14 +1,17 @@
-# Code from https://github.com/Eric-mingjie/network-slimming/blob/master/models/channel_selection.py.
 import numpy as np
 
 import torch
 import torch.nn as nn
 
 
+__all__ = ['channel_selection', 'shortcut_package']
+
+
 class channel_selection(nn.Module):
     """
     Select channels from the output of BatchNorm2d layer. It should be put directly after BatchNorm2d layer.
     The output shape of this layer is determined by the number of 1 in `self.indexes`.
+    Code from https://github.com/Eric-mingjie/network-slimming/blob/master/models/channel_selection.py.
     """
     def __init__(self, num_channels):
         """
@@ -33,9 +36,9 @@ class channel_selection(nn.Module):
 
 
 
-class shortcut_slim(nn.Module):
+class shortcut_package(nn.Module):
     def __init__(self, shortcut):
-        super(shortcut_slim, self).__init__()
+        super(shortcut_package, self).__init__()
         self.shortcut = shortcut
     
     def forward(self, x):

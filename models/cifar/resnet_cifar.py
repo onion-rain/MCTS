@@ -2,13 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .channel_selection import channel_selection, shortcut_slim
+from . import shortcut_package
 
-# cs means channel select
 # 用于cifar数据集stage = 3
 
-
-__all__ = ['resnet20_cs', 'resnet32_cs', 'resnet44_cs', 'resnet56_cs', 'resnet110_cs', 'resnet1202_cs']
+__all__ = ['resnet20', 'resnet32', 'resnet44', 'resnet56', 'resnet110', 'resnet1202']
 
 
 def conv3x3(in_channels, out_channels, stride=1, groups=1, dilation=1):
@@ -26,7 +24,7 @@ class Basicblock(nn.Module):
         # 此处in_channels不能用cfg[0]代替，因为此处与其他block相接，不能直接删除通道，要用channel_selection来选择通道
         super(Basicblock, self).__init__()
         self.norm1 = nn.BatchNorm2d(in_channels)
-        self.select = channel_selection(in_channels)
+        # self.select = channel_selection(in_channels)
         self.relu1 = nn.ReLU(inplace=True)
         self.conv1 = conv1x1(cfg[0], cfg[1], stride=1)
         
@@ -37,15 +35,15 @@ class Basicblock(nn.Module):
 
         if stride != 1 or in_channels != out_channels:
             """用一个1*1的卷积核缩小特征尺寸"""
-            self.shortcut = shortcut_slim(conv1x1(in_channels, out_channels, stride=stride))
+            self.shortcut = shortcut_package(conv1x1(in_channels, out_channels, stride=stride))
         else:
-            self.shortcut = shortcut_slim(nn.Sequential())
+            self.shortcut = shortcut_package(nn.Sequential())
 
     def forward(self, x):
         shortcut = self.shortcut(x)
 
         residual = self.norm1(x)
-        residual = self.select(residual)
+        # residual = self.select(residual)
         residual = self.relu1(residual)
         residual = self.conv1(residual)
         
@@ -63,7 +61,7 @@ class Bottleneck(nn.Module):
         # in_channels要用channel_selection来选择通道,out_channels要与原网络相同
         super(Bottleneck, self).__init__()
         self.norm1 = nn.BatchNorm2d(in_channels)
-        self.select = channel_selection(in_channels)
+        # self.select = channel_selection(in_channels)
         self.relu1 = nn.ReLU(inplace=True)
         self.conv1 = conv1x1(cfg[0], cfg[1], stride=1)
         
@@ -78,15 +76,15 @@ class Bottleneck(nn.Module):
 
         if stride != 1 or in_channels != out_channels:
             """用一个1*1的卷积核缩小特征尺寸"""
-            self.shortcut = shortcut_slim(conv1x1(in_channels, out_channels, stride=stride))
+            self.shortcut = shortcut_package(conv1x1(in_channels, out_channels, stride=stride))
         else:
-            self.shortcut = shortcut_slim(nn.Sequential())
+            self.shortcut = shortcut_package(nn.Sequential())
 
     def forward(self, x):
         shortcut = self.shortcut(x)
 
         residual = self.norm1(x)
-        residual = self.select(residual)
+        # residual = self.select(residual)
         residual = self.relu1(residual)
         residual = self.conv1(residual)
         
@@ -102,7 +100,7 @@ class Bottleneck(nn.Module):
         return out
 
 
-class ResNet_cs(nn.Module):
+class ResNet(nn.Module):
 
     def __init__(self, block, depth, cfg=None, num_classes=10):
         """
@@ -112,7 +110,7 @@ class ResNet_cs(nn.Module):
             cfg：每个bn层的通道数
             num_classes：分类数
         """
-        super(ResNet_cs, self).__init__()
+        super(ResNet, self).__init__()
         
         if block is Bottleneck:
             assert (depth - 2) % 9 == 0, 'depth should be 9n+2'
@@ -141,7 +139,7 @@ class ResNet_cs(nn.Module):
         self.stage_2 = self._make_layer(block, n, cfg=cfg[self.nconv*n:2*self.nconv*n], stride=2)
         self.stage_3 = self._make_layer(block, n, cfg=cfg[2*self.nconv*n:3*self.nconv*n], stride=2)
         self.norm2 = nn.BatchNorm2d(self.cfg_original[-1])
-        self.select = channel_selection(self.cfg_original[-1])
+        # self.select = channel_selection(self.cfg_original[-1])
         self.relu2 = nn.ReLU(inplace=True)
         self.pool2 = nn.AdaptiveAvgPool2d((1, 1)) # 输出尺寸为1*1
 
@@ -184,33 +182,35 @@ class ResNet_cs(nn.Module):
         x = self.stage_3(x) # 8x8(cifar)
 
         x = self.norm2(x)
-        x = self.select(x)
+        # x = self.select(x)
         x = self.relu2(x)
         x = self.pool2(x)
         x = torch.flatten(x, 1) # x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
-def resnet20_cs(cfg=None, **kwargs):
+
+
+def resnet20(cfg=None, **kwargs):
     depth = 20
-    return ResNet_cs(Basicblock, depth, cfg, **kwargs)
+    return ResNet(Basicblock, depth, cfg, **kwargs)
 
-def resnet32_cs(cfg=None, **kwargs):
+def resnet32(cfg=None, **kwargs):
     depth = 32
-    return ResNet_cs(Basicblock, depth, cfg, **kwargs)
+    return ResNet(Basicblock, depth, cfg, **kwargs)
 
-def resnet44_cs(cfg=None, **kwargs):
+def resnet44(cfg=None, **kwargs):
     depth = 44
-    return ResNet_cs(Basicblock, depth, cfg, **kwargs)
+    return ResNet(Basicblock, depth, cfg, **kwargs)
 
-def resnet56_cs(cfg=None, **kwargs):
+def resnet56(cfg=None, **kwargs):
     depth = 56
-    return ResNet_cs(Basicblock, depth, cfg, **kwargs)
+    return ResNet(Basicblock, depth, cfg, **kwargs)
 
-def resnet110_cs(cfg=None, **kwargs):
+def resnet110(cfg=None, **kwargs):
     depth = 110
-    return ResNet_cs(Basicblock, depth, cfg, **kwargs)
+    return ResNet(Basicblock, depth, cfg, **kwargs)
 
-def resnet1202_cs(cfg=None, **kwargs):
+def resnet1202(cfg=None, **kwargs):
     depth = 1202
-    return ResNet_cs(Basicblock, depth, cfg, **kwargs)
+    return ResNet(Basicblock, depth, cfg, **kwargs)
