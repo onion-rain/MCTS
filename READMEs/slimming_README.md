@@ -95,8 +95,8 @@ fine-tune: ```python trainer.py --arch resnet110_cs --epochs 20 --gpu 7 --valuat
 
 ### test_loss(交叉熵):
 
-![test_loss](readme_imgs/test_loss.jpg)
+![test_loss](imgs/slimming/test_loss.jpg)
 
 ### test_top1:
 
-![test_top1](readme_imgs/test_top1.jpg)
+![test_top1](imgs/slimming/test_top1.jpg)

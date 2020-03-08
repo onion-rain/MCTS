@@ -35,23 +35,12 @@ fine-tune: ```python trainer.py --arch vgg16_bn_cifar --epochs 20 --gpu 4--valua
 |       0       | [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512] |
 |    0.37121    | [32, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M', 256, 256, 256] |
 
-
-## 训练过程（From Scratch）：
-
-### test_loss(交叉熵):
-
-![test_loss](readme_imgs/test_loss.jpg)
-
-### test_top1:
-
-![test_top1](readme_imgs/test_top1.jpg)
-
 ## fine-tuning：
 
 ### test_loss(交叉熵):
 
-![test_loss](readme_imgs/finetune_test_loss.jpg)
+![test_loss](imgs/l1_filter_prune/finetune_test_loss.jpg)
 
 ### test_top1:
 
-![test_top1](readme_imgs/finetune_test_top1.jpg)
+![test_top1](imgs/l1_filter_prune/finetune_test_top1.jpg)
