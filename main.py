@@ -16,7 +16,7 @@ import argparse
 
 from tester import Tester
 from config import Configuration
-from prune.weight_pruner import WeightPruner
+from prune.filter_pruner import FilterPruner
 import models
 from utils import *
 
@@ -82,13 +82,12 @@ class Pruner(object):
         self.vis = None
 
         # step5: pruner
-        if self.config.prune_object == 'all':
-            self.config.prune_object = ['conv', 'fc']
-        self.pruner = WeightPruner(
-            model=self.model, 
-            prune_percent=self.config.prune_percent, 
-            device=self.device, 
-            prune_object=self.config.prune_object,
+        self.pruner = FilterPruner(
+            model=self.model,
+            device=self.device,
+            arch=self.config.arch,
+            prune_percent=[self.config.prune_percent],
+            
         )
 
         # step6: valuator
@@ -111,10 +110,16 @@ class Pruner(object):
         # print_model_parameters(self.valuator.model)
 
         print("")
-        print("| -------------------- pruning model -------------------- |")
-        self.pruner.prune()
-        self.valuator.test(self.pruner.pruned_model)
+        print("| -----------------simple pruning model ------------------ |")
+        self.pruner.simple_prune()
+        self.valuator.test(self.pruner.simple_pruned_model)
         print_flops_params(self.valuator.model, self.config.dataset)
+
+        # print("")
+        # print("| -------------------- pruning model -------------------- |")
+        # self.pruner.prune()
+        # self.valuator.test(self.pruner.pruned_model)
+        # print_flops_params(self.valuator.model, self.config.dataset)
 
         # # save pruned model
         # name = ('weight_pruned' + str(self.config.prune_percent) 

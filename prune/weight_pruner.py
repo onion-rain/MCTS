@@ -28,7 +28,9 @@ class WeightPruner(object):
         self.pruned_model = None
 
     def extract_conv_weights(self):
-        """提取所有 weights"""
+        """提取所有层 weights(tensor)存到self.conv_weights_list, len()=layers_num， 
+            对于conv层：tensor.shape=[filters_num, weights_num]
+            对于fc层：tensor.shape=[in_channels*out_channels]"""
         self.conv_weights_num = 0
         self.fc_weights_num = 0
         self.conv_weights_list = [] # 保存各层权重的tensor
