@@ -53,6 +53,8 @@ class Configuration(object):
     # filter prune
     prune_percent = 0.5
 
+    prune_object = 'all'
+
     
 
     def update_config(self, kwargs):

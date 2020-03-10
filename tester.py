@@ -15,6 +15,15 @@ from utils import accuracy, print_model_parameters, AverageMeter, print_flops_pa
 class Tester(object):
     """
     可通过传入config_dic来配置Tester，这种情况下不会在初始化过程中print相关数据
+    例：
+        val_config_dic = {
+        'model': self.model,
+        'dataloader': self.val_dataloader,
+        'device': self.device,
+        'vis': self.vis,
+        'seed': self.config.random_seed
+        }
+        self.valuator = Tester(val_config_dic)
     也可通过**kwargs配置Tester
     """
     def __init__(self, config_dic=None, **kwargs):

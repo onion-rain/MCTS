@@ -16,6 +16,7 @@ import argparse
 
 from tester import Tester
 from config import Configuration
+from prune.weight_pruner import WeightPruner
 import models
 from utils import accuracy, print_model_parameters, AverageMeter, get_path, \
             get_dataloader, get_suffix, print_flops_params, save_checkpoint, print_nonzeros
@@ -41,7 +42,7 @@ class Pruner(object):
 
         self.suffix = get_suffix(self.config)
         print('{:<30}  {:<8}'.format('==> suffix: ', self.suffix))
-
+        
         # 更新一些默认标志
         self.best_acc1 = 0
         self.checkpoint = None
@@ -54,21 +55,11 @@ class Pruner(object):
             self.device = torch.device('cpu')
             print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
 
-        # Random Seed 
-        random.seed(0)
-        torch.manual_seed(0)
-        np.random.seed(self.config.random_seed)
-        torch.backends.cudnn.deterministic = True
-
         # step1: data
         _, self.val_dataloader, self.num_classes = get_dataloader(self.config)
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        # if self.config.arch.startswith("vgg"):
-        #     self.prune = self.prune_vgg
-        # elif self.config.arch.startswith("resnet"):
-        #     self.prune = self.prune_resnet
         cfg = None
         if self.config.resume_path != '': # 断点续练hhh
             checkpoint = torch.load(self.config.resume_path, map_location=self.device)
@@ -89,8 +80,19 @@ class Pruner(object):
         print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
         print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
 
-        # step6: valuator
         self.vis = None
+
+        # step5: pruner
+        if self.config.prune_object == 'all':
+            self.config.prune_object = ['conv', 'fc']
+        self.pruner = WeightPruner(
+            model=self.model, 
+            prune_percent=self.config.prune_percent, 
+            device=self.device, 
+            prune_object=self.config.prune_object,
+        )
+
+        # step6: valuator
         val_config_dic = {
             'model': self.model,
             'dataloader': self.val_dataloader,
@@ -111,73 +113,26 @@ class Pruner(object):
 
         print("")
         print("| -------------------- pruning model -------------------- |")
-        self.prune()
-        self.valuator.test(self.pruned_model)
+        self.pruner.prune()
+        self.valuator.test(self.pruner.pruned_model)
         print_flops_params(self.valuator.model, self.config.dataset)
 
-        # save pruned model
-        name = ('weight_pruned' + str(self.config.prune_percent) 
-                + '_' + self.config.dataset 
-                + "_" + self.config.arch
-                + self.suffix)
-        if len(self.config.gpu_idx_list) > 1:
-            state_dict = self.pruned_model.module.state_dict()
-        else: state_dict = self.pruned_model.state_dict()
-        path = save_checkpoint({
-            # 'cfg': cfg,
-            'ratio': self.prune_ratio,
-            'model_state_dict': state_dict,
-            'best_acc1': self.valuator.top1_acc.avg,
-        }, file_root='checkpoints/weight_pruned/', file_name=name)
-        print('{:<30}  {}'.format('==> pruned model save path: ', path))
+        # # save pruned model
+        # name = ('weight_pruned' + str(self.config.prune_percent) 
+        #         + '_' + self.config.dataset 
+        #         + "_" + self.config.arch
+        #         + self.suffix)
+        # if len(self.config.gpu_idx_list) > 1:
+        #     state_dict = self.pruned_model.module.state_dict()
+        # else: state_dict = self.pruned_model.state_dict()
+        # path = save_checkpoint({
+        #     # 'cfg': cfg,
+        #     'ratio': self.prune_ratio,
+        #     'model_state_dict': state_dict,
+        #     'best_acc1': self.valuator.top1_acc.avg,
+        # }, file_root='checkpoints/weight_pruned/', file_name=name)
+        # print('{:<30}  {}'.format('==> pruned model save path: ', path))
 
-
-    def prune(self, prune_percent=None):
-        """
-        删掉低于阈值的bn层，构建新的模型，可以降低params和flops
-        """
-        original_model = copy.deepcopy(self.model).to(self.device)
-        
-        # 提取所有conv weights
-        num_weights = 0
-        for module in original_model.modules():
-            if isinstance(module, torch.nn.Conv2d):
-                num_weights += module.weight.data.numel()
-        conv_weights = torch.zeros(num_weights)
-        index = 0
-        for module in original_model.modules():
-            if isinstance(module, torch.nn.Conv2d):
-                size = module.weight.data.numel()
-                conv_weights[index : (index+size)] = module.weight.data.flatten(0).abs().clone()
-                index += size
-
-        # 计算prune阈值
-        sorted_conv_weights, _ = torch.sort(conv_weights) # 从小到大排
-        if prune_percent == None:
-            prune_percent = self.config.prune_percent
-        threshold_index = int(len(sorted_conv_weights) * prune_percent)
-        self.threshold = sorted_conv_weights[threshold_index]
-        print('{:<30}  {:0.4e}'.format('==> prune threshold: ', self.threshold))
-
-        # 小于阈值归零处理
-        self.pruned_model = original_model
-        pruned_num = 0
-        for layer_index, module in enumerate(self.pruned_model.modules()):
-            if isinstance(module, torch.nn.Conv2d):
-                weight_copy = module.weight.data.clone()
-                mask = weight_copy.abs().gt(self.threshold).float().to(self.device) # torch.gt(a, b): a>b为1否则为0
-                remain_weight = int(torch.sum(mask))
-                if remain_weight == 0:
-                    error_str = 'Prune Error: layer' + str(layer_index) + ": " + module._get_name() + ': there is no remain nonzero_weight! turn down the prune_percent!'
-                    print(error_str)
-                    # raise
-                pruned_num += (mask.numel() - remain_weight)
-                module.weight.data.mul_(mask)
-                # print('layer index: {:<5} total weights: {:<10} remaining weights: {:<10}'.
-                #     format(layer_index, mask.numel(), remain_weight))
-        self.prune_ratio = pruned_num/len(conv_weights)
-        print('{:<30}  {:.4f}%'.format('==> prune ratio: ', self.prune_ratio*100))
-        return 0
 
 
 if __name__ == "__main__":
@@ -200,6 +155,8 @@ if __name__ == "__main__":
                         help='refine from pruned model, use construction to build the model')
     parser.add_argument('--prune-percent', type=float, default=0.5, 
                         help='percentage of weight to prune')
+    parser.add_argument('--prune-object', type=str, metavar='object', default='all',
+                        help='prune object: "conv", "fc", "all"(default: , "all")')
 
     args = parser.parse_args()
 
@@ -212,7 +169,8 @@ if __name__ == "__main__":
         resume_path=args.resume_path,
         refine=args.refine,
 
-        prune_percent=args.prune_percent
+        prune_percent=args.prune_percent,
+        prune_object=args.prune_object,
     )
     pruner.run()
     print("end")
