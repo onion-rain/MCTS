@@ -116,7 +116,7 @@ class ResNet_cs(nn.Module):
             num_classes：分类数
         """
         super(ResNet_cs, self).__init__()
-        
+        self.num_classes = num_classes
         if block is Bottleneck:
             assert (depth - 2) % 9 == 0, 'depth should be 9n+2'
             n = (depth - 2) // 9 # 每个stage里block数

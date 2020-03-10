@@ -31,6 +31,7 @@ class VGG_cifar(nn.Module):
 
     def __init__(self, cfg, batch_norm, num_classes=1000, init_weights=True):
         super(VGG_cifar, self).__init__()
+        self.num_classes = num_classes
         self.features = make_layers(cfg, batch_norm=batch_norm)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = nn.Linear(cfg[-1], num_classes)

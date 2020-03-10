@@ -87,7 +87,8 @@ class Pruner(object):
             device=self.device,
             arch=self.config.arch,
             prune_percent=[self.config.prune_percent],
-            
+            # target_cfg=[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M', 256, 256, 256],
+            p=1,
         )
 
         # step6: valuator
@@ -115,11 +116,11 @@ class Pruner(object):
         self.valuator.test(self.pruner.simple_pruned_model)
         print_flops_params(self.valuator.model, self.config.dataset)
 
-        # print("")
-        # print("| -------------------- pruning model -------------------- |")
-        # self.pruner.prune()
-        # self.valuator.test(self.pruner.pruned_model)
-        # print_flops_params(self.valuator.model, self.config.dataset)
+        print("")
+        print("| -------------------- pruning model -------------------- |")
+        self.pruner.prune()
+        self.valuator.test(self.pruner.pruned_model)
+        print_flops_params(self.valuator.model, self.config.dataset)
 
         # # save pruned model
         # name = ('weight_pruned' + str(self.config.prune_percent) 

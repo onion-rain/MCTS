@@ -25,16 +25,16 @@
                 // "--resume", "checkpoints/basline_sr/cifar10_resnet20_cs_sr_best.pth.tar",
                 // "--slim", "0.5",
 
-                //weight prune
-                "--resume", "checkpoints/baseline/cifar10_vgg19_bn_cifar_best.pth.tar",
-                "--arch", "vgg19_bn_cifar",
-                "--prune-percent", "0.1",
-                "--prune-object", "conv",
-                
-                // //l1 filter prune
-                // "--arch", "vgg16_bn_cifar",
-                // "--gpu", "4",
+                // //weight prune
                 // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
+                // "--arch", "vgg16_bn_cifar",
+                // "--prune-percent", "0.1",
+                // "--prune-object", "conv",
+                
+                //l1 filter prune
+                "--arch", "vgg16_bn_cifar",
+                "--gpu", "4",
+                "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
             ],
         },
     ]
