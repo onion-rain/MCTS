@@ -7,6 +7,7 @@ import models
 class FilterPruner(object):
     """
     FIXME simple prune 和 prune 得到的模型精度不同
+    TODO 适配其他模型
     args:
         model(torch.nn.Module): 模型
         arch(str): 模型名，用于加载剪枝后新的网络结构
@@ -35,6 +36,7 @@ class FilterPruner(object):
         )
         pruner.simple_prune()
         pruner.prune()
+    注：simple_prune()可单独使用，但要prune，必须先simple_prune()
     """
     def __init__(self, model, arch=None, prune_percent=[0.5,], device='cpu',
                     target_cfg=None, p="fro"):
@@ -47,11 +49,16 @@ class FilterPruner(object):
         self.pruned_cfg = []
         self.pruned_cfg_mask = []
         self.p = p
+        self.original_model.eval() # 验证模式
 
 
-    def simple_prune(self, prune_percent=None):
+    def simple_prune(self, model=None, prune_percent=None):
         """仅将权值归零"""
+        if model is not None:
+            self.original_model = copy.deepcopy(model).to(self.device)
         self.simple_pruned_model = copy.deepcopy(self.original_model).to(self.device)
+        self.original_model.eval()
+        self.simple_pruned_model.eval()
 
         if prune_percent is not None:
             self.prune_percent = prune_percent
@@ -61,9 +68,10 @@ class FilterPruner(object):
             for layer_index, module in enumerate(self.simple_pruned_model.modules()):
                 if isinstance(module, torch.nn.Conv2d):
                     self.prune_percent.append(p)
-                elif isinstance(module, torch.nn.Conv2d):
+                elif isinstance(module, torch.nn.MaxPool2d):
                     self.prune_percent.append(0)
 
+        self.pruned_cfg = []
         self.conv_threshold = []
         conv_pruned_num = 0
         conv_original_num = 0
@@ -117,8 +125,8 @@ class FilterPruner(object):
         # print('{:<30}  {:.4f}'.format('==> conv layer num: ', index))
         self.conv_prune_ratio = conv_pruned_num/conv_original_num
         print('{:<30}  {:.4f}%'.format('==> prune conv ratio: ', self.conv_prune_ratio*100))
-        print('{:<30}  {}'.format('==> pruned cfg: ', self.pruned_cfg))
-        return self.pruned_cfg
+        print('{}'.format(self.pruned_cfg))
+        return self.simple_pruned_model, self.pruned_cfg
 
 
     def prune(self):
@@ -127,8 +135,10 @@ class FilterPruner(object):
         self.pruned_model = models.__dict__[self.arch](cfg=self.pruned_cfg, num_classes=self.original_model.num_classes) # 根据cfg构建新的model
         self.pruned_model.to(self.device) # 模型转移到设备上
 
+        self.pruned_model.eval()
+
         self.weight_recover_vgg(self.pruned_cfg_mask, self.original_model, self.pruned_model)
-        return self.pruned_cfg
+        return self.pruned_model, self.pruned_cfg
 
 
     def weight_recover_vgg(self, cfg_mask, original_model, pruned_model):

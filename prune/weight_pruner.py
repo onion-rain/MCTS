@@ -26,6 +26,7 @@ class WeightPruner(object):
         self.prune_object = prune_object
         self.original_model = copy.deepcopy(model).to(self.device)
         self.pruned_model = None
+        self.original_model.eval()
 
     def extract_conv_weights(self):
         """提取所有层 weights(tensor)存到self.conv_weights_list, len()=layers_num， 
@@ -84,6 +85,7 @@ class WeightPruner(object):
         """仅将权值归零"""
         if prune_percent is not None:
             self.prune_percent = prune_percent
+        self.original_model.eval()
 
         # 计算阈值
         self.get_threshold()

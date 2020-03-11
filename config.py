@@ -50,10 +50,11 @@ class Configuration(object):
     sr_lambda = 1e-4
     slim_percent = 0.7
 
-    # filter prune
+    # prune
     prune_percent = 0.5
-
+    lp_norm=2
     prune_object = 'all'
+    sfp_intervals = None
 
     
 

@@ -30,6 +30,9 @@ def get_suffix(config):
     if config.refine is True:
         suffix += '_refine'
 
+    if config.sfp_intervals is not None:
+        suffix += '_sfp'
+
     return suffix
 
 

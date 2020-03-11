@@ -88,7 +88,7 @@ class Pruner(object):
             arch=self.config.arch,
             prune_percent=[self.config.prune_percent],
             # target_cfg=[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M', 256, 256, 256],
-            p=1,
+            p=self.config.lp_norm,
         )
 
         # step6: valuator
@@ -107,20 +107,20 @@ class Pruner(object):
         print("")
         print("| -------------------- original model -------------------- |")
         self.valuator.test(self.model)
-        print_flops_params(self.valuator.model, self.config.dataset)
+        print_flops_params(self.model, self.config.dataset)
         # print_model_parameters(self.valuator.model)
 
         print("")
         print("| -----------------simple pruning model ------------------ |")
-        self.pruner.simple_prune()
-        self.valuator.test(self.pruner.simple_pruned_model)
-        print_flops_params(self.valuator.model, self.config.dataset)
+        self.model, self.cfg = self.pruner.simple_prune(self.model)
+        self.valuator.test(self.model)
+        print_flops_params(self.model, self.config.dataset)
 
         print("")
         print("| -------------------- pruning model -------------------- |")
-        self.pruner.prune()
-        self.valuator.test(self.pruner.pruned_model)
-        print_flops_params(self.valuator.model, self.config.dataset)
+        self.model, self.cfg = self.pruner.prune()
+        self.valuator.test(self.model)
+        print_flops_params(self.model, self.config.dataset)
 
         # # save pruned model
         # name = ('weight_pruned' + str(self.config.prune_percent) 
@@ -159,9 +159,10 @@ if __name__ == "__main__":
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
     parser.add_argument('--prune-percent', type=float, default=0.5, 
-                        help='percentage of weight to prune')
-    parser.add_argument('--prune-object', type=str, metavar='object', default='all',
-                        help='prune object: "conv", "fc", "all"(default: , "all")')
+                        help='percentage of weight to prune(default: 0.5)')
+    parser.add_argument('--lp-norm', '-lp', dest='lp_norm', type=int, default=2, 
+                        help='the order of norm(default: 2)')
+
 
     args = parser.parse_args()
 
@@ -175,7 +176,7 @@ if __name__ == "__main__":
         refine=args.refine,
 
         prune_percent=args.prune_percent,
-        prune_object=args.prune_object,
+        lp_norm=args.lp_norm
     )
     pruner.run()
     print("end")

@@ -9,11 +9,11 @@ import argparse
 
 from config import Configuration
 import models
-from utils import accuracy, print_model_parameters, AverageMeter, print_flops_params, \
-                    get_dataloader, print_model_param_nums, print_model_param_flops
+from utils import *
 
 class Tester(object):
     """
+    TODO trainer做成工具类
     可通过传入config_dic来配置Tester，这种情况下不会在初始化过程中print相关数据
     例：
         val_config_dic = {

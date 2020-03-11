@@ -17,8 +17,7 @@ import argparse
 from tester import Tester
 from config import Configuration
 import models
-from utils import accuracy, print_model_parameters, AverageMeter, get_path, \
-            get_dataloader, get_suffix, print_flops_params, save_checkpoint
+from utils import *
 
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
@@ -27,6 +26,9 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class Trainer(object):
+    """
+    TODO trainer做成工具类
+    """
     def __init__(self, **kwargs):
 
         print("| ----------------- Initializing Trainer ----------------- |")
@@ -204,12 +206,14 @@ class Trainer(object):
             save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
         print("{}{}".format("best_acc1: ", self.best_acc1))
 
-    def train(self, epoch=None):
+    def train(self, model=None, epoch=None):
         """
         在指定数据集上训练指定模型, model和dataset在创建Trainer类时通过修改self.config确定
         args:
             epoch：仅用于显示当前epoch
         """
+        if model is not None:
+            self.model = model
         self.model.train() # 训练模式
         self.loss_meter.reset()
         self.top1_acc.reset()
@@ -309,6 +313,9 @@ class Trainer(object):
         
         # update learning rate
         self.lr_scheduler.step(epoch=epoch)
+        
+        return self.model
+        
 
     # additional subgradient descent on the sparsity-induced penalty term
     def updateBN(self):

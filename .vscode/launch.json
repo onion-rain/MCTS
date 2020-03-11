@@ -31,10 +31,21 @@
                 // "--prune-percent", "0.1",
                 // "--prune-object", "conv",
                 
-                //l1 filter prune
-                "--arch", "vgg16_bn_cifar",
+                // //l1 filter prune
+                // "--arch", "vgg16_bn_cifar",
+                // "--gpu", "4",
+                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
+                // "--prune-percent", "0.2",
+
+                //SFP
+                "--arch", "vgg19_bn_cifar",
+                "--epochs", "150",
                 "--gpu", "4",
-                "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
+                "--valuate",
+                "--visdom",
+                "--lp-norm", "2",
+                "--sfp-intervals", "3",
+                "--prune-percent", "0.2",
             ],
         },
     ]
