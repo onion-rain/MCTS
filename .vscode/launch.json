@@ -31,21 +31,28 @@
                 // "--prune-percent", "0.1",
                 // "--prune-object", "conv",
                 
-                //l1 filter prune
-                "--arch", "vgg16_bn_cifar",
-                "--gpu", "5",
-                "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
-                "--prune-percent", "0.3",
+                // //l1 filter prune
+                // "--arch", "vgg16_bn_cifar",
+                // "--gpu", "5",
+                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
+                // "--prune-percent", "0.3",
+                // "--lp-norm", "1"
+                
+                // //l1 filter prune
+                // "--arch", "vgg16_bn_cifar",
+                // "--gpu", "5",
+                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
+                // "--prune-percent", "0.3",
+                // "--lp-norm", "1"
 
-                // //SFP
-                // "--arch", "vgg19_bn_cifar",
-                // "--epochs", "150",
-                // "--gpu", "4",
-                // "--valuate",
-                // "--visdom",
-                // "--lp-norm", "2",
-                // "--sfp-intervals", "3",
-                // "--prune-percent", "0.2",
+                //SFP
+                "--arch", "vgg19_bn_cifar",
+                "--epochs", "150",
+                "--gpu", "5",
+                "--valuate",
+                "--lp-norm", "2",
+                "--sfp-intervals", "3",
+                "--prune-percent", "0.2",
             ],
         },
     ]

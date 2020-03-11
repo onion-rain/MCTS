@@ -15,6 +15,7 @@ import datetime
 import argparse
 
 from tester import Tester
+from trainer import Trainer
 from config import Configuration
 from prune.filter_pruner import FilterPruner
 import models
@@ -23,18 +24,14 @@ from utils import *
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
-import copy
-
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class SFP(object):
-    """
-    TODO trainer做成工具类
-    """
+
     def __init__(self, **kwargs):
 
-        print("| ----------------- Initializing Trainer ----------------- |")
+        print("| ------------------ Initializing SFP ------------------- |")
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
@@ -139,7 +136,18 @@ class SFP(object):
                 self.config.vis_env = self.config.dataset + '_' + self.config.arch + self.suffix
             if self.config.vis_legend == '':
                 self.config.vis_legend = self.config.arch + self.suffix
-            self.vis = Visualizer(self.config.vis_env, self.config.vis_legend, clear=vis_clear) 
+            self.vis = Visualizer(self.config.vis_env, self.config.vis_legend, clear=vis_clear)
+
+        # trainer
+        train_config_dic = {
+            'model': self.model,
+            'dataloader': self.val_dataloader,
+            'device': self.device,
+            'vis': self.vis,
+            'vis_interval': self.config.vis_interval,
+            'seed': self.config.random_seed
+        }
+        self.trainer = Trainer(train_config_dic) 
 
         # step6: valuator
         self.valuator = None
@@ -163,37 +171,32 @@ class SFP(object):
             p=self.config.lp_norm,
         )
 
-    
-    def print_bar(self):
-        """calculate duration time"""
-        interval = datetime.datetime.now() - self.start_time
-        print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
-            format(
-                model=self.config.arch,
-                dataset=self.config.dataset,
-                dh=interval.seconds//3600,
-                dm=interval.seconds%3600//60,
-                ds=interval.seconds%60,
-            )
-        )
-
 
     def run(self):
 
         print("")
-        self.start_time = datetime.datetime.now()
+        start_time = datetime.datetime.now()
         name = (self.config.dataset + "_" + self.config.arch + self.suffix)
         print_flops_params(model=self.model)
 
         # initial test
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
-        self.print_bar()
+        self.trainer.print_bar(start_time, self.config.arch, self.config.dataset)
         print("")
 
         for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
-            self.model = self.train(self.model, epoch=epoch)
+            self.model = self.trainer.train(
+                model=self.model,
+                train_dataloader=self.train_dataloader,
+                criterion=self.criterion,
+                optimizer=self.optimizer,
+                lr_scheduler=self.lr_scheduler,
+                epoch=epoch,
+                vis=self.vis,
+                vis_interval=self.config.vis_interval,
+            )
             if self.valuator is not None:
                 self.valuator.test(self.model, epoch=epoch)
 
@@ -208,7 +211,7 @@ class SFP(object):
                 if self.valuator is not None:
                     self.valuator.test(self.model, epoch=epoch+0.5)
                 
-            self.print_bar()
+            self.trainer.print_bar(start_time, self.config.arch, self.config.dataset)
             print("")
             
             # save checkpoint
@@ -234,124 +237,6 @@ class SFP(object):
         print("{}{}".format("best_acc1: ", self.best_acc1))
 
 
-    def train(self, model=None, epoch=None):
-        """
-        在指定数据集上训练指定模型, dataset在创建Trainer类时通过修改self.config确定
-        args:
-            epoch：仅用于显示当前epoch
-        """
-        if model is not None:
-            self.model = model
-        self.model.train() # 训练模式
-        self.loss_meter.reset()
-        self.top1_acc.reset()
-        self.top5_acc.reset()
-        self.batch_time.reset()
-        self.dataload_time.reset()
-        if self.vis is not None:
-            self.loss_vis.reset()
-            self.top1_vis.reset()
-
-        end_time = time.time()
-        # print("training...")
-        # pbar = tqdm(
-        #     enumerate(self.train_dataloader), 
-        #     total=len(self.train_dataset)/self.config.batch_size,
-        # )
-        # for batch_index, (input, target) in pbar:
-        for batch_index, (input, target) in enumerate(self.train_dataloader):
-            # measure data loading time
-            self.dataload_time.update(time.time() - end_time)
-
-            # compute output
-            input, target = input.to(self.device), target.to(self.device)
-            output = self.model(input)
-            loss = self.criterion(output, target)
-
-            # compute gradient and do SGD step
-            self.optimizer.zero_grad()
-            loss.backward()
-
-            if self.config.sr:
-                self.updateBN()
-                
-            self.optimizer.step()
-
-            # meters update
-            self.loss_meter.update(loss.item(), input.size(0))
-            prec1, prec5 = accuracy(output.data, target.data, topk=(1, 5))
-            self.top1_acc.update(prec1.data.cpu(), input.size(0))
-            self.top5_acc.update(prec5.data.cpu(), input.size(0))
-
-            # measure elapsed time
-            self.batch_time.update(time.time() - end_time)
-            end_time = time.time()
-
-            # print log
-            done = (batch_index+1) * self.train_dataloader.batch_size
-            percentage = 100. * (batch_index+1) / len(self.train_dataloader)
-            # pbar.set_description(
-            print("\r"
-                "Train: {epoch:3} "
-                "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
-                "loss: {loss_meter:.3f} | "
-                "top1: {top1:3.3f}% | "
-                # "top5: {top5:3.3f} | "
-                "load_time: {time_percent:2.0f}% | "
-                "lr   : {lr:0.1e} ".format(
-                    epoch=0 if epoch == None else epoch,
-                    done=done,
-                    total_len=len(self.train_dataloader.dataset),
-                    percentage=percentage,
-                    loss_meter=self.loss_meter.avg,
-                    top1=self.top1_acc.avg,
-                    # top5=self.top5_acc.avg,
-                    time_percent=self.dataload_time.avg/self.batch_time.avg*100,
-                    lr=self.optimizer.param_groups[0]['lr'],
-                ), end=""
-            )
-
-            # visualize
-            if self.vis is not None:
-                self.loss_vis.update(loss.item(), input.size(0))
-                self.top1_vis.update(prec1.data.cpu(), input.size(0))
-
-                if (batch_index % self.config.vis_interval == self.config.vis_interval-1):
-                    vis_x = epoch+percentage/100
-                    self.vis.plot('train_loss', self.loss_vis.avg, x=vis_x)
-                    self.vis.plot('train_top1', self.top1_vis.avg, x=vis_x)
-                    self.loss_vis.reset()
-                    self.top1_vis.reset()
-
-        print("")
-
-        # visualize
-        if self.vis is not None:
-            self.vis.log(
-                "epoch: {epoch},  lr: {lr}, <br>\
-                train_loss: {train_loss}, <br>\
-                train_top1: {train_top1}, <br>"
-                .format(
-                    lr=self.optimizer.param_groups[0]['lr'],
-                    epoch=epoch, 
-                    train_loss=self.loss_meter.avg,
-                    train_top1=self.top1_acc.avg,
-                )
-            )
-        
-        # update learning rate
-        self.lr_scheduler.step(epoch=epoch)
-
-        return self.model
-
-
-    # additional subgradient descent on the sparsity-induced penalty term
-    def updateBN(self):
-        for module in self.model.modules():
-            if isinstance(module, torch.nn.BatchNorm2d):
-                # torch.sign(module.weight.data)是对sparsity-induced penalty(g(γ))求导的结果
-                module.weight.grad.data.add_(self.config.sr_lambda * torch.sign(module.weight.data))  # L1
-
 
 if __name__ == "__main__":
 
@@ -367,8 +252,6 @@ if __name__ == "__main__":
                         help='number of data loading workers (default: 10)')
     parser.add_argument('--batch-size', type=int, default=100, metavar='N',
                         help='input batch size for training (default: 100)')
-    # parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-    #                     help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=150, metavar='N',
                         help='number of epochs to train (default: 150)')
     parser.add_argument('--lr', dest='lr', type=float, default=1e-1, 

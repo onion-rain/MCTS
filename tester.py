@@ -13,7 +13,6 @@ from utils import *
 
 class Tester(object):
     """
-    TODO trainer做成工具类
     可通过传入config_dic来配置Tester，这种情况下不会在初始化过程中print相关数据
     例：
         val_config_dic = {
@@ -49,11 +48,13 @@ class Tester(object):
         if model is not None:
             self.model = model
         self.model.eval() # 验证模式
-        self.loss_meter.reset()
-        self.top1_acc.reset()
-        self.top5_acc.reset()
-        self.batch_time.reset()
-        self.dataload_time.reset()
+        
+        #meters
+        self.loss_meter = AverageMeter() # 计算所有数的平均值和标准差，这里用来统计一个epoch中的平均值
+        self.top1_acc = AverageMeter()
+        self.top5_acc = AverageMeter()
+        self.batch_time = AverageMeter()
+        self.dataload_time = AverageMeter()
 
         end_time = time.time()
         # print("testing...")
@@ -162,13 +163,6 @@ class Tester(object):
         # step3: criterion
         self.criterion = torch.nn.CrossEntropyLoss()
 
-        #step4: meters
-        self.loss_meter = AverageMeter() # 计算所有数的平均值和标准差，这里用来统计一个epoch中的平均值
-        self.top1_acc = AverageMeter()
-        self.top5_acc = AverageMeter()
-        self.batch_time = AverageMeter()
-        self.dataload_time = AverageMeter()
-
 
     def init_from_config(self, config):
     
@@ -191,12 +185,6 @@ class Tester(object):
         # step3: criterion
         self.criterion = torch.nn.CrossEntropyLoss()
 
-        #step4: meters
-        self.loss_meter = AverageMeter() # 计算所有数的平均值和标准差，这里用来统计一个epoch中的平均值
-        self.top1_acc = AverageMeter()
-        self.top5_acc = AverageMeter()
-        self.batch_time = AverageMeter()
-        self.dataload_time = AverageMeter()
 
     
 
