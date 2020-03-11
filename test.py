@@ -5,6 +5,11 @@ a = torch.tensor([[1], [2], [3]])
 b = torch.tensor([[5], [6], [7]])
 c = torch.tensor([[9], [4], [0]])
 
+f = a.mul_(b)
+
+
+
+
 d = torch.stack([a, b, c])
 e = torch.cat([a, b, c])
 

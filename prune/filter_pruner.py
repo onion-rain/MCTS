@@ -56,8 +56,10 @@ class FilterPruner(object):
         """仅将权值归零"""
         if model is not None:
             self.original_model = copy.deepcopy(model).to(self.device)
-        self.simple_pruned_model = copy.deepcopy(self.original_model).to(self.device)
-        self.original_model.eval()
+            self.original_model.eval()
+            self.simple_pruned_model = model # 若传入模型则直接在模型上剪，不然还得更新optimizer
+        else:
+            self.simple_pruned_model = simple_pruned_model(self.original_model).to(self.device)
         self.simple_pruned_model.eval()
 
         if prune_percent is not None:
@@ -104,7 +106,7 @@ class FilterPruner(object):
                 module.weight.data.mul_(mask)
                 
                 # 用于从旧模型向新模型恢复weight
-                cfg_mask = torch.zeros(original_filters_num * filter_weight_num).to(self.device)
+                cfg_mask = torch.zeros(original_filters_num).to(self.device)
                 cfg_mask[keep_filters_index.tolist()] = 1
                 self.pruned_cfg_mask.append(cfg_mask)
 
@@ -137,7 +139,7 @@ class FilterPruner(object):
 
         self.pruned_model.eval()
 
-        self.weight_recover_vgg(self.pruned_cfg_mask, self.original_model, self.pruned_model)
+        self.weight_recover_vgg(self.pruned_cfg_mask, self.simple_pruned_model, self.pruned_model)
         return self.pruned_model, self.pruned_cfg
 
 

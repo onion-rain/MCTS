@@ -23,13 +23,14 @@ from utils import *
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
+import copy
+
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class SFP(object):
     """
     TODO trainer做成工具类
-    FIXME filter_pruner.simple_prune之后训练无法提高精度了
     """
     def __init__(self, **kwargs):
 
@@ -175,6 +176,7 @@ class SFP(object):
                 ds=interval.seconds%60,
             )
         )
+
 
     def run(self):
 
