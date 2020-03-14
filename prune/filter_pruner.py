@@ -94,7 +94,7 @@ class FilterPruner(object):
                 # 排序计算保留filter的索引
                 weight_copy = module.weight.data.clone()
                 weight_copy_flat = weight_copy.view(weight_copy.size()[0], -1)
-                conv_norm = torch.norm(weight_copy_flat, self.p, 1) # lp norm
+                conv_norm = weight_copy_flat.norm(self.p, 1) # lp norm
                 sorted_conv_norm, sorted_filter_index = torch.sort(conv_norm)
                 keep_filters_index = sorted_filter_index.cpu().numpy()[::-1][:remain_filters_num]
                 

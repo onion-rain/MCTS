@@ -82,7 +82,7 @@ class Pruner(object):
         self.vis = None
 
         # step5: pruner
-        self.pruner = FilterPruner(
+        self.pruner = Pred_FilterPruner(
             model=self.model,
             device=self.device,
             arch=self.config.arch,

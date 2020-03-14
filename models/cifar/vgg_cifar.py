@@ -114,3 +114,7 @@ def vgg19_bn_cifar(cfg=None, **kwargs):
     if cfg is None:
         cfg = cfgs['E']
     return VGG_cifar(cfg, True, **kwargs)
+
+if __name__ == "__main__":
+    model = vgg16_bn_cifar()
+    print("end")
