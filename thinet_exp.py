@@ -9,6 +9,7 @@ import random
 import numpy as np
 import copy
 import argparse
+import datetime
 
 from tester import Tester
 from config import Configuration
@@ -26,32 +27,47 @@ import math
 
 import models
 
-# 提取隐藏层features
-class FeatureExtractor:
-    features = None
+# # 提取隐藏层features
+# class FeatureExtractor:
+#     features = None
  
-    def __init__(self, model, layer_num):
-        self.hook = model[layer_num].register_forward_hook(self.hook_fn)
+#     def __init__(self, model, layer_num):
+#         self.hook = model[layer_num].register_forward_hook(self.hook_fn)
  
-    def hook_fn(self, module, input, output):
-        self.features = output.cpu()
+#     def hook_fn(self, module, input, output):
+#         self.features = output.cpu()
  
-    def remove(self):
-        self.hook.remove()
+#     def remove(self):
+#         self.hook.remove()
 
-def get_hidden_output_feature(model, idx, x):
-    """return model第idx层的前向传播输出特征图"""
-    feature_extractor = FeatureExtractor(model, idx) # 注册钩子
-    out = model(x)
-    feature_extractor.remove() # 销毁钩子
-    return feature_extractor.features # 第idx层输出的特征
+# def get_hidden_output_feature(model, idx, x):
+#     """return model第idx层的前向传播输出特征图"""
+#     feature_extractor = FeatureExtractor(model, idx) # 注册钩子
+#     out = model(x)
+#     feature_extractor.remove() # 销毁钩子
+#     return feature_extractor.features # 第idx层输出的特征
+
+
+def print_bar(str, channel_num, start_time):
+    """calculate duration time"""
+    interval = datetime.datetime.now() - start_time
+    print("-------- pruned: {str}  --  channel num: {channel_num}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+        format(
+            str=str,
+            channel_num=channel_num,
+            dh=interval.seconds//3600,
+            dm=interval.seconds%3600//60,
+            ds=interval.seconds%60,
+        )
+    )
 
 def get_tuples(model):
     """
     Code from https://github.com/synxlin/nn-compression.
     获得计算第i层以及i+1层输入特征图的前向传播函数
-    :return:
-        list of tuple, [(module_name, module, next_module, fn_input_feature, fn_next_input_feature), ...]
+    
+    return:
+        list of tuple, [(module_name, module, next_bn, next_module, fn_input_feature, fn_next_input_feature), ...]
     """
     # 提取各层
     features = model.features
@@ -66,21 +82,27 @@ def get_tuples(model):
     conv_indices = []
     conv_modules = []
     conv_names = []
-    for i, m in enumerate(features.modules()):
+    bn_modules = []
+    for i, m in enumerate(features):
         if isinstance(m, torch.nn.modules.conv._ConvNd):
             conv_indices.append(i)
             conv_modules.append(m)
             conv_names.append(module_name_dict[m])
+            bn_modules.append(None)
+        elif isinstance(m, torch.nn.modules.batchnorm._BatchNorm):
+            if bn_modules[-1] is None:
+                bn_modules[-1] = m # 其实还有种隐患，不过应该没有哪个模型一个conv后面跟两个bn吧hhh
     
     # 获得第idx个卷积层输入特征图
     def get_fn_conv_input_feature(idx):
         def fn(x):
             if idx == 0:
                 return x
-            else: 
-                return get_hidden_output_feature(features, conv_indices[idx-1]-1, x)
-            # for layer in range(conv_indices[idx]):
-            #     x = features[layer](x)
+            else:
+            #     return get_hidden_output_feature(features, conv_indices[idx]-1, x)
+                for layer in range(conv_indices[idx]):
+                    x = features[layer](x)
+                return x
         return fn
 
     # 获得第idx+1个卷积层输入特征图
@@ -89,10 +111,11 @@ def get_tuples(model):
             if idx+1 < len(conv_indices):
                 for layer in range(conv_indices[idx]+1, conv_indices[idx+1]):
                     x = features[layer](x)
-            else:
+            else: # 下层为fc
                 for layer in range(conv_indices[-1]+1, len(features)):
                     x = features[layer](x)
-                x = x.view(x.size(0), -1)
+                x = model.avgpool(x)
+                x = torch.flatten(x, 1)
             return x
         return fn
 
@@ -102,17 +125,20 @@ def get_tuples(model):
     fn_next_input_feature = []
 
     for i in range(len(conv_indices)):
-        modules.append(conv_modules[i])
-        module_names.append(conv_names[i])
+        # modules.append(conv_modules[i])
+        # module_names.append(conv_names[i])
         fn_input_feature.append(get_fn_conv_input_feature(i))
         fn_next_input_feature.append(get_fn_next_input_feature(i))
 
-    modules.append(classifier)
+    conv_modules.append(classifier) # 图省事直接append到conv_modules里面
 
     tuples = []
-    for i in range(len(module_names)):
-        tuples.append((module_names[i], modules[i], modules[i+1],
+    for i in range(len(conv_names)):
+        tuples.append((conv_names[i], conv_modules[i], bn_modules[i], conv_modules[i+1],
                                 fn_input_feature[i], fn_next_input_feature[i]))
+    # for i in range(len(conv_names)):
+    #     tuples.append((conv_names[-2], conv_modules[-2], bn_modules[-2], conv_modules[-1],
+    #                             fn_input_feature[-2], fn_next_input_feature[-2]))
 
     return tuples
 
@@ -148,7 +174,7 @@ def channel_select(sparsity, output_feature, fn_next_input_feature, next_module,
 
     return indices_pruned
 
-def module_surgery(module, next_module, indices_pruned, device):
+def module_surgery(module, next_bn, next_module, indices_pruned, device):
     """根据indices_pruned实现filter的删除与权重的recover"""
     # operate module
     if isinstance(module, torch.nn.modules.conv._ConvNd):
@@ -166,10 +192,31 @@ def module_surgery(module, next_module, indices_pruned, device):
         new_bias = module.bias[indices_stayed, ...].clone()
         del module.bias
         module.bias = torch.nn.Parameter(new_bias)
+    
+
+    if next_bn is not None:
+        # operate batch_norm
+        if isinstance(next_bn, torch.nn.modules.batchnorm._BatchNorm):
+            next_bn.num_features = num_channels_stayed
+        else:
+            raise NotImplementedError
+        # operate batch_norm weight
+        new_weight = next_bn.weight.data[indices_stayed].clone()
+        new_bias = next_bn.bias.data[indices_stayed].clone()
+        new_running_mean = next_bn.running_mean[indices_stayed].clone()
+        new_running_var = next_bn.running_var[indices_stayed].clone()
+        del next_bn.weight, next_bn.bias, next_bn.running_mean, next_bn.running_var
+        next_bn.weight = torch.nn.Parameter(new_weight)
+        next_bn.bias = torch.nn.Parameter(new_bias)
+        next_bn.running_mean = new_running_mean
+        next_bn.running_var = new_running_var
+
 
     # operate next_module
     if isinstance(next_module, torch.nn.modules.conv._ConvNd):
         next_module.in_channels = num_channels_stayed
+    elif isinstance(next_module, torch.nn.modules.linear.Linear):
+        print("fc")
     else:
         raise NotImplementedError
     # operate next_module weight
@@ -205,13 +252,20 @@ def weight_reconstruction(next_module, next_input_feature, next_output_feature, 
 
 
 def prune(model, sparsity, dataloader, device, method, p):
+
+    start_time = datetime.datetime.now()
+
     input_iter = iter(dataloader)
     tuples = get_tuples(model)
-    for (module_name, module, next_module, fn_input_feature, fn_next_input_feature) in tuples:
+
+    print_bar("get_tuples", 0, start_time)
+
+    for (module_name, module, next_bn, next_module, fn_input_feature, fn_next_input_feature) in tuples:
         # 此处module和next_module均为conv module
         input, _ = input_iter.__next__()
         input = input.to(device)
         input_feature = fn_input_feature(input)
+        input_feature = input_feature.to(device)
 
         output_feature = module(input_feature) # 之后我们要对这玩意下刀，去掉几个channel
         next_input_feature = fn_next_input_feature(output_feature)
@@ -219,13 +273,15 @@ def prune(model, sparsity, dataloader, device, method, p):
 
         # sparsity = get_param_sparsity(module_name)
         indices_pruned = channel_select(sparsity, output_feature, fn_next_input_feature, next_module, method)
-        module_surgery(module, next_module, indices_pruned, device)
+        module_surgery(module, next_bn, next_module, indices_pruned, device)
 
         # 通道剪枝后更新特征图
         output_feature = module(input_feature)
         next_input_feature = fn_next_input_feature(output_feature)
 
-        weight_reconstruction(next_module, next_input_feature, next_output_feature, device)
+        # weight_reconstruction(next_module, next_input_feature, next_output_feature, device)
+
+        print_bar(module_name, module.out_channels, start_time)
 
 
 class Pruner(object):
