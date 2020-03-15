@@ -27,6 +27,8 @@ import math
 
 import models
 
+print(torch.__version__)
+
 # # 提取隐藏层features
 # class FeatureExtractor:
 #     features = None
@@ -143,8 +145,11 @@ def get_tuples(model):
     return tuples
 
 def channel_select(sparsity, output_feature, fn_next_input_feature, next_module, method='greedy', p=2):
-    """next(_conv)_output_feature到next2_input_feature之间算是一种恒定的变换，
-    因此这里不比较i+2层卷积层的输入，转而比较i+1层卷积层的输出"""
+    """
+    选一些不重要的channel，使得fn_next_input_feature(channel)的lp norm最小
+    next(_conv)_output_feature到next2_input_feature之间算是一种恒定的变换，
+    因此这里不比较i+2层卷积层的输入，转而比较i+1层卷积层的输出
+    """
     original_channel_num = output_feature.size(1)
     purned_channel_num = int(math.floor(original_channel_num * sparsity)) # 向下取整
 
@@ -166,6 +171,7 @@ def channel_select(sparsity, output_feature, fn_next_input_feature, next_module,
                     min_idx = idx
             indices_pruned.append(min_idx)
     elif method == 'lasso':
+        # TODO
         raise NotImplementedError
     elif method == 'random':
         indices_pruned = random.sample(range(original_channel_num), purned_channel_num)
@@ -216,7 +222,7 @@ def module_surgery(module, next_bn, next_module, indices_pruned, device):
     if isinstance(next_module, torch.nn.modules.conv._ConvNd):
         next_module.in_channels = num_channels_stayed
     elif isinstance(next_module, torch.nn.modules.linear.Linear):
-        print("fc")
+        next_module.in_features = num_channels_stayed
     else:
         raise NotImplementedError
     # operate next_module weight
@@ -225,7 +231,12 @@ def module_surgery(module, next_bn, next_module, indices_pruned, device):
     next_module.weight = torch.nn.Parameter(new_weight)
 
 def weight_reconstruction(next_module, next_input_feature, next_output_feature, device=None):
-    if next_module.bias is not None:
+    """
+    通过最小二乘寻找最合适next_module的权重，
+    使得去掉一些通道的next_input_feature经过next_module运算与原输出差距最小，
+    next_output_feature为原输出，即目标输出
+    """
+    if next_module.bias is not None: # 还原bias影响
         bias_size = [1] * next_output_feature.dim()
         bias_size[1] = -1
         next_output_feature -= next_module.bias.view(bias_size)
@@ -236,22 +247,26 @@ def weight_reconstruction(next_module, next_input_feature, next_output_feature, 
                                 stride=next_module.stride)
         unfold = unfold.to(device)
         unfold.eval()
-        next_input_feature = unfold(next_input_feature)
-        next_input_feature = next_input_feature.transpose(1, 2)
-        num_fields = next_input_feature.size(0) * next_input_feature.size(1)
+        # 卷积层输入
+        next_input_feature = unfold(next_input_feature) # [B, C*kh*kw, L]
+        next_input_feature = next_input_feature.transpose(1, 2) # 维度1,2颠倒一下才好理解，next_input_feature[B, L, :]表示从输入特种图中提取一个卷积核体积的子特征图(shape=C*kh*kw)，L就是每个输入特征图里这种子特征图有多少个(卷积核能滑多少次)
+        num_fields = next_input_feature.size(0) * next_input_feature.size(1) # B * L
         next_input_feature = next_input_feature.reshape(num_fields, -1)
+        # 目标输出
         next_output_feature = next_output_feature.view(next_output_feature.size(0), next_output_feature.size(1), -1)
         next_output_feature = next_output_feature.transpose(1, 2).reshape(num_fields, -1)
 
-    param, _ = torch.lstsq(next_output_feature.data, next_input_feature.data) # 计算最小二乘的解
-    param = param[0:next_input_feature.size(1), :].clone().t().contiguous().view(next_output_feature.size(1), -1)
+    # 计算最小二乘的解 Returned tensor XX has shape (\max(m, n) \times k)(max(m,n)×k) . The first nn rows of XX contains the solution.
+    param, _ = torch.lstsq(next_output_feature.data.cpu(), next_input_feature.data.cpu()) # The case when m < n is not supported on the GPU.
+    param = param.to(device)[:next_input_feature.size(1), :].clone().t().reshape(next_output_feature.size(1), -1)
+
     if isinstance(next_module, torch.nn.modules.conv._ConvNd):
         param = param.view(next_module.out_channels, next_module.in_channels, *next_module.kernel_size)
     del next_module.weight
     next_module.weight = torch.nn.Parameter(param)
 
 
-def prune(model, sparsity, dataloader, device, method, p):
+def Thinet_prune(model, sparsity, dataloader, device, method, p):
 
     start_time = datetime.datetime.now()
 
@@ -279,7 +294,7 @@ def prune(model, sparsity, dataloader, device, method, p):
         output_feature = module(input_feature)
         next_input_feature = fn_next_input_feature(output_feature)
 
-        # weight_reconstruction(next_module, next_input_feature, next_output_feature, device)
+        weight_reconstruction(next_module, next_input_feature, next_output_feature, device)
 
         print_bar(module_name, module.out_channels, start_time)
 
@@ -363,7 +378,7 @@ class Pruner(object):
 
         print("")
         print("| -------------------- pruning model -------------------- |")
-        prune(self.model, self.config.prune_percent, self.val_dataloader, self.device, 'greedy', self.config.lp_norm)
+        Thinet_prune(self.model, self.config.prune_percent, self.val_dataloader, self.device, 'greedy', self.config.lp_norm)
         self.valuator.test(self.model)
         print_flops_params(self.model, self.config.dataset)
 
