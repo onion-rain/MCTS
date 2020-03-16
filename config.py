@@ -56,6 +56,9 @@ class Configuration(object):
     prune_object = 'all'
     sfp_intervals = None
 
+    # thinet
+    method = 'greedy'
+
     
 
     def update_config(self, kwargs):

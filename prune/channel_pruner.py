@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import math
 import datetime
+from sklearn.linear_model import Lasso
 
 
 
@@ -123,19 +124,19 @@ def get_tuples(model):
 
 def channel_select(sparsity, output_feature, fn_next_input_feature, next_module, method='greedy', p=2):
     """
-    选一些不重要的channel，使得fn_next_input_feature(channel)的lp norm最小
+    output_feature中选一些不重要的channel，使得fn_next_input_feature(output_feature_try)的lp norm最小
     next(_conv)_output_feature到next2_input_feature之间算是一种恒定的变换，
     因此这里不比较i+2层卷积层的输入，转而比较i+1层卷积层的输出
     """
-    original_channel_num = output_feature.size(1)
-    purned_channel_num = int(math.floor(original_channel_num * sparsity)) # 向下取整
+    original_num = output_feature.size(1)
+    pruned_num = int(math.floor(original_num * sparsity)) # 向下取整
 
     if method == 'greedy':
         indices_pruned = []
-        while len(indices_pruned) < purned_channel_num:
+        while len(indices_pruned) < pruned_num:
             min_diff = 1e10
             min_idx = 0
-            for idx in range(original_channel_num):
+            for idx in range(original_num):
                 if idx in indices_pruned:
                     continue
                 indices_try = indices_pruned + [idx]
@@ -148,10 +149,71 @@ def channel_select(sparsity, output_feature, fn_next_input_feature, next_module,
                     min_idx = idx
             indices_pruned.append(min_idx)
     elif method == 'lasso':
-        # TODO
-        raise NotImplementedError
+        # FIXME 无法收敛。。。待解决
+        next_output_feature = next_module(fn_next_input_feature(output_feature))
+        num_el = next_output_feature.numel()
+        next_output_feature = next_output_feature.data.view(num_el).cpu()
+        next_output_feature_divided = []
+        for idx in range(original_num):
+            output_feature_try = torch.zeros_like(output_feature)
+            output_feature_try[:, idx, ...] = output_feature[:, idx, ...]
+            next_output_feature_try = next_module(fn_next_input_feature(output_feature_try))
+            next_output_feature_divided.append(next_output_feature_try.data.view(num_el, 1))
+        next_output_feature_divided = torch.cat(next_output_feature_divided, dim=1).cpu()
+
+
+
+        # import matplotlib.pyplot as plt  # 可视化绘制
+        # X = next_output_feature_divided[:, 1:2]
+        # y = next_output_feature
+        # model = Lasso(alpha=0.000001, warm_start=True, selection='random', tol=4000)
+        # model.fit(X, y)
+        # predicted = model.predict(X)
+        # # 绘制散点图 参数：x横轴 y纵轴
+        # plt.scatter(X, y, marker='x')
+        # plt.plot(X, predicted, c='r')
+        # # 绘制x轴和y轴坐标
+        # plt.xlabel("next_output_feature_divided[:, 0:1]")
+        # plt.ylabel("next_output_feature")
+        # # 显示图形
+        # plt.savefig('Lasso1.png')
+
+
+
+        # first, try to find a alpha that provides enough pruned channels
+        alpha_try = 5e-5
+        pruned_num_try = 0
+        solver = Lasso(alpha=alpha_try, warm_start=True, selection='random')
+        while pruned_num_try < pruned_num:
+            alpha_try *= 2
+            solver.alpha = alpha_try
+            solver.fit(next_output_feature_divided, next_output_feature)
+            pruned_num_try = sum(solver.coef_ == 0)
+            print("lasso_alpha = {}, pruned_num_try = {}".format(alpha_try, pruned_num_try))
+
+        # then, narrow down alpha to get more close to the desired number of pruned channels
+        alpha_min = 0
+        alpha_max = alpha_try
+        pruned_num_tolerate_coeff = 1.1 # 死区
+        pruned_num_max = int(pruned_num * pruned_num_tolerate_coeff)
+        while True:
+            alpha = (alpha_min + alpha_max) / 2
+            solver.alpha = alpha
+            solver.fit(next_output_feature_divided, next_output_feature)
+            pruned_num_try = sum(solver.coef_ == 0)
+            if pruned_num_try > pruned_num_max:
+                alpha_max = alpha
+            elif pruned_num_try < pruned_num:
+                alpha_min = alpha
+            else:
+                print("lasso_alpha = {}".format(alpha))
+                break
+
+        # finally, convert lasso coeff to indices
+        indices_pruned = solver.coef_.nonzero()[0].tolist()
+        
     elif method == 'random':
-        indices_pruned = random.sample(range(original_channel_num), purned_channel_num)
+        indices_pruned = random.sample(range(original_num), pruned_num)
     else:
         raise NotImplementedError
 

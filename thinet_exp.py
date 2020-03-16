@@ -12,7 +12,7 @@ import datetime
 
 from tester import Tester
 from config import Configuration
-from prune.Thinet_pruner import print_bar, Thinet_prune
+from prune.channel_pruner import print_bar, Thinet_prune
 import models
 from utils import *
 
@@ -97,7 +97,14 @@ class Pruner(object):
 
         print("")
         print("| -------------------- pruning model -------------------- |")
-        Thinet_prune(self.model, self.config.prune_percent, self.val_dataloader, self.device, 'greedy', self.config.lp_norm)
+        Thinet_prune(
+            self.model, 
+            self.config.prune_percent, 
+            self.val_dataloader, 
+            self.device, 
+            self.config.method, 
+            self.config.lp_norm
+        )
         self.valuator.test(self.model)
         print_flops_params(self.model, self.config.dataset)
 
@@ -140,6 +147,10 @@ if __name__ == "__main__":
                         help='percentage of weight to prune(default: 0.5)')
     parser.add_argument('--lp-norm', '-lp', dest='lp_norm', type=int, default=2, 
                         help='the order of norm(default: 2)')
+    parser.add_argument('--method', type=str, default='greedy', 
+                        help="'greedy': select one contributed to the smallest next feature after another\
+                            'lasso': select pruned channels by lasso regression\
+                            'random': randomly select")
 
     args = parser.parse_args()
 
@@ -153,7 +164,8 @@ if __name__ == "__main__":
         refine=args.refine,
 
         prune_percent=args.prune_percent,
-        lp_norm=args.lp_norm
+        lp_norm=args.lp_norm,
+        method=args.method,
     )
     pruner.run()
     print("end")

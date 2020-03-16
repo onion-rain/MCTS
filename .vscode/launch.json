@@ -52,7 +52,8 @@
                 "--gpu", "5",
                 "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
                 "--prune-percent", "0.3",
-                "--lp-norm", "2"
+                "--lp-norm", "2",
+                "--method", "lasso",
             ],
         },
     ]
