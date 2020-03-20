@@ -19,7 +19,7 @@ from utils import *
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
-# python thinet_exp.py --arch vgg16_bn_cifar --gpu 5 --resume checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar --prune-percent 0.3 --lp-norm 2 
+# python channel_pruner_exp.py --arch vgg16_bn_cifar --gpu 5 --resume checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar --prune-percent 0.3 --lp-norm 2 
 
 print(torch.__version__)
 

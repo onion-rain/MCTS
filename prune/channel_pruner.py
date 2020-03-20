@@ -9,13 +9,13 @@ from sklearn.linear_model import Lasso
 # # 提取隐藏层features
 # class FeatureExtractor:
 #     features = None
- 
+
 #     def __init__(self, model, layer_num):
 #         self.hook = model[layer_num].register_forward_hook(self.hook_fn)
- 
+
 #     def hook_fn(self, module, input, output):
 #         self.features = output.cpu()
- 
+
 #     def remove(self):
 #         self.hook.remove()
 
@@ -131,7 +131,7 @@ def channel_select(sparsity, output_feature, fn_next_input_feature, next_module,
     original_num = output_feature.size(1)
     pruned_num = int(math.floor(original_num * sparsity)) # 向下取整
 
-    if method == 'greedy':
+    if method == 'greedy': # ThiNet: A Filter Level Pruning Method for Deep Neural Network Compression
         indices_pruned = []
         while len(indices_pruned) < pruned_num:
             min_diff = 1e10
@@ -148,13 +148,13 @@ def channel_select(sparsity, output_feature, fn_next_input_feature, next_module,
                     min_diff = next_output_feature_try_norm
                     min_idx = idx
             indices_pruned.append(min_idx)
-    elif method == 'lasso':
+    elif method == 'lasso': # Channel Pruning for Accelerating Very Deep Neural Networks
         # FIXME 无法收敛。。。待解决
         next_output_feature = next_module(fn_next_input_feature(output_feature))
         num_el = next_output_feature.numel()
         next_output_feature = next_output_feature.data.view(num_el).cpu()
         next_output_feature_divided = []
-        for idx in range(original_num):
+        for idx in range(original_num): # 每个channel单独拿出来，其他通道为0
             output_feature_try = torch.zeros_like(output_feature)
             output_feature_try[:, idx, ...] = output_feature[:, idx, ...]
             next_output_feature_try = next_module(fn_next_input_feature(output_feature_try))

@@ -11,13 +11,13 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "--workers", "1",
+                "--workers", "0",
 
-                // //train
-                // "--arch", "resnet20",
-                // "--dataset", "cifar10",
-                // "--gpu", "5",
-                // "--valuate",
+                //train
+                "--arch", "resnet20",
+                "--dataset", "imagenet",
+                "--gpu", "4,5",
+                "--valuate",
                 
                 // //slimming
                 // "--arch", "resnet20_cs",
@@ -47,13 +47,21 @@
                 // "--sfp-intervals", "3",
                 // "--prune-percent", "0.2",
                 
-                //thinet
-                "--arch", "vgg16_bn_cifar",
-                "--gpu", "5",
-                "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
-                "--prune-percent", "0.3",
-                "--lp-norm", "2",
-                "--method", "lasso",
+                // //thinet
+                // "--arch", "vgg16_bn_cifar",
+                // "--gpu", "5",
+                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
+                // "--prune-percent", "0.3",
+                // "--lp-norm", "2",
+                // "--method", "lasso",
+                
+                // //MetaPruner
+                // "--arch", "vgg16_bn_cifar",
+                // "--gpu", "5",
+                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
+                // "--prune-percent", "0.3",
+                // "--lp-norm", "2",
+                // "--method", "lasso",
             ],
         },
     ]

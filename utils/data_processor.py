@@ -4,15 +4,39 @@ import torch
 import time
 import torchvision as tv
 import numpy as np
+import copy as cp
 
 
-__all__ = ['get_dataloader', 'gram_matrix', 'img2tensor', 'normalize_batch']
+__all__ = ['div_dataset', 'get_dataloader', 'gram_matrix', 'img2tensor', 'normalize_batch']
 
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
-def get_dataloader(config):
+def div_dataset(dataset, val_num):
+    """将dataset拆分成一个train_dataset,一个val_dataset，val_dataset每个分类有val_num个图片"""
+    train_dataset = cp.deepcopy(dataset)
+    val_dataset = cp.deepcopy(dataset)
+
+    train_imgs = []
+    val_imgs = []
+    count = [0,]*1000
+    for data in dataset.imgs:
+        if count[data[1]] < val_num:
+            val_imgs.append(data)
+            count[data[1]] += 1
+        else:
+            train_imgs.append(data)
+
+    train_dataset.imgs = train_imgs
+    train_dataset.samples = train_imgs
+    val_dataset.imgs = val_imgs
+    val_dataset.samples = val_imgs
+    
+    return train_dataset, val_dataset
+
+
+def get_dataloader(config, div=False):
     """
     args:
         config(Configuration): 
@@ -108,6 +132,9 @@ def get_dataloader(config):
         print("Dataset undefined")
         exit(0)
 
+    if div:
+        train_dataset, val_dataset = div_dataset(train_dataset, 50)
+        val_dataset.transform = val_transform
 
     train_dataloader = torch.utils.data.DataLoader(
         dataset=train_dataset, 
