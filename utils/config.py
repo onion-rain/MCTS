@@ -2,6 +2,8 @@ import warnings
 import torch
 from pathlib import Path
 
+__all__ = ['Configuration']
+
 class Configuration(object):
     '''
     使用范例：

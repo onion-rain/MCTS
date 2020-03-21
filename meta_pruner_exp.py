@@ -13,32 +13,20 @@ import random
 import datetime
 import argparse
 
-from tester import Tester
-from config import Configuration
-import models
 from utils import *
-from prune.meta_pruner import *
+import models
+from train import *
+from tester import Tester
 
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
+# import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
+# fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
 class MetaPruner(object):
     """
-    可通过传入config_dic来配置Tester，这种情况下不会在初始化过程中print相关数据
-    例：
-        train_config_dic = {
-        'model': self.model,
-        'dataloader': self.train_dataloader,
-        'device': self.device,
-        'vis': self.vis,
-        'vis_interval': self.config.vis_interval,
-        'seed': self.config.random_seed
-        }
-        self.trainer = Trainer(train_config_dic)
-    也可通过**kwargs配置Trainer
     """
     def __init__(self, config_dic=None, **kwargs):
         print("| ----------------- Initializing meta pruner ----------------- |")
@@ -50,9 +38,6 @@ class MetaPruner(object):
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
         print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
         print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
-
-        if self.config.sr:
-            self.sr = self.config.sr
 
         self.suffix = get_suffix(self.config)
         print('{:<30}  {:<8}'.format('==> suffix: ', self.suffix))
@@ -117,7 +102,7 @@ class MetaPruner(object):
             self.model.load_state_dict(checkpoint['model_state_dict'])
 
         # print(self.model)
-            
+        
         # exit(0)
         
         # step3: criterion and optimizer
@@ -150,6 +135,18 @@ class MetaPruner(object):
             self.vis = Visualizer(self.config.vis_env, self.config.vis_legend, clear=vis_clear) 
             self.vis_interval = self.config.vis_interval
 
+        # step6: trainer
+        self.pruningnet_trainer = PruningnetTrainer(
+            self.model, 
+            self.train_dataloader, 
+            self.criterion, 
+            self.optimizer, 
+            self.device, 
+            self.vis, 
+            self.vis_interval,
+            self.lr_scheduler,
+        )
+
         # step6: valuator
         self.valuator = None
         if self.config.valuate is True:
@@ -162,21 +159,6 @@ class MetaPruner(object):
                 'criterion': self.criterion,
             }
             self.valuator = Tester(val_config_dic)
-
-        # pruningnet trainer
-        self.pruningnet_trainer = None
-        train_config_dic = {
-            'model': self.model,
-            'dataloader': self.train_dataloader,
-            'device': self.device,
-            'vis': self.vis,
-            'vis_interval': self.config.vis_interval,
-            'seed': self.config.random_seed,
-            'criterion': self.criterion,
-            'optimizer': self.optimizer,
-            'lr_scheduler': self.lr_scheduler,
-        }
-        self.pruningnet_trainer = PruningnetTrainer(train_config_dic)
     
 
     def print_bar(self, start_time, arch, dataset):

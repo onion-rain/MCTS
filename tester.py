@@ -7,7 +7,6 @@ import time
 import random
 import argparse
 
-from config import Configuration
 import models
 from utils import *
 

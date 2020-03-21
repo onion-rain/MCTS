@@ -60,7 +60,10 @@
                 "--dataset", "imagenet",
                 "--gpu", "0",
                 "--batch-size", "100",
-                "--valuate",
+                // "--valuate",
+                "--visdom",
+                "--epochs", "32",
+                "--usr-suffix", "_MetaPruningnet",
             ],
         },
     ]
