@@ -16,7 +16,7 @@ __all__ = ['get_suffix', 'write_log', 'print_model_parameters', 'print_nonzeros'
             'save_checkpoint']
 
 
-def get_suffix(config):
+def get_suffix(config, usr_suffix=''):
     """
     获取后缀字符串，用在checkpoin、visdom_envirionment、visdom_legend等的命名
     args:
@@ -32,6 +32,9 @@ def get_suffix(config):
 
     if config.sfp_intervals is not None:
         suffix += '_sfp'
+    
+    suffix += usr_suffix
+    suffix += config.usr_suffx
 
     return suffix
 

@@ -24,6 +24,7 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
+# fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
 class Trainer(object):
     """
@@ -300,9 +301,11 @@ class Trainer(object):
                 self.cfg=checkpoint['cfg']
                 print(self.cfg)
         self.model = models.__dict__[self.config.arch](cfg=self.cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
+        self.model.to(self.device) # 模型转移到设备上
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
-        self.model.to(self.device) # 模型转移到设备上
+            # torch.distributed.init_process_group(backend='nccl', init_method='tcp://localhost:65535', rank=0, world_size=1)
+            # self.model = torch.nn.parallel.DistributedDataParallel(self.model, find_unused_parameters=True)
         if checkpoint is not None:
             if 'epoch' in checkpoint.keys():
                 self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
@@ -426,6 +429,8 @@ if __name__ == "__main__":
                         metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
+    parser.add_argument('--usr-suffix', type=str, default='',
+                        help='usr_suffix(default:"", means nothing')
 
     parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
@@ -462,6 +467,7 @@ if __name__ == "__main__":
         valuate=args.valuate,
         resume_path=args.resume_path,
         refine=args.refine,
+        usr_suffix=args.usr_suffix,
 
         sr=args.sr,
         sr_lambda=args.sr_lambda,

@@ -3,8 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-# 用于cifar数据集stage = 3
-
 __all__ = ['ResNet_meta', 'resnet18_meta', 'resnet34_meta', 'resnet50_meta', 'resnet101_meta', 'resnet152_meta',]
 
 

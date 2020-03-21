@@ -58,9 +58,9 @@
                 //MetaPruner
                 "--arch", "resnet50_meta",
                 "--dataset", "imagenet",
-                "--gpu", "0, 1",
-                "--batch-size", "50",
-                // "--valuate",
+                "--gpu", "0",
+                "--batch-size", "100",
+                "--valuate",
             ],
         },
     ]

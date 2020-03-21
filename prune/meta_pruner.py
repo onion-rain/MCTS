@@ -22,7 +22,7 @@ def pruningnet_train(model, epoch=None, train_dataloader=None, criterion=None, d
         loss_vis = AverageMeter()
         top1_vis = AverageMeter()
     
-    if isinstance(model, torch.nn.DataParallel) and len(model.device_ids) > 1: # 多gpu训练
+    if isinstance(model, torch.nn.DataParallel) or isinstance(model, torch.nn.parallel.DistributedDataParallel): # 多gpu训练
         channel_scales = model.module.channel_scales
         stage_repeat = model.module.stage_repeat
     else:
