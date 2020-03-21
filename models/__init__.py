@@ -17,7 +17,7 @@ CIFAR_MODEL_NAMES = sorted(name for name in cifar.__dict__
                             and not name.startswith("__")
                             and callable(cifar.__dict__[name]))
 
-IMAGENET_MODEL_NAMES = sorted(name for name in cifimagenetar.__dict__
+IMAGENET_MODEL_NAMES = sorted(name for name in imagenet.__dict__
                             if name.islower()
                             and not name.startswith("__")
                             and callable(imagenet.__dict__[name]))

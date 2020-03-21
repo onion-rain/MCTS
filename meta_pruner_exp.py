@@ -3,8 +3,7 @@
 # ssl._create_default_https_context = ssl._create_unverified_context
 
 import torch
-from utils.visualize import Visualizer
-from tqdm import tqdm
+# from tqdm import tqdm
 from torch.nn import functional as F
 # import torchvision as tv
 import numpy as np
@@ -18,16 +17,16 @@ from tester import Tester
 from config import Configuration
 import models
 from utils import *
+from prune.meta_pruner import *
 
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 
-class Trainer(object):
+class MetaPruner(object):
     """
-    TODO 待大量测试
     可通过传入config_dic来配置Tester，这种情况下不会在初始化过程中print相关数据
     例：
         train_config_dic = {
@@ -42,212 +41,13 @@ class Trainer(object):
     也可通过**kwargs配置Trainer
     """
     def __init__(self, config_dic=None, **kwargs):
-
-        if config_dic is None:
-            self.init_from_kwargs(**kwargs)
-        else:
-            self.init_from_config(config_dic)
-        
-    
-    def print_bar(self, start_time, arch, dataset):
-        """calculate duration time"""
-        interval = datetime.datetime.now() - start_time
-        print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
-            format(
-                model=arch,
-                dataset=dataset,
-                dh=interval.seconds//3600,
-                dm=interval.seconds%3600//60,
-                ds=interval.seconds%60,
-            )
-        )
-
-    def run(self):
-
-        print("")
-        start_time = datetime.datetime.now()
-        name = (self.config.dataset + "_" + self.config.arch + self.suffix)
-        print_flops_params(model=self.model)
-
-        # initial test
-        if self.valuator is not None:
-            self.valuator.test(self.model, epoch=self.start_epoch-1)
-        self.print_bar(start_time, self.config.arch, self.config.dataset)
-        print("")
-        for epoch in range(self.start_epoch, self.config.max_epoch):
-            # train & valuate
-            self.train(epoch=epoch)
-            if self.valuator is not None:
-                self.valuator.test(self.model, epoch=epoch)
-            self.print_bar(start_time, self.config.arch, self.config.dataset)
-            print("")
-            
-            # save checkpoint
-            if self.valuator is not None:
-                is_best = self.valuator.top1_acc.avg > self.best_acc1
-                self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
-            else:
-                is_best = self.top1_acc.avg > self.best_acc1
-                self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
-            if len(self.config.gpu_idx_list) > 1:
-                state_dict = self.model.module.state_dict()
-            else: state_dict = self.model.state_dict()
-            save_dict = {
-                'model': self.config.arch,
-                'epoch': epoch,
-                'model_state_dict': state_dict,
-                'best_acc1': self.best_acc1,
-                'optimizer_state_dict': self.optimizer.state_dict(),
-            }
-            if self.cfg is not None:
-                save_dict['cfg'] = self.cfg
-            save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
-        print("{}{}".format("best_acc1: ", self.best_acc1))
-
-    def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
-                optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
-        """
-        在指定数据集上训练指定模型, model和dataset在创建Trainer类时通过修改self.config确定
-        args:
-            epoch：仅用于显示当前epoch
-        """
-        if model is not None:
-            self.model = model
-        if train_dataloader is not None:
-            self.train_dataloader = train_dataloader
-        if criterion is not None:
-            self.criterion = criterion
-        if optimizer is not None:
-            self.optimizer = optimizer
-        if lr_scheduler is not None:
-            self.lr_scheduler = lr_scheduler
-        if vis is not None:
-            self.vis = vis
-        if vis_interval is not None:
-            self.vis_interval = vis_interval
-        
-        self.model.train() # 训练模式
-
-        # meters
-        self.loss_meter = AverageMeter()
-        self.top1_acc = AverageMeter()
-        self.top5_acc = AverageMeter()
-        self.batch_time = AverageMeter()
-        self.dataload_time = AverageMeter()
-        if self.vis is not None:
-            self.loss_vis = AverageMeter()
-            self.top1_vis = AverageMeter()
-
-        end_time = time.time()
-        # print("training...")
-        # pbar = tqdm(
-        #     enumerate(self.train_dataloader), 
-        #     total=len(self.train_dataset)/self.config.batch_size,
-        # )
-        # for batch_index, (input, target) in pbar:
-        for batch_index, (input, target) in enumerate(self.train_dataloader):
-            # measure data loading time
-            self.dataload_time.update(time.time() - end_time)
-
-            # compute output
-            input, target = input.to(self.device), target.to(self.device)
-            output = self.model(input)
-            loss = self.criterion(output, target)
-
-            # compute gradient and do SGD step
-            self.optimizer.zero_grad()
-            loss.backward()
-
-            if hasattr(self, 'sr'):
-                self.updateBN()
-                
-            self.optimizer.step()
-
-            # meters update
-            self.loss_meter.update(loss.item(), input.size(0))
-            prec1, prec5 = accuracy(output.data, target.data, topk=(1, 5))
-            self.top1_acc.update(prec1.data.cpu(), input.size(0))
-            self.top5_acc.update(prec5.data.cpu(), input.size(0))
-
-            # measure elapsed time
-            self.batch_time.update(time.time() - end_time)
-            end_time = time.time()
-
-            # print log
-            done = (batch_index+1) * self.train_dataloader.batch_size
-            percentage = 100. * (batch_index+1) / len(self.train_dataloader)
-            # pbar.set_description(
-            print("\r"
-                "Train: {epoch:3} "
-                "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
-                "loss: {loss_meter:.3f} | "
-                "top1: {top1:3.3f}% | "
-                # "top5: {top5:3.3f} | "
-                "load_time: {time_percent:2.0f}% | "
-                "lr   : {lr:0.1e} ".format(
-                    epoch=0 if epoch == None else epoch,
-                    done=done,
-                    total_len=len(self.train_dataloader.dataset),
-                    percentage=percentage,
-                    loss_meter=self.loss_meter.avg,
-                    top1=self.top1_acc.avg,
-                    # top5=self.top5_acc.avg,
-                    time_percent=self.dataload_time.avg/self.batch_time.avg*100,
-                    lr=self.optimizer.param_groups[0]['lr'],
-                ), end=""
-            )
-
-            # visualize
-            if self.vis is not None:
-                self.loss_vis.update(loss.item(), input.size(0))
-                self.top1_vis.update(prec1.data.cpu(), input.size(0))
-
-                if (batch_index % self.vis_interval == self.vis_interval-1):
-                    vis_x = epoch+percentage/100
-                    self.vis.plot('train_loss', self.loss_vis.avg, x=vis_x)
-                    self.vis.plot('train_top1', self.top1_vis.avg, x=vis_x)
-                    self.loss_vis.reset()
-                    self.top1_vis.reset()
-
-        print("")
-
-        # visualize
-        if self.vis is not None:
-            self.vis.log(
-                "epoch: {epoch},  lr: {lr}, <br>\
-                train_loss: {train_loss}, <br>\
-                train_top1: {train_top1}, <br>"
-                .format(
-                    lr=self.optimizer.param_groups[0]['lr'],
-                    epoch=epoch, 
-                    train_loss=self.loss_meter.avg,
-                    train_top1=self.top1_acc.avg,
-                )
-            )
-        
-        # update learning rate
-        if self.lr_scheduler is not None:
-            self.lr_scheduler.step(epoch=epoch)
-        
-        return self.model
-        
-
-    # additional subgradient descent on the sparsity-induced penalty term
-    def updateBN(self):
-        for module in self.model.modules():
-            if isinstance(module, torch.nn.BatchNorm2d):
-                # torch.sign(module.weight.data)是对sparsity-induced penalty(g(γ))求导的结果
-                module.weight.grad.data.add_(self.config.sr_lambda * torch.sign(module.weight.data))  # L1
-
-
-    def init_from_kwargs(self, **kwargs):
-
-        print("| ----------------- Initializing Trainer ----------------- |")
+        print("| ----------------- Initializing meta pruner ----------------- |")
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
+        print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
         print('{:<30}  {:<8}'.format('==> srlambda: ', self.config.sr_lambda))
         print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
 
@@ -284,7 +84,7 @@ class Trainer(object):
             torch.backends.cudnn.benchmark = True # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
 
         # step1: data
-        self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config, div=True)
+        self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
@@ -351,35 +151,84 @@ class Trainer(object):
                 'dataloader': self.val_dataloader,
                 'device': self.device,
                 'vis': self.vis,
-                'seed': self.config.random_seed
+                'seed': self.config.random_seed,
+                'criterion': self.criterion,
             }
             self.valuator = Tester(val_config_dic)
 
+        # pruningnet trainer
+        self.pruningnet_trainer = None
+        train_config_dic = {
+            'model': self.model,
+            'dataloader': self.train_dataloader,
+            'device': self.device,
+            'vis': self.vis,
+            'vis_interval': self.config.vis_interval,
+            'seed': self.config.random_seed,
+            'criterion': self.criterion,
+            'optimizer': self.optimizer,
+            'lr_scheduler': self.lr_scheduler,
+        }
+        self.pruningnet_trainer = PruningnetTrainer(train_config_dic)
+    
 
-    def init_from_config(self, config):
-        """这种构造方法一般就是外部调用self.train(),需要啥从train()形参里传入"""
-        # visdom
-        self.vis = config['vis']
-        self.vis_interval = config['vis_interval']
-
-        # device
-        self.device = config['device']
-
-        # Random Seed
-        random.seed(config['seed'])
-        torch.manual_seed(config['seed'])
-
-        # step1: data
-        self.train_dataloader = config['dataloader']
-
-        # step2: model
-        self.model = config['model']
-
-        # step3: criterion
-        self.criterion = torch.nn.CrossEntropyLoss()
+    def print_bar(self, start_time, arch, dataset):
+        """calculate duration time"""
+        interval = datetime.datetime.now() - start_time
+        print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+            format(
+                model=arch,
+                dataset=dataset,
+                dh=interval.seconds//3600,
+                dm=interval.seconds%3600//60,
+                ds=interval.seconds%60,
+            )
+        )
 
 
+    def run(self):
 
+        print("")
+        start_time = datetime.datetime.now()
+        name = (self.config.dataset + "_" + self.config.arch + self.suffix)
+        print_flops_params(model=self.model, dataset=self.config.dataset)
+
+        # initial test
+        if self.valuator is not None:
+            self.valuator.test(self.model, epoch=self.start_epoch-1)
+        self.print_bar(start_time, self.config.arch, self.config.dataset)
+        print("")
+        for epoch in range(self.start_epoch, self.config.max_epoch):
+            # train & valuate
+            self.pruningnet_trainer.train(epoch=epoch)
+            if self.valuator is not None:
+                self.valuator.test(self.model, epoch=epoch)
+            self.print_bar(start_time, self.config.arch, self.config.dataset)
+            print("")
+            
+            # save checkpoint
+            if self.valuator is not None:
+                is_best = self.valuator.top1_acc.avg > self.best_acc1
+                self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
+            else:
+                is_best = self.top1_acc.avg > self.best_acc1
+                self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
+            if len(self.config.gpu_idx_list) > 1:
+                state_dict = self.model.module.state_dict()
+            else: state_dict = self.model.state_dict()
+            save_dict = {
+                'model': self.config.arch,
+                'epoch': epoch,
+                'model_state_dict': state_dict,
+                'best_acc1': self.best_acc1,
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            }
+            if self.cfg is not None:
+                save_dict['cfg'] = self.cfg
+            save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
+        print("{}{}".format("best_acc1: ", self.best_acc1))
+
+   
 
 
 
@@ -439,7 +288,7 @@ if __name__ == "__main__":
     # args.workers = 0
 
 
-    trainer = Trainer(
+    metapruner = MetaPruner(
         arch=args.arch,
         dataset=args.dataset,
         num_workers = args.workers, # 使用多进程加载数据
@@ -462,6 +311,6 @@ if __name__ == "__main__":
         vis_legend=args.vis_legend,
         vis_interval=args.vis_interval,
     )
-    trainer.run()
+    metapruner.run()
     print("end")
 

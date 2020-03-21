@@ -31,12 +31,15 @@ class Trainer(object):
     可通过传入config_dic来配置Tester，这种情况下不会在初始化过程中print相关数据
     例：
         train_config_dic = {
-        'model': self.model,
-        'dataloader': self.train_dataloader,
-        'device': self.device,
-        'vis': self.vis,
-        'vis_interval': self.config.vis_interval,
-        'seed': self.config.random_seed
+            'model': self.model,
+            'dataloader': self.train_dataloader,
+            'device': self.device,
+            'vis': self.vis,
+            'vis_interval': self.config.vis_interval,
+            'seed': self.config.random_seed,
+            'criterion': self.criterion,
+            'optimizer': self.optimizer,
+            'lr_scheduler': self.lr_scheduler,
         }
         self.trainer = Trainer(train_config_dic)
     也可通过**kwargs配置Trainer
@@ -376,7 +379,13 @@ class Trainer(object):
         self.model = config['model']
 
         # step3: criterion
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = config['criterion']
+
+        # step4: optimizer
+        self.optimizer = config['optimizer']
+
+        # step4: lr_scheduler
+        self.lr_scheduler = config['lr_scheduler']
 
 
 

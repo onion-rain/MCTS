@@ -11,16 +11,82 @@ from config import Configuration
 import models
 from utils import *
 
+__all__ = ['test', 'Tester']
+
+def test(model, epoch=-1, test_dataloader=None, criterion=None, device=None, vis=None):
+    
+    model.eval() # 验证模式
+    
+    # meters
+    loss_meter = AverageMeter() # 计算所有数的平均值和标准差，这里用来统计一个epoch中的平均值
+    top1_acc = AverageMeter()
+    top5_acc = AverageMeter()
+    batch_time = AverageMeter()
+    dataload_time = AverageMeter()
+
+    end_time = time.time()
+    # print("testing...")
+    with torch.no_grad():
+        for batch_index, (input, target) in enumerate(test_dataloader):
+            # measure data loading time
+            dataload_time.update(time.time() - end_time)
+
+            # compute output
+            input, target = input.to(device), target.to(device)
+            output = model(input)
+            loss = criterion(output, target)
+
+            # meters update and visualize
+            loss_meter.update(loss.item(), input.size(0))
+            prec1, prec5 = accuracy(output.data, target.data, topk=(1, 5))
+            top1_acc.update(prec1.data.cpu(), input.size(0))
+            # self.top5_acc.update(prec5.data.cpu(), input.size(0))
+
+            # measure elapsed time
+            batch_time.update(time.time() - end_time)
+            end_time = time.time()
+
+            done = (batch_index+1) * test_dataloader.batch_size
+            percentage = 100. * (batch_index+1) / len(test_dataloader)
+            time_str = time.strftime('%H:%M:%S')
+            print("\r"
+            "Test: {epoch:4} "
+            "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
+            "loss: {loss_meter:.3f} | "
+            "top1: {top1:3.3f}% | "
+            # "top5: {top5:3.3f} | "
+            "load_time: {time_percent:2.0f}% | "
+            "UTC+8: {time_str} ".format(
+                epoch=epoch,
+                done=done,
+                total_len=len(test_dataloader.dataset),
+                percentage=percentage,
+                loss_meter=loss_meter.avg,
+                top1=top1_acc.avg,
+                # top5=top5_acc.avg,
+                time_percent=dataload_time.avg/batch_time.avg*100,
+                time_str=time_str
+            ), end=""
+        )
+    print("")
+    
+    # visualize
+    if vis is not None:
+        vis.plot('test_loss', loss_meter.avg, x=epoch)
+        vis.plot('test_top1', top1_acc.avg, x=epoch)
+
+
 class Tester(object):
     """
     可通过传入config_dic来配置Tester，这种情况下不会在初始化过程中print相关数据
     例：
         val_config_dic = {
-        'model': self.model,
-        'dataloader': self.val_dataloader,
-        'device': self.device,
-        'vis': self.vis,
-        'seed': self.config.random_seed
+            'model': self.model,
+            'dataloader': self.val_dataloader,
+            'device': self.device,
+            'vis': self.vis,
+            'seed': self.config.random_seed,
+            'criterion': self.criterion,
         }
         self.valuator = Tester(val_config_dic)
     也可通过**kwargs配置Tester
@@ -38,7 +104,7 @@ class Tester(object):
         print_flops_params(model=self.model)
         self.test()
 
-    def test(self, model=None, epoch=None):
+    def test(self, model=None, epoch=-1):
         """
         测试指定模型在指定数据集上的表现, 数据集在创建Tester类时通过修改self.config确定
         args:
@@ -47,65 +113,10 @@ class Tester(object):
         """
         if model is not None:
             self.model = model
-        self.model.eval() # 验证模式
-        
-        #meters
-        self.loss_meter = AverageMeter() # 计算所有数的平均值和标准差，这里用来统计一个epoch中的平均值
-        self.top1_acc = AverageMeter()
-        self.top5_acc = AverageMeter()
-        self.batch_time = AverageMeter()
-        self.dataload_time = AverageMeter()
 
-        end_time = time.time()
-        # print("testing...")
-        with torch.no_grad():
-            for batch_index, (input, target) in enumerate(self.test_dataloader):
-                # measure data loading time
-                self.dataload_time.update(time.time() - end_time)
-
-                # compute output
-                input, target = input.to(self.device), target.to(self.device)
-                output = self.model(input)
-                loss = self.criterion(output, target)
-
-                # meters update and visualize
-                self.loss_meter.update(loss.item(), input.size(0))
-                prec1, prec5 = accuracy(output.data, target.data, topk=(1, 5))
-                self.top1_acc.update(prec1.data.cpu(), input.size(0))
-                # self.top5_acc.update(prec5.data.cpu(), input.size(0))
-
-                # measure elapsed time
-                self.batch_time.update(time.time() - end_time)
-                end_time = time.time()
-
-                done = (batch_index+1) * self.test_dataloader.batch_size
-                percentage = 100. * (batch_index+1) / len(self.test_dataloader)
-                time_str = time.strftime('%H:%M:%S')
-                print("\r"
-                "Test: {epoch:4} "
-                "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
-                "loss: {loss_meter:.3f} | "
-                "top1: {top1:3.3f}% | "
-                # "top5: {top5:3.3f} | "
-                "load_time: {time_percent:2.0f}% | "
-                "UTC+8: {time_str} ".format(
-                    epoch=0 if epoch == None else epoch,
-                    done=done,
-                    total_len=len(self.test_dataloader.dataset),
-                    percentage=percentage,
-                    loss_meter=self.loss_meter.avg,
-                    top1=self.top1_acc.avg,
-                    # top5=self.top5_acc.avg,
-                    time_percent=self.dataload_time.avg/self.batch_time.avg*100,
-                    time_str=time_str
-                ), end=""
-            )
-        print("")
-        
-        # visualize
-        if self.vis is not None:
-            self.vis.plot('test_loss', self.loss_meter.avg, x=epoch)
-            self.vis.plot('test_top1', self.top1_acc.avg, x=epoch)
+        test(self.model, epoch=epoch, test_dataloader=self.test_dataloader, 
+            criterion=self.criterion, device=self.device, vis=self.vis)
+    
 
     def init_from_kwargs(self, **kwargs):
         
@@ -183,7 +194,7 @@ class Tester(object):
         self.model = config['model']
 
         # step3: criterion
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = config['criterion']
 
 
     

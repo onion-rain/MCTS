@@ -4,7 +4,7 @@ import math
 import datetime
 from sklearn.linear_model import Lasso
 
-
+__all__ = ['print_bar', 'Thinet_prune']
 
 # # 提取隐藏层features
 # class FeatureExtractor:

@@ -12,7 +12,7 @@ import datetime
 
 from tester import Tester
 from config import Configuration
-from prune.channel_pruner import print_bar, Thinet_prune
+from prune.channel_pruner import *
 import models
 from utils import *
 

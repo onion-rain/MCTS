@@ -130,8 +130,11 @@ def print_flops_params(model, dataset='cifar'):
     """
     if dataset.startswith("cifar"):
         flops, params = get_model_complexity_info(model, (3, 32, 32), as_strings=True, print_per_layer_stat=False)
-    elif dataset is "imagenet":
+    elif dataset == "imagenet":
         flops, params = get_model_complexity_info(model, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
+    else:
+        print("不支持数据集: {}".format(dataset)) 
+        raise NotImplementedError
     print('{:<30}  {:<8}'.format('==> Computational complexity: ', flops))
     print('{:<30}  {:<8}'.format('==> Number of parameters: ', params))
     # print('Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
