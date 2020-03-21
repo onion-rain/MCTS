@@ -252,7 +252,8 @@ class Trainer(object):
         self.config.update_config(kwargs) # 解析参数更新默认配置
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
-        print('{:<30}  {:<8}'.format('==> srlambda: ', self.config.sr_lambda))
+        print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
+        print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
         print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
 
         if self.config.sr:
@@ -300,7 +301,10 @@ class Trainer(object):
             if self.config.refine: # 根据cfg加载剪枝后的模型结构
                 self.cfg=checkpoint['cfg']
                 print(self.cfg)
-        self.model = models.__dict__[self.config.arch](cfg=self.cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
+        if self.cfg is not None:
+            self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes)
+        else:
+            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes)
         self.model.to(self.device) # 模型转移到设备上
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
@@ -357,7 +361,8 @@ class Trainer(object):
                 'dataloader': self.val_dataloader,
                 'device': self.device,
                 'vis': self.vis,
-                'seed': self.config.random_seed
+                'seed': self.config.random_seed,
+                'criterion': self.criterion,
             }
             self.valuator = Tester(val_config_dic)
 

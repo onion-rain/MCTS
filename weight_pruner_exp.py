@@ -59,17 +59,21 @@ class Pruner(object):
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        cfg = None
+        self.cfg = None
+        checkpoint = None
         if self.config.resume_path != '': # 断点续练hhh
             checkpoint = torch.load(self.config.resume_path, map_location=self.device)
             print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
             if self.config.refine: # 根据cfg加载剪枝后的模型结构
-                cfg=checkpoint['cfg']
-                print(cfg)
+                self.cfg=checkpoint['cfg']
+                print(self.cfg)
         else: 
-            print("你剪枝不加载模型剪锤子??")
+            print("你test不加载模型测锤子??")
             exit(0)
-        self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
+        if self.cfg is not None:
+            self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes)
+        else:
+            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes)
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上

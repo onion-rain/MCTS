@@ -34,7 +34,7 @@ def get_suffix(config, usr_suffix=''):
         suffix += '_sfp'
     
     suffix += usr_suffix
-    suffix += config.usr_suffx
+    suffix += config.usr_suffix
 
     return suffix
 

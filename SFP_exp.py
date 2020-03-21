@@ -82,7 +82,13 @@ class SFP(object):
             if self.config.refine: # 根据cfg加载剪枝后的模型结构
                 self.cfg=checkpoint['cfg']
                 print(self.cfg)
-        self.model = models.__dict__[self.config.arch](cfg=self.cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
+        else: 
+            print("你test不加载模型测锤子??")
+            exit(0)
+        if self.cfg is not None:
+            self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes)
+        else:
+            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes)
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上

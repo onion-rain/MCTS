@@ -48,7 +48,7 @@ class MetaPruner(object):
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
-        print('{:<30}  {:<8}'.format('==> srlambda: ', self.config.sr_lambda))
+        print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
         print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
 
         if self.config.sr:
@@ -96,7 +96,10 @@ class MetaPruner(object):
             if self.config.refine: # 根据cfg加载剪枝后的模型结构
                 self.cfg=checkpoint['cfg']
                 print(self.cfg)
-        self.model = models.__dict__[self.config.arch](cfg=self.cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
+        if self.cfg is not None:
+            self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes)
+        else:
+            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes)
         self.model.to(self.device) # 模型转移到设备上
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
@@ -250,8 +253,6 @@ if __name__ == "__main__":
                         help='number of data loading workers (default: 10)')
     parser.add_argument('--batch-size', type=int, default=100, metavar='N',
                         help='input batch size for training (default: 100)')
-    # parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-    #                     help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=150, metavar='N',
                         help='number of epochs to train (default: 150)')
     parser.add_argument('--lr', dest='lr', type=float, default=1e-1, 

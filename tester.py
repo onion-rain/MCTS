@@ -75,6 +75,8 @@ def test(model, epoch=-1, test_dataloader=None, criterion=None, device=None, vis
         vis.plot('test_loss', loss_meter.avg, x=epoch)
         vis.plot('test_top1', top1_acc.avg, x=epoch)
 
+    return loss_meter, top1_acc, top5_acc
+
 
 class Tester(object):
     """
@@ -114,8 +116,14 @@ class Tester(object):
         if model is not None:
             self.model = model
 
-        test(self.model, epoch=epoch, test_dataloader=self.test_dataloader, 
-            criterion=self.criterion, device=self.device, vis=self.vis)
+        self.loss_meter, self.top1_acc, self.top5_acc = test(
+            self.model, 
+            epoch=epoch, 
+            test_dataloader=self.test_dataloader, 
+            criterion=self.criterion, 
+            device=self.device, 
+            vis=self.vis
+        )
     
 
     def init_from_kwargs(self, **kwargs):
@@ -151,17 +159,21 @@ class Tester(object):
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        cfg = None
+        self.cfg = None
+        checkpoint = None
         if self.config.resume_path != '': # 断点续练hhh
             checkpoint = torch.load(self.config.resume_path, map_location=self.device)
             print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
             if self.config.refine: # 根据cfg加载剪枝后的模型结构
-                cfg=checkpoint['cfg']
-                print(cfg)
+                self.cfg=checkpoint['cfg']
+                print(self.cfg)
         else: 
             print("你test不加载模型测锤子??")
             exit(0)
-        self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
+        if self.cfg is not None:
+            self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes)
+        else:
+            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes)
         if len(self.config.gpu_idx_list) > 1:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
         self.model.to(self.device) # 模型转移到设备上
