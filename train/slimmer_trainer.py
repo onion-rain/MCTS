@@ -20,7 +20,6 @@ __all__ = ['SlimmerTrainer']
 
 class SlimmerTrainer(Trainer):
     """
-    TODO 待测试
     bn稀疏训练
     """
     def __init__(self, model, dataloader, criterion, optimizer, device, 
@@ -82,10 +81,7 @@ class SlimmerTrainer(Trainer):
             self.optimizer.step()
 
             # meters update
-            self.loss_meter.update(loss.item(), input.size(0))
-            prec1, prec5 = accuracy(output.data, target.data, topk=(1, 5))
-            self.top1_acc.update(prec1.data.cpu(), input.size(0))
-            self.top5_acc.update(prec5.data.cpu(), input.size(0))
+            self.upadate_meters(output, target, loss)
 
             # measure elapsed time
             self.batch_time.update(time.time() - end_time)
@@ -117,9 +113,6 @@ class SlimmerTrainer(Trainer):
 
             # visualize
             if self.vis is not None:
-                self.loss_vis.update(loss.item(), input.size(0))
-                self.top1_vis.update(prec1.data.cpu(), input.size(0))
-
                 if (batch_index % self.vis_interval == self.vis_interval-1):
                     vis_x = epoch+percentage/100
                     self.vis.plot('train_loss', self.loss_vis.avg, x=vis_x)

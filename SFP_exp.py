@@ -28,7 +28,9 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class SFP(object):
-
+    """
+    TODO 由于trainer类大改，本类某些函数可能个已过期
+    """
     def __init__(self, **kwargs):
 
         print("| ------------------ Initializing SFP ------------------- |")
@@ -40,70 +42,22 @@ class SFP(object):
         print('{:<30}  {:<8}'.format('==> srlambda: ', self.config.sr_lambda))
         print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
 
-        self.suffix = get_suffix(self.config)
-        print('{:<30}  {:<8}'.format('==> suffix: ', self.suffix))
-
         # 更新一些默认标志
         self.start_epoch = 0
         self.best_acc1 = 0
         self.checkpoint = None
         vis_clear = True
 
+        # suffix
+        self.suffix = suffix_init(self.config)
         # device
-        if len(self.config.gpu_idx_list) > 0:
-            self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
-            print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
-        else:
-            self.device = torch.device('cpu')
-            print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
-
+        self.device = device_init(self.config)
         # Random Seed 
-        # (其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，而加载数据一般没有不用多线程的，这就有点尴尬了)
-        if self.config.deterministic:
-            if self.config.num_workers > 1:
-                print("ERROR: Setting --deterministic requires setting --workers to 0 or 1")
-            random.seed(0)
-            torch.manual_seed(0)
-            np.random.seed(self.config.random_seed)
-            torch.backends.cudnn.deterministic = True
-        else: 
-            torch.backends.cudnn.benchmark = True # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
-
-        # step1: data
-        self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
-
-        # step2: model
-        print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        self.cfg = None
-        checkpoint = None
-        if self.config.resume_path != '': # 断点续练hhh
-            checkpoint = torch.load(self.config.resume_path, map_location=self.device)
-            print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
-            if self.config.refine: # 根据cfg加载剪枝后的模型结构
-                self.cfg=checkpoint['cfg']
-                print(self.cfg)
-        else: 
-            print("你test不加载模型测锤子??")
-            exit(0)
-        if self.cfg is not None:
-            self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes)
-        else:
-            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes)
-        if len(self.config.gpu_idx_list) > 1:
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
-        self.model.to(self.device) # 模型转移到设备上
-        if checkpoint is not None:
-            if 'epoch' in checkpoint.keys():
-                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
-                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-                if checkpoint['epoch'] > -1:
-                    vis_clear = False # 不清空visdom已有visdom env里的内容
-            if 'best_acc1' in checkpoint.keys():
-                self.best_acc1 = checkpoint['best_acc1']
-                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            
-        # exit(0)
+        seed_init(self.config)
+        # data
+        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
+        # model
+        self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
         
         # step3: criterion and optimizer
         self.optimizer = torch.optim.SGD(
@@ -112,9 +66,6 @@ class SFP(object):
             momentum=self.config.momentum,
             weight_decay=self.config.weight_decay,
         )
-        if checkpoint is not None:
-            if 'optimizer_state_dict' in checkpoint.keys():
-                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         
         self.criterion = torch.nn.CrossEntropyLoss()
 
@@ -125,35 +76,36 @@ class SFP(object):
             last_epoch=self.start_epoch-1, # 我的训练epoch从1开始，而pytorch要通过当前epoch是否等于0判断是不是resume
         )
         
-        # step4: meters
-        self.loss_meter = AverageMeter()
-        self.top1_acc = AverageMeter()
-        self.top5_acc = AverageMeter()
-        self.batch_time = AverageMeter()
-        self.dataload_time = AverageMeter()
+        # resume
+        if checkpoint is not None:
+            if 'epoch' in checkpoint.keys():
+                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
+                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+                if checkpoint['epoch'] > -1:
+                    vis_clear = False # 不清空visdom已有visdom env里的内容
+            if 'best_acc1' in checkpoint.keys():
+                self.best_acc1 = checkpoint['best_acc1']
+                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+            if 'optimizer_state_dict' in checkpoint.keys():
+                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            if 'best_acc1' in checkpoint.keys():
+                self.best_acc1 = checkpoint['best_acc1']
+                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
         
-        
-        # step5: visdom
-        self.vis = None
-        if self.config.visdom:
-            self.loss_vis = AverageMeter()
-            self.top1_vis = AverageMeter()
-            if self.config.vis_env == '':
-                self.config.vis_env = self.config.dataset + '_' + self.config.arch + self.suffix
-            if self.config.vis_legend == '':
-                self.config.vis_legend = self.config.arch + self.suffix
-            self.vis = Visualizer(self.config.vis_env, self.config.vis_legend, clear=vis_clear)
+        # visdom
+        self.vis, self.vis_interval = visdom_init(self.config, self.suffix, vis_clear)
 
-        # trainer
-        train_config_dic = {
-            'model': self.model,
-            'dataloader': self.val_dataloader,
-            'device': self.device,
-            'vis': self.vis,
-            'vis_interval': self.config.vis_interval,
-            'seed': self.config.random_seed
-        }
-        self.trainer = Trainer(train_config_dic) 
+        # step6: trainer
+        self.trainer = Trainer(
+            self.model, 
+            self.train_dataloader, 
+            self.criterion, 
+            self.optimizer, 
+            self.device, 
+            self.vis, 
+            self.vis_interval,
+            self.lr_scheduler,
+        )
 
         # step6: valuator
         self.valuator = None
@@ -175,8 +127,8 @@ class SFP(object):
             prune_percent=[self.config.prune_percent],
             # target_cfg=[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M', 256, 256, 256],
             p=self.config.lp_norm,
-        )
-
+        )        
+        
 
     def run(self):
 
@@ -188,21 +140,12 @@ class SFP(object):
         # initial test
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
-        self.trainer.print_bar(start_time, self.config.arch, self.config.dataset)
+        print_bar(start_time, self.config.arch, self.config.dataset)
         print("")
 
         for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
-            self.model = self.trainer.train(
-                model=self.model,
-                train_dataloader=self.train_dataloader,
-                criterion=self.criterion,
-                optimizer=self.optimizer,
-                lr_scheduler=self.lr_scheduler,
-                epoch=epoch,
-                vis=self.vis,
-                vis_interval=self.config.vis_interval,
-            )
+            self.trainer.train(epoch=epoch)
             if self.valuator is not None:
                 self.valuator.test(self.model, epoch=epoch)
 
@@ -217,7 +160,7 @@ class SFP(object):
                 if self.valuator is not None:
                     self.valuator.test(self.model, epoch=epoch+0.5)
                 
-            self.trainer.print_bar(start_time, self.config.arch, self.config.dataset)
+            print_bar(start_time, self.config.arch, self.config.dataset)
             print("")
             
             # save checkpoint

@@ -28,7 +28,7 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 
 class TrainerExp(object):
     """
-    TODO 待大量测试
+    TODO 由于trainer类大改，本类某些函数可能个已过期
     """
     def __init__(self, config_dic=None, **kwargs):
 
@@ -42,81 +42,30 @@ class TrainerExp(object):
         print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
         print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
 
-        self.suffix = get_suffix(self.config)
-        print('{:<30}  {:<8}'.format('==> suffix: ', self.suffix))
-
         # 更新一些默认标志
         self.start_epoch = 0
         self.best_acc1 = 0
         self.checkpoint = None
         vis_clear = True
 
+        # suffix
+        self.suffix = suffix_init(self.config)
         # device
-        if len(self.config.gpu_idx_list) > 0:
-            self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
-            print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
-        else:
-            self.device = torch.device('cpu')
-            print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
-
+        self.device = device_init(self.config)
         # Random Seed 
-        # (其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，而加载数据一般没有不用多线程的，这就有点尴尬了)
-        if self.config.deterministic:
-            if self.config.num_workers > 1:
-                print("ERROR: Setting --deterministic requires setting --workers to 0 or 1")
-            random.seed(0)
-            torch.manual_seed(0)
-            np.random.seed(self.config.random_seed)
-            torch.backends.cudnn.deterministic = True
-        else: 
-            torch.backends.cudnn.benchmark = True # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
-
-        # step1: data
-        # self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
+        seed_init(self.config)
+        # data
         self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
-
-        # step2: model
-        print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        self.cfg = None
-        checkpoint = None
-        if self.config.resume_path != '': # 断点续练hhh
-            checkpoint = torch.load(self.config.resume_path, map_location=self.device)
-            print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
-            if self.config.refine: # 根据cfg加载剪枝后的模型结构
-                self.cfg=checkpoint['cfg']
-                print(self.cfg)
-        if self.cfg is not None:
-            self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes)
-        else:
-            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes)
-        self.model.to(self.device) # 模型转移到设备上
-        if len(self.config.gpu_idx_list) > 1:
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
-            # torch.distributed.init_process_group(backend='nccl', init_method='tcp://localhost:65535', rank=0, world_size=1)
-            # self.model = torch.nn.parallel.DistributedDataParallel(self.model, find_unused_parameters=True)
-        if checkpoint is not None:
-            if 'epoch' in checkpoint.keys():
-                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
-                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-                if checkpoint['epoch'] > -1:
-                    vis_clear = False # 不清空visdom已有visdom env里的内容
-            if 'best_acc1' in checkpoint.keys():
-                self.best_acc1 = checkpoint['best_acc1']
-                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-            self.model.load_state_dict(checkpoint['model_state_dict'])
-            
-        # exit(0)
+        # model
+        self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
         
-        # step3: criterion and optimizer
+        # criterion and optimizer
         self.optimizer = torch.optim.SGD(
             params=self.model.parameters(),
             lr=self.config.lr,
             momentum=self.config.momentum,
             weight_decay=self.config.weight_decay,
         )
-        if checkpoint is not None:
-            if 'optimizer_state_dict' in checkpoint.keys():
-                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         
         self.criterion = torch.nn.CrossEntropyLoss()
 
@@ -126,17 +75,25 @@ class TrainerExp(object):
             gamma=0.1,
             last_epoch=self.start_epoch-1, # 我的训练epoch从1开始，而pytorch要通过当前epoch是否等于0判断是不是resume
         )
-        
-        # step5: visdom
-        self.vis = None
-        self.vis_interval = None
-        if self.config.visdom:
-            if self.config.vis_env == '':
-                self.config.vis_env = self.config.dataset + '_' + self.config.arch + self.suffix
-            if self.config.vis_legend == '':
-                self.config.vis_legend = self.config.arch + self.suffix
-            self.vis = Visualizer(self.config.vis_env, self.config.vis_legend, clear=vis_clear) 
-            self.vis_interval = self.config.vis_interval
+
+        # resume
+        if checkpoint is not None:
+            if 'epoch' in checkpoint.keys():
+                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
+                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+                if checkpoint['epoch'] > -1:
+                    vis_clear = False # 不清空visdom已有visdom env里的内容
+            if 'best_acc1' in checkpoint.keys():
+                self.best_acc1 = checkpoint['best_acc1']
+                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+            if 'optimizer_state_dict' in checkpoint.keys():
+                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            if 'best_acc1' in checkpoint.keys():
+                self.best_acc1 = checkpoint['best_acc1']
+                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+                
+        # visdom
+        self.vis, self.vis_interval = visdom_init(self.config, self.suffix, vis_clear)
 
         if self.config.sr:
             self.sr = self.config.sr
@@ -178,19 +135,6 @@ class TrainerExp(object):
             }
             self.valuator = Tester(val_config_dic)
         
-    
-    def print_bar(self, start_time, arch, dataset):
-        """calculate duration time"""
-        interval = datetime.datetime.now() - start_time
-        print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
-            format(
-                model=arch,
-                dataset=dataset,
-                dh=interval.seconds//3600,
-                dm=interval.seconds%3600//60,
-                ds=interval.seconds%60,
-            )
-        )
 
     def run(self):
 
@@ -202,14 +146,14 @@ class TrainerExp(object):
         # initial test
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
-        self.print_bar(start_time, self.config.arch, self.config.dataset)
+        print_bar(start_time, self.config.arch, self.config.dataset)
         print("")
         for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
             self.trainer.train(epoch=epoch)
             if self.valuator is not None:
                 self.valuator.test(self.model, epoch=epoch)
-            self.print_bar(start_time, self.config.arch, self.config.dataset)
+            print_bar(start_time, self.config.arch, self.config.dataset)
             print("")
             
             # save checkpoint
@@ -232,6 +176,7 @@ class TrainerExp(object):
             if self.cfg is not None:
                 save_dict['cfg'] = self.cfg
             save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
+        
         print("{}{}".format("best_acc1: ", self.best_acc1))
 
 

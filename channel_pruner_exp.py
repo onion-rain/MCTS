@@ -24,6 +24,9 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 print(torch.__version__)
 
 class Pruner(object):
+    """
+    TODO 由于trainer类大改，本类某些函数可能个已过期
+    """
 
     def __init__(self, **kwargs):
 
@@ -33,47 +36,41 @@ class Pruner(object):
         self.config.update_config(kwargs) # 解析参数更新默认配置
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
-
-        self.suffix = get_suffix(self.config)
-        print('{:<30}  {:<8}'.format('==> suffix: ', self.suffix))
+        print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
+        print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
+        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
         
         # 更新一些默认标志
         self.best_acc1 = 0
         self.checkpoint = None
-
+        
+        # suffix
+        self.suffix = suffix_init(self.config)
         # device
-        if len(self.config.gpu_idx_list) > 0:
-            self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
-            print('{:<30}  {:<8}'.format('==> chosen GPU idx: ', self.config.gpu_idx))
-        else:
-            self.device = torch.device('cpu')
-            print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
-
-        # step1: data
-        _, self.val_dataloader, self.num_classes = get_dataloader(self.config)
-
-        # step2: model
-        print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
-        cfg = None
-        if self.config.resume_path != '': # 断点续练hhh
-            checkpoint = torch.load(self.config.resume_path, map_location=self.device)
-            print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
-            if self.config.refine: # 根据cfg加载剪枝后的模型结构
-                cfg=checkpoint['cfg']
-                print(cfg)
-        else: 
-            print("你剪枝不加载模型剪锤子??")
-            exit(0)
-        self.model = models.__dict__[self.config.arch](cfg=cfg, num_classes=self.num_classes) # 从models中获取名为config.model的model
-        if len(self.config.gpu_idx_list) > 1:
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.config.gpu_idx_list)
-        self.model.to(self.device) # 模型转移到设备上
-        # if checkpoint is not None:
-        self.best_acc1 = checkpoint['best_acc1']
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-        print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-
+        self.device = device_init(self.config)
+        # Random Seed 
+        seed_init(self.config)
+        # data
+        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
+        # model
+        self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
+        
+        # resume
+        if checkpoint is not None:
+            if 'epoch' in checkpoint.keys():
+                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
+                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+                if checkpoint['epoch'] > -1:
+                    vis_clear = False # 不清空visdom已有visdom env里的内容
+            if 'best_acc1' in checkpoint.keys():
+                self.best_acc1 = checkpoint['best_acc1']
+                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+            if 'optimizer_state_dict' in checkpoint.keys():
+                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            if 'best_acc1' in checkpoint.keys():
+                self.best_acc1 = checkpoint['best_acc1']
+                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+        
         self.vis = None
 
         # step6: valuator
@@ -85,6 +82,7 @@ class Pruner(object):
             'seed': self.config.random_seed
         }
         self.valuator = Tester(val_config_dic)
+
 
     def run(self):
 

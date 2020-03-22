@@ -9,36 +9,25 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms
 from ptflops import get_model_complexity_info
 import shutil
+import datetime
 
 
-__all__ = ['get_suffix', 'write_log', 'print_model_parameters', 'print_nonzeros', 
-            'accuracy', 'get_path', 'AverageMeter', 'print_flops_params',
-            'save_checkpoint']
+__all__ = ['print_bar', 'write_log', 'print_model_parameters', 'print_nonzeros', 
+           'accuracy', 'get_path', 'AverageMeter', 'print_flops_params',
+           'save_checkpoint']
 
-
-def get_suffix(config, usr_suffix=''):
-    """
-    获取后缀字符串，用在checkpoin、visdom_envirionment、visdom_legend等的命名
-    args:
-        config(Configuration)
-            config.visdom
-    """
-    suffix = ''
-    if config.sr is True:
-        suffix += '_sr'
-
-    if config.refine is True:
-        suffix += '_refine'
-
-    if config.sfp_intervals is not None:
-        suffix += '_sfp'
-    
-    suffix += usr_suffix
-    suffix += config.usr_suffix
-
-    return suffix
-
-
+def print_bar(start_time, arch, dataset):
+    """calculate duration time"""
+    interval = datetime.datetime.now() - start_time
+    print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+        format(
+            model=arch,
+            dataset=dataset,
+            dh=interval.seconds//3600,
+            dm=interval.seconds%3600//60,
+            ds=interval.seconds%60,
+        )
+    )
 
 def write_log(filename, content):
     """

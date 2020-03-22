@@ -60,7 +60,16 @@ class Trainer(object):
             self.loss_vis = AverageMeter()
             self.top1_vis = AverageMeter()
 
-        
+    def upadate_meters(self, output, target, loss):
+        self.loss_meter.update(loss.item(), output.size(0))
+        prec1, prec5 = accuracy(output.data, target.data, topk=(1, 5))
+        self.top1_acc.update(prec1.data.cpu(), output.size(0))
+        self.top5_acc.update(prec5.data.cpu(), output.size(0))
+        if self.vis is not None:
+            self.loss_vis.update(loss.item(), output.size(0))
+            self.top1_vis.update(prec1.data.cpu(), output.size(0))
+
+
 
     def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
                 optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
@@ -108,10 +117,7 @@ class Trainer(object):
             self.optimizer.step()
 
             # meters update
-            self.loss_meter.update(loss.item(), input.size(0))
-            prec1, prec5 = accuracy(output.data, target.data, topk=(1, 5))
-            self.top1_acc.update(prec1.data.cpu(), input.size(0))
-            self.top5_acc.update(prec5.data.cpu(), input.size(0))
+            self.upadate_meters(output, target, loss)
 
             # measure elapsed time
             self.batch_time.update(time.time() - end_time)
@@ -143,9 +149,6 @@ class Trainer(object):
 
             # visualize
             if self.vis is not None:
-                self.loss_vis.update(loss.item(), input.size(0))
-                self.top1_vis.update(prec1.data.cpu(), input.size(0))
-
                 if (batch_index % self.vis_interval == self.vis_interval-1):
                     vis_x = epoch+percentage/100
                     self.vis.plot('train_loss', self.loss_vis.avg, x=vis_x)

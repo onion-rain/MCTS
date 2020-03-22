@@ -34,7 +34,6 @@ class first_conv(nn.Module):
         for scale in channel_scales: # 所有可能的通道数都造一个bn层
             self.norm1.append(nn.BatchNorm2d(int(self.out_channels*scale), affine=False))
 
-
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
     def forward(self, x, scale_id):
@@ -92,13 +91,14 @@ class Bottleneck(nn.Module):
         for scale in channel_scales: # 所有可能的通道数都造一个bn层
             self.norm3.append(nn.BatchNorm2d(int(self.out_channels*scale), affine=False))
 
-        self.fc_shortcut1 = nn.Linear(3, 32)
-        self.fc_shortcut2 = nn.Linear(32, self.out_channels * self.in_channels * 1 * 1)
-        # self.shortcut = conv1x1(in_channels, out_channels, stride=stride)
-        # self.norm_shortcut = nn.BatchNorm2d(self.out_channels)
-        self.norm_shortcut = nn.ModuleList()
-        for scale in channel_scales: # 所有可能的通道数都造一个bn层
-            self.norm_shortcut.append(nn.BatchNorm2d(int(self.out_channels*scale), affine=False))
+        if stride != 1 or self.in_channels != self.out_channels:
+            self.fc_shortcut1 = nn.Linear(3, 32)
+            self.fc_shortcut2 = nn.Linear(32, self.out_channels * self.in_channels * 1 * 1)
+            # self.shortcut = conv1x1(in_channels, out_channels, stride=stride)
+            # self.norm_shortcut = nn.BatchNorm2d(self.out_channels)
+            self.norm_shortcut = nn.ModuleList()
+            for scale in channel_scales: # 所有可能的通道数都造一个bn层
+                self.norm_shortcut.append(nn.BatchNorm2d(int(self.out_channels*scale), affine=False))
 
     def forward(self, x, scale_ids):
 
@@ -109,7 +109,7 @@ class Bottleneck(nn.Module):
 
         # shortcut
         shortcut = x
-        if in_channels != out_channels or self.stride !=1:
+        if self.stride != 1 or self.in_channels != self.out_channels:
             conv_shortcut_param = F.relu(self.fc_shortcut1(block_cfg))
             conv_shortcut_param = F.relu(self.fc_shortcut2(conv_shortcut_param))
             conv_shortcut_param = conv_shortcut_param.view(self.out_channels, self.in_channels, 1, 1)
