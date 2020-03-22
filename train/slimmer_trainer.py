@@ -103,7 +103,7 @@ class SlimmerTrainer(Trainer):
                     done=done,
                     total_len=len(self.train_dataloader.dataset),
                     percentage=percentage,
-                    loss_meter=self.loss_meter.avg,
+                    loss_meter=self.loss_meter.avg if self.loss_meter.avg<999.999 else 999.999,
                     top1=self.top1_acc.avg,
                     # top5=self.top5_acc.avg,
                     time_percent=self.dataload_time.avg/self.batch_time.avg*100,

@@ -60,7 +60,7 @@ def test(model, epoch=-1, test_dataloader=None, criterion=None, device=None, vis
                 done=done,
                 total_len=len(test_dataloader.dataset),
                 percentage=percentage,
-                loss_meter=loss_meter.avg,
+                loss_meter=loss_meter.avg if loss_meter.avg<999.999 else 999.999,
                 top1=top1_acc.avg,
                 # top5=top5_acc.avg,
                 time_percent=dataload_time.avg/batch_time.avg*100,
