@@ -144,7 +144,7 @@ class MetaPruner(object):
                 is_best = self.valuator.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
             else:
-                is_best = self.valuator.top1_acc.avg > self.best_acc1
+                is_best = self.pruningnet_trainer.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
             if len(self.config.gpu_idx_list) > 1:
                 state_dict = self.model.module.state_dict()
@@ -179,8 +179,8 @@ if __name__ == "__main__":
                         help='number of data loading workers (default: 10)')
     parser.add_argument('--batch-size', type=int, default=100, metavar='N',
                         help='input batch size for training (default: 100)')
-    parser.add_argument('--epochs', type=int, default=150, metavar='N',
-                        help='number of epochs to train (default: 150)')
+    parser.add_argument('--epochs', type=int, default=40, metavar='N',
+                        help='number of epochs to train (default: 40)')
     parser.add_argument('--lr', dest='lr', type=float, default=1e-1, 
                         metavar='LR', help='initial learning rate (default: 1e-1)')
     parser.add_argument('--weight-decay', '-wd', dest='weight_decay', type=float,

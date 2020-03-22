@@ -168,7 +168,7 @@ class SFP(object):
                 is_best = self.valuator.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
             else:
-                is_best = self.valuator.top1_acc.avg > self.best_acc1
+                is_best = self.trainer.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
             if len(self.config.gpu_idx_list) > 1:
                 state_dict = self.model.module.state_dict()
