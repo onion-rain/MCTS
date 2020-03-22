@@ -6,7 +6,6 @@ import torch.nn.functional as F
 __all__ = ['ResNet_meta', 'resnet18_meta', 'resnet34_meta', 'resnet50_meta', 'resnet101_meta', 'resnet152_meta',]
 
 
-
 def conv3x3(in_channels, out_channels, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride,
@@ -45,8 +44,7 @@ class first_conv(nn.Module):
 
         # conv1
         conv1_param = F.relu(self.fc11(block_cfg))
-        conv1_param = F.relu(self.fc12(conv1_param))
-        conv1_param = conv1_param.view(self.out_channels, self.in_channels, 7, 7)
+        conv1_param = self.fc12(conv1_param).view(self.out_channels, self.in_channels, 7, 7)
         out = F.conv2d(x, conv1_param[:out_channels, :in_channels, :, :], 
                             bias=None, stride=self.stride, padding=1, groups=1)
         out = self.norm1[scale_id](F.relu(out))
@@ -57,13 +55,13 @@ class first_conv(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    expansion = 4
     def __init__(self, in_channels, out_channels, channel_scales, stride=1):
         super(Bottleneck, self).__init__()
+        expansion = 4
 
         self.channel_scales = channel_scales
         self.in_channels = in_channels
-        self.mid_channels = int(out_channels/self.expansion)
+        self.mid_channels = int(out_channels/expansion)
         self.out_channels = out_channels
         self.stride = stride
 
@@ -102,44 +100,48 @@ class Bottleneck(nn.Module):
 
     def forward(self, x, scale_ids):
 
-        in_channels = int(self.in_channels * self.channel_scales[scale_ids[0]])
+        in_channels  = int(self.in_channels  * self.channel_scales[scale_ids[0]])
         mid_channels = int(self.mid_channels * self.channel_scales[scale_ids[1]])
         out_channels = int(self.out_channels * self.channel_scales[scale_ids[2]])
-        block_cfg = torch.FloatTensor([in_channels, mid_channels, out_channels]).to(x.device)
+        block_cfg = torch.FloatTensor([
+            # TODO 测试是压缩率(0-1)好用还是剩余通道好用(0-100)
+            self.channel_scales[scale_ids[0]],
+            self.channel_scales[scale_ids[1]],
+            self.channel_scales[scale_ids[2]],
+            # in_channels,
+            # mid_channels,
+            # out_channels,
+        ]).to(x.device)
 
         # shortcut
         shortcut = x
         if self.stride != 1 or self.in_channels != self.out_channels:
             conv_shortcut_param = F.relu(self.fc_shortcut1(block_cfg))
-            conv_shortcut_param = F.relu(self.fc_shortcut2(conv_shortcut_param))
-            conv_shortcut_param = conv_shortcut_param.view(self.out_channels, self.in_channels, 1, 1)
+            conv_shortcut_param = self.fc_shortcut2(conv_shortcut_param).view(self.out_channels, self.in_channels, 1, 1)
             shortcut = F.conv2d(shortcut, conv_shortcut_param[:out_channels, :in_channels, :, :], 
                                 bias=None, stride=self.stride, padding=0, groups=1)
-            shortcut = self.norm_shortcut[scale_ids[2]](F.relu(shortcut))
+            shortcut = self.norm_shortcut[scale_ids[2]](shortcut)
 
         # conv1
         conv1_param = F.relu(self.fc11(block_cfg))
-        conv1_param = F.relu(self.fc12(conv1_param))
-        conv1_param = conv1_param.view(self.mid_channels, self.in_channels, 1, 1)
+        conv1_param = self.fc12(conv1_param).view(self.mid_channels, self.in_channels, 1, 1)
         residual = F.conv2d(x, conv1_param[:mid_channels, :in_channels, :, :], 
                             bias=None, stride=1, padding=0, groups=1)
         residual = self.norm1[scale_ids[1]](F.relu(residual))
 
         # conv2
         conv2_param = F.relu(self.fc21(block_cfg))
-        conv2_param = F.relu(self.fc22(conv2_param))
-        conv2_param = conv2_param.view(self.mid_channels, self.mid_channels, 3, 3)
+        conv2_param = self.fc22(conv2_param).view(self.mid_channels, self.mid_channels, 3, 3)
         residual = F.conv2d(residual, conv2_param[:mid_channels, :mid_channels, :, :], 
                             bias=None, stride=self.stride, padding=1, groups=1)
         residual = self.norm2[scale_ids[1]](F.relu(residual))
 
         # conv3
         conv3_param = F.relu(self.fc31(block_cfg))
-        conv3_param = F.relu(self.fc32(conv3_param))
-        conv3_param = conv3_param.view(self.out_channels, self.mid_channels, 1, 1)
+        conv3_param = self.fc32(conv3_param).view(self.out_channels, self.mid_channels, 1, 1)
         residual = F.conv2d(residual, conv3_param[:out_channels, :mid_channels, :, :], 
                             bias=None, stride=1, padding=0, groups=1)
-        residual = self.norm3[scale_ids[2]](F.relu(residual))
+        residual = self.norm3[scale_ids[2]](residual)
 
         out = residual + shortcut
         out = F.relu(out)
@@ -236,3 +238,6 @@ def resnet101_meta(cfg=None, num_classes=1000):
 
 def resnet152_meta(cfg=None, num_classes=1000):
     return ResNet_meta([3, 8, 36, 3], num_classes, cfg=cfg)
+
+
+

@@ -14,7 +14,7 @@
                 "--workers", "0",
 
                 //train
-                "--arch", "resnet50",
+                "--arch", "resnet50_meta",
                 "--dataset", "imagenet",
                 "--gpu", "0",
                 // "--valuate",

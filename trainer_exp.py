@@ -55,7 +55,8 @@ class TrainerExp(object):
         # Random Seed 
         seed_init(self.config)
         # data
-        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
+        # self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
+        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_init(self.config)
         # model
         self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
         
@@ -161,7 +162,7 @@ class TrainerExp(object):
                 is_best = self.valuator.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
             else:
-                is_best = self.top1_acc.avg > self.best_acc1
+                is_best = self.valuator.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
             if len(self.config.gpu_idx_list) > 1:
                 state_dict = self.model.module.state_dict()
