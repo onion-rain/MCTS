@@ -13,11 +13,11 @@
             "args": [
                 "--workers", "0",
 
-                //train
-                "--arch", "resnet50_meta",
-                "--dataset", "imagenet",
-                "--gpu", "0",
-                // "--valuate",
+                // //train
+                // "--arch", "resnet50_meta",
+                // "--dataset", "imagenet",
+                // "--gpu", "0",
+                // // "--valuate",
                 
                 // //slimming
                 // "--arch", "resnet20_cs",
@@ -55,15 +55,15 @@
                 // "--lp-norm", "2",
                 // "--method", "lasso",
                 
-                // //MetaPruner
-                // "--arch", "resnet50_meta",
-                // "--dataset", "imagenet",
-                // "--gpu", "0",
-                // "--batch-size", "100",
-                // // "--valuate",
+                //MetaPruner
+                "--arch", "resnet50_meta",
+                "--dataset", "imagenet",
+                "--gpu", "4",
+                "--batch-size", "100",
+                // "--valuate",
                 // "--visdom",
-                // "--epochs", "32",
-                // "--usr-suffix", "_MetaPruningnet",
+                "--epochs", "32",
+                "--usr-suffix", "_MetaPruningnet",
             ],
         },
     ]

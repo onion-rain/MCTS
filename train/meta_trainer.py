@@ -50,16 +50,21 @@ class PruningnetTrainer(Trainer):
             channel_scales = self.model.channel_scales
             stage_repeat = self.model.stage_repeat
 
+
         end_time = time.time()
         for batch_index, (input, target) in enumerate(self.train_dataloader):
             # measure data loading time
             self.dataload_time.update(time.time() - end_time)
 
+            # 随机生成网络结构
+            mid_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat)).tolist()
+            output_scale_ids = [np.random.randint(low=0, high=len(channel_scales))] # for第一层卷积
+            for i in range(len(stage_repeat)-1): # 每个stage压缩量相同
+                output_scale_ids += [np.random.randint(low=0, high=len(channel_scales))]* stage_repeat[i]
+            output_scale_ids += [-1,]*(stage_repeat[-1] + 1) # 最后一个stage不压缩
+
             # compute output
             input, target = input.to(self.device), target.to(self.device)
-            mid_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat)).tolist()
-            output_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat[:-1])+1).tolist()
-            output_scale_ids += [-1,]*(stage_repeat[-1] + 1) # 最后一个stage输出channel不变
             output = self.model(input, output_scale_ids, mid_scale_ids)
             loss = self.criterion(output, target)
 
