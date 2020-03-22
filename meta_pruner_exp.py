@@ -57,19 +57,9 @@ class MetaPruner(object):
             print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
 
         # Random Seed 
-        # (其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，而加载数据一般没有不用多线程的，这就有点尴尬了)
-        if self.config.deterministic:
-            if self.config.num_workers > 1:
-                print("ERROR: Setting --deterministic requires setting --workers to 0 or 1")
-            random.seed(0)
-            torch.manual_seed(0)
-            np.random.seed(self.config.random_seed)
-            torch.backends.cudnn.deterministic = True
-        else: 
-            torch.backends.cudnn.benchmark = True # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
-
+        seed_init(self.config)
         # step1: data
-        self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
+        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))

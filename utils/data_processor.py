@@ -7,14 +7,18 @@ import numpy as np
 import copy as cp
 
 
-__all__ = ['div_dataset', 'get_dataloader', 'gram_matrix', 'img2tensor', 'normalize_batch']
+__all__ = ['dataset_div', 'gram_matrix', 'img2tensor', 'normalize_batch']
 
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
-def div_dataset(dataset, val_num):
-    """将dataset拆分成一个train_dataset,一个val_dataset，val_dataset每个分类有val_num个图片"""
+def dataset_div(dataset, val_num=50):
+    """
+    暂时仅支持imagenet
+    将dataset拆分成一个train_dataset,一个val_dataset
+    val_num为拆分出的验证集每个分类图片个数
+    """
     train_dataset = cp.deepcopy(dataset)
     val_dataset = cp.deepcopy(dataset)
 
@@ -32,128 +36,7 @@ def div_dataset(dataset, val_num):
     train_dataset.samples = train_imgs
     val_dataset.imgs = val_imgs
     val_dataset.samples = val_imgs
-    
     return train_dataset, val_dataset
-
-
-def get_dataloader(config, div=False):
-    """
-    args:
-        config(Configuration): 
-            需要的配置信息：
-            config.dataset, 
-            config.dataset_root, 
-            config.batch_size, 
-            config.num_workers, 
-            config.droplast
-    return:
-        train_dataloader, val_dataloader, num_classes
-    """
-    print('{:<30}  {:<8}'.format('==> Preparing dataset: ', config.dataset))
-    if config.dataset.startswith("cifar"): # --------------cifar dataset------------------
-        train_transform = tv.transforms.Compose([
-            tv.transforms.RandomCrop(32, padding=4),
-            tv.transforms.RandomHorizontalFlip(),
-            tv.transforms.ToTensor(),
-            tv.transforms.Normalize(
-                mean=[0.5, 0.5, 0.5], 
-                std=[0.5, 0.5, 0.5],
-            ) # 标准化的过程为(input-mean)/std
-        ])
-        val_transform = tv.transforms.Compose([
-            tv.transforms.ToTensor(), 
-            tv.transforms.Normalize(
-                mean=(0.5, 0.5, 0.5), 
-                std=(0.5, 0.5, 0.5)
-            ) # 标准化的过程为(input-mean)/std
-        ])
-        if config.dataset == 'cifar10': # -----------------cifar10 dataset----------------
-            train_dataset = tv.datasets.CIFAR10(
-                root=config.dataset_root, 
-                train=True, 
-                download=False,
-                transform=train_transform,
-            )
-            val_dataset = tv.datasets.CIFAR10(
-                root=config.dataset_root,
-                train=False,
-                download=False,
-                transform=val_transform,
-            )
-            num_classes = 10
-        elif config.dataset == 'cifar100': # --------------cifar100 dataset----------------
-            train_dataset = tv.datasets.CIFAR100(
-                root=config.dataset_root, 
-                train=True, 
-                download=False,
-                transform=train_transform,
-            )
-            val_dataset = tv.datasets.CIFAR100(
-                root=config.dataset_root,
-                train=False,
-                download=False,
-                transform=val_transform,
-            )
-            num_classes = 100
-        else: 
-            print("Dataset undefined")
-            exit(0)
-
-    elif config.dataset == 'imagenet': # ----------------imagenet dataset------------------
-        train_transform = tv.transforms.Compose([
-            tv.transforms.RandomResizedCrop(224),
-            tv.transforms.RandomHorizontalFlip(),
-            tv.transforms.ToTensor(),
-            tv.transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            ) # 标准化的过程为(input-mean)/std
-        ])
-        val_transform = tv.transforms.Compose([
-            # tv.transforms.RandomResizedCrop(224),
-            tv.transforms.Resize(256),
-            tv.transforms.CenterCrop(224),
-            tv.transforms.ToTensor(),
-            tv.transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            ) # 标准化的过程为(input-mean)/std
-        ])
-        train_dataset = tv.datasets.ImageFolder(
-            config.dataset_root+'imagenet/img_train/', 
-            transform=train_transform
-        )
-        val_dataset = tv.datasets.ImageFolder(
-            config.dataset_root+'imagenet/img_val/', 
-            transform=val_transform
-        )
-        num_classes = 1000
-    else: 
-        print("Dataset undefined")
-        exit(0)
-
-    if div:
-        train_dataset, val_dataset = div_dataset(train_dataset, 50)
-        val_dataset.transform = val_transform
-
-    train_dataloader = torch.utils.data.DataLoader(
-        dataset=train_dataset, 
-        batch_size=config.batch_size,
-        shuffle=True,
-        num_workers=config.num_workers,
-        pin_memory=True,
-        drop_last = config.droplast,
-    )
-    val_dataloader = torch.utils.data.DataLoader(
-        dataset=val_dataset,
-        batch_size=config.batch_size,
-        shuffle=False,
-        num_workers=config.num_workers,
-        pin_memory=True,
-    )
-
-    return train_dataloader, val_dataloader, num_classes
-
 
 def gram_matrix(y):
     """

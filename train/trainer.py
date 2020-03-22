@@ -21,12 +21,12 @@ __all__ = ['Trainer']
 
 class Trainer(object):
     """
+    trainer基类，原则上所有trainer都是继承该类
     TODO 待大量测试
     """
     def __init__(self, model, dataloader, criterion, optimizer, device, 
                  vis=None, vis_interval=20, lr_scheduler=None):
 
-        """这种构造方法一般就是外部调用self.train(),需要啥从train()形参里传入"""
         # visdom
         self.vis = vis
         self.vis_interval = vis_interval
@@ -48,32 +48,8 @@ class Trainer(object):
 
         # step4: lr_scheduler
         self.lr_scheduler = lr_scheduler
-        
 
-    def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
-                optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
-        """
-        在指定数据集上训练指定模型, model和dataset在创建Trainer类时通过修改self.config确定
-        args:
-            epoch：仅用于显示当前epoch
-        """
-        if model is not None:
-            self.model = model
-        if train_dataloader is not None:
-            self.train_dataloader = train_dataloader
-        if criterion is not None:
-            self.criterion = criterion
-        if optimizer is not None:
-            self.optimizer = optimizer
-        if lr_scheduler is not None:
-            self.lr_scheduler = lr_scheduler
-        if vis is not None:
-            self.vis = vis
-        if vis_interval is not None:
-            self.vis_interval = vis_interval
-        
-        self.model.train() # 训练模式
-
+    def init_meters(self):
         # meters
         self.loss_meter = AverageMeter()
         self.top1_acc = AverageMeter()
@@ -83,6 +59,32 @@ class Trainer(object):
         if self.vis is not None:
             self.loss_vis = AverageMeter()
             self.top1_vis = AverageMeter()
+
+        
+
+    def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
+                optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
+        """注意：如要更新model必须更新optimizer和lr_scheduler"""
+
+        if epoch is None:
+            epoch = 0
+        if model is not None:
+            assert optimizer is not None
+            assert lr_scheduler is not None
+            self.model = model
+            self.optimizer = optimizer
+            self.lr_scheduler = lr_scheduler
+        if train_dataloader is not None:
+            self.train_dataloader = train_dataloader
+        if criterion is not None:
+            self.criterion = criterion
+        if vis is not None:
+            self.vis = vis
+        if vis_interval is not None:
+            self.vis_interval = vis_interval
+        
+        self.model.train() # 训练模式
+        self.init_meters()
 
         end_time = time.time()
         # print("training...")
@@ -127,7 +129,7 @@ class Trainer(object):
                 # "top5: {top5:3.3f} | "
                 "load_time: {time_percent:2.0f}% | "
                 "lr   : {lr:0.1e} ".format(
-                    epoch=0 if epoch == None else epoch,
+                    epoch=epoch,
                     done=done,
                     total_len=len(self.train_dataloader.dataset),
                     percentage=percentage,

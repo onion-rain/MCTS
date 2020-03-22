@@ -72,7 +72,8 @@ class TrainerExp(object):
             torch.backends.cudnn.benchmark = True # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
 
         # step1: data
-        self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
+        # self.train_dataloader, self.val_dataloader, self.num_classes = get_dataloader(self.config)
+        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
 
         # step2: model
         print('{:<30}  {:<8}'.format('==> creating arch: ', self.config.arch))
