@@ -6,7 +6,7 @@ import time
 from traintest.tester import Tester
 from utils import *
 
-__all__ = ['PruningnetTrainer']
+__all__ = ['PruningnetTester']
 
 class PruningnetTester(Tester):
     """
@@ -41,6 +41,13 @@ class PruningnetTester(Tester):
         
         self.model.eval() # 验证模式
         self.init_meters()
+        
+        if isinstance(self.model, torch.nn.DataParallel) or isinstance(self.model, torch.nn.parallel.DistributedDataParallel): # 多gpu训练
+            channel_scales = self.model.module.channel_scales
+            stage_repeat = self.model.module.stage_repeat
+        else:
+            channel_scales = self.model.channel_scales
+            stage_repeat = self.model.stage_repeat
 
         # 随机生成网络结构
         mid_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat)).tolist()
