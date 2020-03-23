@@ -15,7 +15,6 @@ import copy
 import argparse
 
 from tester import Tester
-from config import Configuration
 from prune.filter_pruner import FilterPruner
 import models
 from utils import *

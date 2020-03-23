@@ -11,7 +11,6 @@ import argparse
 import datetime
 
 from tester import Tester
-from config import Configuration
 from prune.channel_pruner import *
 import models
 from utils import *

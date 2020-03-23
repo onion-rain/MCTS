@@ -13,7 +13,7 @@ import random
 import datetime
 import argparse
 
-from train.trainer import Trainer
+from traintest.trainer import Trainer
 from utils import *
 
 __all__ = ['SlimmerTrainer']

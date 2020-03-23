@@ -15,8 +15,7 @@ import datetime
 import argparse
 
 from tester import Tester
-from trainer import Trainer
-from config import Configuration
+from train&test import *
 from prune.filter_pruner import FilterPruner
 import models
 from utils import *

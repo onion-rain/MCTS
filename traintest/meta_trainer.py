@@ -3,7 +3,7 @@ import numpy as np
 import random
 import time
 
-from train.trainer import Trainer
+from traintest.trainer import Trainer
 from utils import *
 
 __all__ = ['PruningnetTrainer']

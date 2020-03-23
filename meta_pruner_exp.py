@@ -13,10 +13,9 @@ import random
 import datetime
 import argparse
 
-from utils import *
 import models
-from train import *
-from tester import Tester
+from traintest import *
+from utils import *
 
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
@@ -29,7 +28,7 @@ class MetaPruner(object):
     """
     TODO 由于trainer类大改，本类某些函数可能个已过期
     """
-    def __init__(self, config_dic=None, **kwargs):
+    def __init__(self, **kwargs):
         print("| ----------------- Initializing meta pruner ----------------- |")
 
         self.config = Configuration()
@@ -108,15 +107,12 @@ class MetaPruner(object):
         # step6: valuator
         self.valuator = None
         if self.config.valuate is True:
-            val_config_dic = {
-                'model': self.model,
-                'dataloader': self.val_dataloader,
-                'device': self.device,
-                'vis': self.vis,
-                'seed': self.config.random_seed,
-                'criterion': self.criterion,
-            }
-            self.valuator = Tester(val_config_dic)
+            self.valuator = PruningnetTester(
+                dataloader=self.val_dataloader,
+                device=self.device,
+                criterion=self.criterion,
+                vis=self.vis,
+            )
 
 
     def run(self):

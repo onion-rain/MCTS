@@ -74,7 +74,6 @@ class Trainer(object):
     def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
                 optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
         """注意：如要更新model必须更新optimizer和lr_scheduler"""
-
         if epoch is None:
             epoch = 0
         if model is not None:
