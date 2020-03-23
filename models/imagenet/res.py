@@ -160,8 +160,11 @@ class ResNet50(nn.Module):
     def __init__(self, num_classes=1000):
         super(ResNet50, self).__init__()
         self.layers = nn.ModuleList()
+<<<<<<< HEAD
         self.channel_scales = channel_scale
         self.stage_repeat = [3, 4, 6, 3]
+=======
+>>>>>>> b980f3acbfbedeaef606f85a0fdce15ea50c7f9c
 
         #stage0
         self.layers.append(first_conv_block(3, 64, stride=2))
