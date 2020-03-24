@@ -3,18 +3,15 @@ import torch
 import math
 import time
 import numpy as np
-from torch.nn import Parameter
-from torch.nn.modules.module import Module
 import torch.nn.functional as F
-from torchvision import datasets, transforms
 from ptflops import get_model_complexity_info
 import shutil
 import datetime
 
 
 __all__ = ['print_bar', 'write_log', 'print_model_parameters', 'print_nonzeros', 
-           'accuracy', 'get_path', 'AverageMeter', 'print_flops_params',
-           'save_checkpoint']
+           'accuracy', 'get_path', 'CrossEntropyLabelSmooth', 'AverageMeter', 
+           'print_flops_params', 'save_checkpoint',]
 
 def print_bar(start_time, arch, dataset):
     """calculate duration time"""
@@ -95,6 +92,22 @@ def get_path(model_name="model"):
     prefix = "./checkpoints/" + model_name + '_'
     name = time.strftime(prefix + '20%y%m%d_%H.%M.%S.pth')
     return name
+
+# label smooth
+class CrossEntropyLabelSmooth(torch.nn.Module):
+
+  def __init__(self, num_classes, epsilon):
+    super(CrossEntropyLabelSmooth, self).__init__()
+    self.num_classes = num_classes
+    self.epsilon = epsilon
+    self.logsoftmax = torch.nn.LogSoftmax(dim=1)
+
+  def forward(self, inputs, targets):
+    log_probs = self.logsoftmax(inputs)
+    targets = torch.zeros_like(log_probs).scatter_(1, targets.unsqueeze(1), 1)
+    targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
+    loss = (-targets * log_probs).mean(0).sum()
+    return loss
 
 
 class AverageMeter(object):

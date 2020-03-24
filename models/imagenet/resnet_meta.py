@@ -159,7 +159,8 @@ class ResNet_meta(nn.Module):
         """
         super(ResNet_meta, self).__init__()
 
-        stage_channels = [64, 128, 256, 512, 2048] # 每层stage的输出通道数
+        # stage_channels = [64, 128, 256, 512, 2048] # 每层stage的输出通道数
+        stage_channels = [64, 256, 512, 1024, 2048] # 每层stage的输出通道数，与作者相同
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
         self.channel_scales = [] # 随机压缩率摇奖池

@@ -24,10 +24,10 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
-class MetaTrainer(object):
+class MetaSearcher(object):
 
     def __init__(self, **kwargs):
-        print("| ----------------- Initializing meta trainer ----------------- |")
+        print("| ----------------- Initializing meta searcher ----------------- |")
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
@@ -162,7 +162,7 @@ class MetaTrainer(object):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='meta Pruningnet train')
+    parser = argparse.ArgumentParser(description='meta Prunednet search')
     parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='resnet_meta',
                         choices=models.ALL_MODEL_NAMES,
                         help='model architecture: ' +
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     # args.workers = 0
 
 
-    MetaTrainer = MetaTrainer(
+    MetaSearcher = MetaSearcher(
         arch=args.arch,
         dataset=args.dataset,
         num_workers = args.workers, # 使用多进程加载数据
@@ -230,6 +230,6 @@ if __name__ == "__main__":
         vis_legend=args.vis_legend,
         vis_interval=args.vis_interval,
     )
-    MetaTrainer.run()
+    MetaSearcher.run()
     print("end")
 

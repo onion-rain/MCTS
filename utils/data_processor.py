@@ -10,9 +10,6 @@ import copy as cp
 __all__ = ['dataset_div', 'gram_matrix', 'img2tensor', 'normalize_batch']
 
 
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
-
 def dataset_div(dataset, val_num=50):
     """
     暂时仅支持imagenet
@@ -63,6 +60,8 @@ def img2tensor(path):
     style_tensor = style_transform(style_image)
     return style_tensor.unsqueeze(0) # 在第零维增加一个维度
 
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD  = [0.229, 0.224, 0.225]
 
 def normalize_batch(batch):
     """

@@ -49,19 +49,19 @@ class PruningnetTester(Tester):
             channel_scales = self.model.channel_scales
             stage_repeat = self.model.stage_repeat
 
-        # 随机生成网络结构
-        mid_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat)).tolist()
-        output_scale_ids = [np.random.randint(low=0, high=len(channel_scales))] # for第一层卷积
-        for i in range(len(stage_repeat)-1): # 每个stage压缩量相同
-            output_scale_ids += [np.random.randint(low=0, high=len(channel_scales))]* stage_repeat[i]
-        output_scale_ids += [-1,]*(stage_repeat[-1] + 1) # 最后一个stage不压缩
-
         end_time = time.time()
         # print("testing...")
         with torch.no_grad():
             for batch_index, (input, target) in enumerate(self.test_dataloader):
                 # measure data loading time
                 self.dataload_time.update(time.time() - end_time)
+
+                # 随机生成网络结构
+                mid_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat)).tolist()
+                output_scale_ids = [np.random.randint(low=0, high=len(channel_scales))] # for第一层卷积
+                for i in range(len(stage_repeat)-1): # 每个stage压缩量相同
+                    output_scale_ids += [np.random.randint(low=0, high=len(channel_scales))]* stage_repeat[i]
+                output_scale_ids += [-1,]*(stage_repeat[-1] + 1) # 最后一个stage不压缩
 
                 # compute output
                 input, target = input.to(self.device), target.to(self.device)

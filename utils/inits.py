@@ -35,7 +35,7 @@ def suffix_init(config, usr_suffix=''):
     print('{:<30}  {:<8}'.format('==> suffix: ', suffix))
     return suffix
 
-# ----------------------- DEVICE INIT-----------------------
+# ------------------------------- DEVICE INIT-------------------------------
 def device_init(config):
     if len(config.gpu_idx_list) > 0:
         device = torch.device('cuda:{}'.format(min(config.gpu_idx_list))) # 起始gpu序号
@@ -45,7 +45,7 @@ def device_init(config):
         print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
     return device
 
-# ----------------------- SEED INIT-----------------------
+# ------------------------------- SEED INIT-------------------------------
 def seed_init(config):
     """
     其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，
@@ -61,7 +61,7 @@ def seed_init(config):
     else: # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
         torch.backends.cudnn.benchmark = True
 
-# ----------------------- DATASET INIT-----------------------
+# ------------------------------- DATASET INIT-------------------------------
 def get_cifar_train_transform():
     return tv.transforms.Compose([
         tv.transforms.RandomCrop(32, padding=4),
@@ -240,7 +240,7 @@ def dataloader_div_init(config, val_num=50):
     )
     return train_dataloader, val_dataloader, num_classes
 
-# ----------------------- MODEL INIT-----------------------
+# ------------------------------- MODEL INIT-------------------------------
 def model_init(config, device, num_classes):
     print('{:<30}  {:<8}'.format('==> creating arch: ', config.arch))
     model = None
@@ -282,7 +282,7 @@ def distribute_model_init(config, device, num_classes):
         model.load_state_dict(checkpoint['model_state_dict'])
     return model, cfg, checkpoint
 
-# ----------------------- VISDOM INIT-----------------------
+# ------------------------------- VISDOM INIT-------------------------------
 def visdom_init(config, suffix='', vis_clear=True):
     vis = None
     vis_interval = None
