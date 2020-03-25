@@ -16,6 +16,7 @@ import argparse
 import models
 from traintest import *
 from utils import *
+from prune.meta_searcher import PrunednetSearcher
 
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
@@ -73,88 +74,75 @@ class MetaSearcher(object):
         )
 
         # resume
-        if checkpoint is not None:
-            if 'epoch' in checkpoint.keys():
-                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
-                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-                if checkpoint['epoch'] > -1:
-                    vis_clear = False # 不清空visdom已有visdom env里的内容
-            if 'best_acc1' in checkpoint.keys():
-                self.best_acc1 = checkpoint['best_acc1']
-                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-            if 'optimizer_state_dict' in checkpoint.keys():
-                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            if 'best_acc1' in checkpoint.keys():
-                self.best_acc1 = checkpoint['best_acc1']
-                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+        assert checkpoint is not None
+        if 'epoch' in checkpoint.keys():
+            self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
+            print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+            if checkpoint['epoch'] > -1:
+                vis_clear = False # 不清空visdom已有visdom env里的内容
+        if 'best_acc1' in checkpoint.keys():
+            self.best_acc1 = checkpoint['best_acc1']
+            print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+        if 'optimizer_state_dict' in checkpoint.keys():
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
         # visdom
         self.vis, self.vis_interval = visdom_init(self.config, self.suffix, vis_clear)
 
-        # step6: trainer
-        self.pruningnet_trainer = PruningnetTrainer(
+        # step6: searcher
+        self.searcher = PrunednetSearcher(
             self.model, 
             self.train_dataloader, 
+            self.val_dataloader,
             self.criterion_smooth, 
-            self.optimizer, 
             self.device, 
             self.vis, 
-            self.vis_interval,
-            self.lr_scheduler,
+            self.config.max_flops,
         )
 
-        # step6: valuator
-        self.valuator = None
-        if self.config.valuate is True:
-            self.valuator = PruningnetTester(
-                dataloader=self.val_dataloader,
-                device=self.device,
-                criterion=self.criterion,
-                vis=self.vis,
-            )
-
-
     def run(self):
+        self.searcher.search()
 
-        print("")
-        start_time = datetime.datetime.now()
-        name = (self.config.dataset + "_" + self.config.arch + self.suffix)
-        print_flops_params(model=self.model, dataset=self.config.dataset)
 
-        # initial test
-        if self.valuator is not None:
-            self.valuator.test(self.model, epoch=self.start_epoch-1)
-        print_bar(start_time, self.config.arch, self.config.dataset)
-        print("")
-        for epoch in range(self.start_epoch, self.config.max_epoch):
-            # train & valuate
-            self.pruningnet_trainer.train(epoch=epoch)
-            if self.valuator is not None:
-                self.valuator.test(self.model, epoch=epoch)
-            print_bar(start_time, self.config.arch, self.config.dataset)
-            print("")
+        # print("")
+        # start_time = datetime.datetime.now()
+        # name = (self.config.dataset + "_" + self.config.arch + self.suffix)
+        # print_flops_params(model=self.model, dataset=self.config.dataset)
+
+        # # initial test
+        # if self.valuator is not None:
+        #     self.valuator.test(self.model, epoch=self.start_epoch-1)
+        # print_bar(start_time, self.config.arch, self.config.dataset)
+        # print("")
+        # for epoch in range(self.start_epoch, self.config.max_epoch):
+        #     # train & valuate
+        #     self.pruningnet_trainer.train(epoch=epoch)
+        #     if self.valuator is not None:
+        #         self.valuator.test(self.model, epoch=epoch)
+        #     print_bar(start_time, self.config.arch, self.config.dataset)
+        #     print("")
             
-            # save checkpoint
-            if self.valuator is not None:
-                is_best = self.valuator.top1_acc.avg > self.best_acc1
-                self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
-            else:
-                is_best = self.pruningnet_trainer.top1_acc.avg > self.best_acc1
-                self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
-            if len(self.config.gpu_idx_list) > 1:
-                state_dict = self.model.module.state_dict()
-            else: state_dict = self.model.state_dict()
-            save_dict = {
-                'model': self.config.arch,
-                'epoch': epoch,
-                'model_state_dict': state_dict,
-                'best_acc1': self.best_acc1,
-                'optimizer_state_dict': self.optimizer.state_dict(),
-            }
-            if self.cfg is not None:
-                save_dict['cfg'] = self.cfg
-            save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
-        print("{}{}".format("best_acc1: ", self.best_acc1))
+        #     # save checkpoint
+        #     if self.valuator is not None:
+        #         is_best = self.valuator.top1_acc.avg > self.best_acc1
+        #         self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
+        #     else:
+        #         is_best = self.pruningnet_trainer.top1_acc.avg > self.best_acc1
+        #         self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
+        #     if len(self.config.gpu_idx_list) > 1:
+        #         state_dict = self.model.module.state_dict()
+        #     else: state_dict = self.model.state_dict()
+        #     save_dict = {
+        #         'model': self.config.arch,
+        #         'epoch': epoch,
+        #         'model_state_dict': state_dict,
+        #         'best_acc1': self.best_acc1,
+        #         'optimizer_state_dict': self.optimizer.state_dict(),
+        #     }
+        #     if self.cfg is not None:
+        #         save_dict['cfg'] = self.cfg
+        #     save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
+        # print("{}{}".format("best_acc1: ", self.best_acc1))
 
    
 

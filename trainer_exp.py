@@ -88,9 +88,6 @@ class TrainerExp(object):
                 print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
             if 'optimizer_state_dict' in checkpoint.keys():
                 self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            if 'best_acc1' in checkpoint.keys():
-                self.best_acc1 = checkpoint['best_acc1']
-                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
                 
         # visdom
         self.vis, self.vis_interval = visdom_init(self.config, self.suffix, vis_clear)

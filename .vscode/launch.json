@@ -55,15 +55,21 @@
                 // "--lp-norm", "2",
                 // "--method", "lasso",
                 
-                //MetaPruner
+                //Meta train
+                // "--arch", "resnet50_meta",
+                // "--dataset", "imagenet",
+                // "--gpu", "5",
+                // "--batch-size", "100",
+                // // "--valuate",
+                // // "--visdom",
+                // "--epochs", "32",
+                // "--usr-suffix", "_MetaPruningnet",
+
+                //Meta search
                 "--arch", "resnet50_meta",
                 "--dataset", "imagenet",
-                "--gpu", "5",
-                "--batch-size", "100",
-                // "--valuate",
-                // "--visdom",
-                "--epochs", "32",
-                "--usr-suffix", "_MetaPruningnet",
+                "--gpu", "0",
+                "--resume", "checkpoints/imagenet_resnet50_meta_myo_best.pth.tar",
             ],
         },
     ]

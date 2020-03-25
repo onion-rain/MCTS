@@ -62,6 +62,9 @@ class Configuration(object):
     # thinet
     method = 'greedy'
 
+    # meta prune
+    max_flops = 2000
+
     
 
     def update_config(self, kwargs):

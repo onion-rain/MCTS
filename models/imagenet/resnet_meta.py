@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-__all__ = ['ResNet_meta', 'resnet18_meta', 'resnet34_meta', 'resnet50_meta', 'resnet101_meta', 'resnet152_meta',]
+__all__ = ['ResNet_meta', 'resnet50_meta', 'resnet101_meta', 'resnet152_meta',]
 
 
 def conv3x3(in_channels, out_channels, stride=1, groups=1, dilation=1):
@@ -104,13 +104,9 @@ class Bottleneck(nn.Module):
         mid_channels = int(self.mid_channels * self.channel_scales[scale_ids[1]])
         out_channels = int(self.out_channels * self.channel_scales[scale_ids[2]])
         block_cfg = torch.FloatTensor([
-            # TODO 测试是压缩率(0-1)好用还是剩余通道好用(0-100)
             self.channel_scales[scale_ids[0]],
             self.channel_scales[scale_ids[1]],
             self.channel_scales[scale_ids[2]],
-            # in_channels,
-            # mid_channels,
-            # out_channels,
         ]).to(x.device)
 
         # shortcut
@@ -147,15 +143,27 @@ class Bottleneck(nn.Module):
         out = F.relu(out)
         return out
 
+def parse_gene(gene, stage_repeat):
+    """根据gene生成output_scale_ids与mid_scale_ids"""
+    if gene is None:
+        output_scale_ids = [-1,]*(sum(stage_repeat)+2)
+        mid_scale_ids = [-1,]*sum(stage_repeat)
+    else:
+        mid_scale_ids = gene[len(stage_repeat)+1:len(stage_repeat)+1+sum(stage_repeat)]
+        output_scale_ids = [gene[0]] # stage 0
+        for i in range(len(stage_repeat)):
+            output_scale_ids += [gene[i+1]]*stage_repeat[i]
+        output_scale_ids.append(-1) # features输出通道不变
+    return output_scale_ids, mid_scale_ids
 
 class ResNet_meta(nn.Module):
 
-    def __init__(self, stage_repeat=[2, 2, 2, 2], num_classes=1000, cfg=None):
+    def __init__(self, stage_repeat=[3, 4, 6, 3], num_classes=1000, gene=None):
         """
         args:
             stage_repeat(list)：每个stage重复的block数
             num_classes(int)：分类数
-            TODO cfg(list): 存储每层卷积的输入输出通道，用来构造剪之后的网络
+            gene(list): 存储每层卷积的输入输出通道，用来构造剪之后的网络，前部表示output_scale_ids，后部表示mid_scale_ids
         """
         super(ResNet_meta, self).__init__()
 
@@ -166,6 +174,8 @@ class ResNet_meta(nn.Module):
         self.channel_scales = [] # 随机压缩率摇奖池
         for i in range(31):
             self.channel_scales.append((10 + i * 3)/100)
+
+        self.output_scale_ids, self.mid_scale_ids = parse_gene(gene, self.stage_repeat)
 
         self.features = nn.ModuleList()
 
@@ -202,10 +212,15 @@ class ResNet_meta(nn.Module):
         #         nn.init.constant_(m.weight, 1)
         #         nn.init.constant_(m.bias, 0)
 
-    def forward(self, x, output_scale_ids=None, mid_scale_ids=None):
+    def forward(self, x, output_scale_ids=None, mid_scale_ids=None, gene=None):
+
         if output_scale_ids is None:
-            output_scale_ids = [-1,]*(sum(self.stage_repeat)+2)
-            mid_scale_ids = [-1,]*sum(self.stage_repeat)
+            output_scale_ids = self.output_scale_ids
+            mid_scale_ids = self.mid_scale_ids
+
+        if gene is not None:
+            output_scale_ids, mid_scale_ids = parse_gene(gene, self.stage_repeat)
+
         for idx, block in enumerate(self.features):
             if idx == 0:
                 x = block(x, output_scale_ids[idx])
@@ -219,26 +234,25 @@ class ResNet_meta(nn.Module):
         x = self.classifier(x)
         return x
 
+# 这些应该是basicblock。。懒得写了
+# def resnet18_meta(cfg=None, num_classes=1000):
+#     return ResNet_meta([2, 2, 2, 2], num_classes, gene=cfg)
 
 
-def resnet18_meta(cfg=None, num_classes=1000):
-    return ResNet_meta([2, 2, 2, 2], num_classes, cfg=cfg)
-
-
-def resnet34_meta(cfg=None, num_classes=1000):
-    return ResNet_meta([3, 4, 6, 3], num_classes, cfg=cfg)
+# def resnet34_meta(cfg=None, num_classes=1000):
+#     return ResNet_meta([3, 4, 6, 3], num_classes, gene=cfg)
 
 
 def resnet50_meta(cfg=None, num_classes=1000):
-    return ResNet_meta([3, 4, 6, 3], num_classes, cfg=cfg)
+    return ResNet_meta([3, 4, 6, 3], num_classes, gene=cfg)
 
 
 def resnet101_meta(cfg=None, num_classes=1000):
-    return ResNet_meta([3, 4, 23, 3], num_classes, cfg=cfg)
+    return ResNet_meta([3, 4, 23, 3], num_classes, gene=cfg)
 
 
 def resnet152_meta(cfg=None, num_classes=1000):
-    return ResNet_meta([3, 8, 36, 3], num_classes, cfg=cfg)
+    return ResNet_meta([3, 8, 36, 3], num_classes, gene=cfg)
 
 
 

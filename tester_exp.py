@@ -24,47 +24,26 @@ class TesterExp(object):
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
 
-        # visdom
-        self.vis = None
-        if self.config.visdom:
-            self.vis = Visualizer(self.config.vis_env, self.config.vis_legend) # 初始化visdom
-
+        # suffix
+        self.suffix = suffix_init(self.config)
         # device
-        if len(self.config.gpu_idx_list) > 0:
-            self.device = torch.device('cuda:{}'.format(min(self.config.gpu_idx_list))) # 起始gpu序号
-            print('{:<30}  {:<8}'.format('==> chosen GPU index: ', self.config.gpu_idx))
-        else:
-            self.device = torch.device('cpu')
-            print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
-
-        # Random Seed
-        random.seed(0)
-        torch.manual_seed(0)
-        np.random.seed(self.config.random_seed)
-        torch.backends.cudnn.deterministic = True
-
-        # step1: data
-        _, self.test_dataloader, self.num_classes = get_dataloader(self.config)
-
+        self.device = device_init(self.config)
+        # Random Seed 
+        seed_init(self.config)
+        # data
+        self.train_dataloader, self.test_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
         # model
         self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
-        if 'epoch' in checkpoint.keys():
-            self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
-            print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-            if checkpoint['epoch'] > -1:
-                vis_clear = False # 不清空visdom已有visdom env里的内容
-        if 'best_acc1' in checkpoint.keys():
-            self.best_acc1 = checkpoint['best_acc1']
-            print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-        if 'best_acc1' in checkpoint.keys():
-            self.best_acc1 = checkpoint['best_acc1']
-            print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-
 
         # step3: criterion
         self.criterion = torch.nn.CrossEntropyLoss()
 
-        self.tester = Tester(
+        # visdom
+        self.vis = None
+        if self.config.visdom:
+            self.vis, _ = visdom_init(self.config, self.suffix, vis_clear=True)
+
+        self.valuator = Tester(
             dataloader=self.val_dataloader,
             device=self.device,
             criterion=self.criterion,
