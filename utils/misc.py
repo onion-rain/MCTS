@@ -15,8 +15,10 @@ __all__ = ['print_bar', 'write_log', 'print_model_parameters', 'print_nonzeros',
            'accuracy', 'get_path', 'CrossEntropyLabelSmooth', 'AverageMeter', 
            'print_flops_params', 'save_checkpoint', 'get_model_flops', 'Logger']
 
-def print_bar(start_time, arch, dataset):
+def print_bar(start_time, arch, dataset, epoch=None):
     """calculate duration time"""
+    if epoch is not  None:
+        print("--  {:^3}  ".format(epoch), end='')
     interval = datetime.datetime.now() - start_time
     print("--------  model: {model}  --  dataset: {dataset}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
         format(
@@ -25,7 +27,7 @@ def print_bar(start_time, arch, dataset):
             dh=interval.seconds//3600 + interval.days*24,
             dm=interval.seconds%3600//60,
             ds=interval.seconds%60,
-        ), flush=True
+        ), flush=True,
     )
 
 def write_log(filename, content):

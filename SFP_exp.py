@@ -212,7 +212,7 @@ if __name__ == "__main__":
     parser.add_argument('--valuate', action='store_true',
                         help='valuate each training epoch')
     parser.add_argument('--resume', dest='resume_path', type=str, default='',
-                        metavar='PATH', help='path to latest checkpoint (default: none)')
+                        metavar='PATH', help='path to latest train checkpoint (default: '')')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
     parser.add_argument('--log-path', type=str, default='logs/log.txt',

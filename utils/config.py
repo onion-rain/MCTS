@@ -64,9 +64,14 @@ class Configuration(object):
     method = 'greedy'
 
     # meta prune
-    max_flops = 2000
+    max_flops = 0
+    population = 100
+    select_num = 30
+    mutation_num = 30
+    crossover_num = 30
+    mutation_prob = 0.1
+    research_resume_path = ''
 
-    
 
     def update_config(self, kwargs):
         '''

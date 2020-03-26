@@ -138,7 +138,7 @@ if __name__ == "__main__":
     parser.add_argument('--gpu', type=str, default='0', metavar='gpu_idx',
                         help='training GPU index(default:"0",which means use GPU0')
     parser.add_argument('--resume', dest='resume_path', type=str, default='',
-                        metavar='PATH', help='path to latest checkpoint (default: none)')
+                        metavar='PATH', help='path to latest train checkpoint (default: '')')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
     parser.add_argument('--prune-percent', type=float, default=0.5, 

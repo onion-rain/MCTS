@@ -40,8 +40,8 @@ class MetaSearcher(object):
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
 
         # 更新一些默认标志
-        self.start_epoch = 0
-        self.best_acc1 = 0
+        self.max_iter = self.config.max_epoch
+        self.start_iter = 0
         self.checkpoint = None
         vis_clear = True
 
@@ -56,36 +56,19 @@ class MetaSearcher(object):
         # model
         self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
         
-        # criterion and optimizer
-        self.optimizer = torch.optim.SGD(
-            params=self.model.parameters(),
-            lr=self.config.lr,
-            momentum=self.config.momentum,
-            weight_decay=self.config.weight_decay,
-        )
-        
         self.criterion = torch.nn.CrossEntropyLoss()
-        self.criterion_smooth = CrossEntropyLabelSmooth(self.num_classes, 0.1)
+        # self.criterion_smooth = CrossEntropyLabelSmooth(self.num_classes, 0.1)
 
-        self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer=self.optimizer,
-            milestones=[self.config.max_epoch*0.25, self.config.max_epoch*0.75], 
-            gamma=0.1,
-            last_epoch=self.start_epoch-1, # 我的训练epoch从1开始，而pytorch要通过当前epoch是否等于0判断是不是resume
-        )
-
-        # resume
-        assert checkpoint is not None
-        if 'epoch' in checkpoint.keys():
-            self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
-            print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-            if checkpoint['epoch'] > -1:
-                vis_clear = False # 不清空visdom已有visdom env里的内容
-        if 'best_acc1' in checkpoint.keys():
-            self.best_acc1 = checkpoint['best_acc1']
-            print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-        if 'optimizer_state_dict' in checkpoint.keys():
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        # TODO resume search
+        self.candidates = []
+        if self.config.research_resume_path != '':
+            search_checkpoint = torch.load(config.research_resume_path, map_location=device)
+            assert search_checkpoint['model'] == self.config.arch
+            self.start_iter = search_checkpoint['iter']+1
+            print('{:<30}  {:<8}'.format('==> checkpoint searched iteration: ', search_checkpoint['iter']))
+            vis_clear = False
+            self.candidates = search_checkpoint['candidates']
+            best_acc1_error = search_checkpoint['best_acc1_error']
 
         # visdom
         self.vis, self.vis_interval = visdom_init(self.config, self.suffix, vis_clear)
@@ -95,15 +78,44 @@ class MetaSearcher(object):
             self.model, 
             self.train_dataloader, 
             self.val_dataloader,
-            self.criterion_smooth, 
+            self.criterion, 
             self.device, 
             self.vis, 
-            self.config.max_flops,
+            # hyper-parameters
+            self.config.max_flops, 
+            self.config.population, 
+            self.config.select_num, 
+            self.config.mutation_num, 
+            self.config.crossover_num, 
+            self.config.mutation_prob, 
         )
+            
+        print()
+        print('{:<30}  {:<8}'.format('==> max_flops: ', self.config.max_flops))
+        print('{:<30}  {:<8}'.format('==> population: ', self.config.population))
+        print('{:<30}  {:<8}'.format('==> select_num: ', self.config.select_num))
+        print('{:<30}  {:<8}'.format('==> mutation_num: ', self.config.mutation_num))
+        print('{:<30}  {:<8}'.format('==> crossover_num: ', self.config.crossover_num))
+        print('{:<30}  {:<8}'.format('==> mutation_prob: ', self.config.mutation_prob))
+        print('{:<30}  {:<8}'.format('==> search resume from: ', self.config.research_resume_path))
+            
 
     def run(self):
         print("")
-        self.searcher.search()
+        start_time = datetime.datetime.now()
+        for iter in range(self.start_iter, self.max_iter):
+            print_bar(start_time, self.config.arch, self.config.dataset, epoch=iter)
+            self.candidates = self.searcher.search(iter, self.candidates)
+
+            # save checkpoint
+            name = ('MetaPruneSearch_' + self.config.arch + self.suffix)
+            save_dict = {
+                'model': self.config.arch,
+                'iter': iter,
+                'candidates': self.candidates,
+                'best_acc1_error': self.candidates[0][-1],
+            }
+            save_checkpoint(save_dict, is_best=False, epoch=None, file_root='checkpoints/meta_prune/', file_name=name)
 
 
 if __name__ == "__main__":
@@ -135,7 +147,7 @@ if __name__ == "__main__":
     # parser.add_argument('--valuate', action='store_true',
     #                     help='valuate each training epoch')
     parser.add_argument('--resume', dest='resume_path', type=str, default='',
-                        metavar='PATH', help='path to latest checkpoint (default: none)')
+                        metavar='PATH', help='path to latest train checkpoint (default: '')')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
     parser.add_argument('--usr-suffix', type=str, default='',
@@ -152,8 +164,21 @@ if __name__ == "__main__":
     parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
                         help='visdom plot interval batchs (default: 50)')
 
-    parser.add_argument('--flops', dest='max_flops', type=float, default=800, 
-                        metavar='Flops', help='The maximum amount of computation that can be tolerated(default: 800)')
+    parser.add_argument('--search-resume', dest='search_resume_path', type=str, default='',
+                        metavar='PATH', help='path to latest checkpoint (default: '')')
+    parser.add_argument('--flops', dest='max_flops', type=float, default=0, 
+                        metavar='Flops', help='The maximum amount of computation that can be tolerated, 0 means no limit(default: 0)')
+    parser.add_argument('--population', dest='population', type=int, default=100, 
+                        metavar='N', help='candidates number(default: 100)')
+    parser.add_argument('--select-num', dest='select_num', type=int, default=30, 
+                        metavar='N', help='after one iteration, the rest candidates number(default: 30)')
+    parser.add_argument('--mutation-num', dest='mutation_num', type=int, default=30, 
+                        metavar='N', help='The number of mutations in the candidates(default: 30)')
+    parser.add_argument('--crossover-num', dest='crossover_num', type=int, default=30, 
+                        metavar='N', help='The number of crossover in the candidates(default: 30)')
+    parser.add_argument('--mutation-prob', dest='mutation_prob', type=float, default=0.1, 
+                        metavar='prob', help='mutation probability(default: 0.1)')
+                        
     args = parser.parse_args()
 
     # debug用
@@ -181,7 +206,14 @@ if __name__ == "__main__":
         vis_legend=args.vis_legend,
         vis_interval=args.vis_interval,
 
+        search_resume_path=args.search_resume_path, 
+        # hyper-parameters
         max_flops=args.max_flops,
+        population=args.population,
+        select_num=args.select_num,
+        mutation_num=args.mutation_num,
+        crossover_num=args.crossover_num,
+        mutation_prob=args.mutation_prob,
     )
     MetaSearcher.run()
     print("end")

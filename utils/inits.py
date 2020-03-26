@@ -242,6 +242,7 @@ def dataloader_div_init(config, val_num=50):
 
 # ------------------------------- MODEL INIT-------------------------------
 def model_init(config, device, num_classes):
+    """模型训练model通用初始化"""
     print('{:<30}  {:<8}'.format('==> creating arch: ', config.arch))
     model = None
     cfg = None
@@ -262,7 +263,8 @@ def model_init(config, device, num_classes):
     return model, cfg, checkpoint
 
 def distribute_model_init(config, device, num_classes):
-    """此种模式下只能通过修改CUDA_VISIBLE_DEVICES来选择GPU"""
+    """模型训练model通用初始化
+    此种模式下只能通过修改CUDA_VISIBLE_DEVICES来选择GPU"""
     print('{:<30}  {:<8}'.format('==> creating arch: ', config.arch))
     model = None
     cfg = None

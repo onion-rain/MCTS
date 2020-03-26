@@ -12,15 +12,16 @@ __all__ = ['PrunednetSearcher']
 class PrunednetSearcher(object):
     """
     """
-    def __init__(self, model, train_dataloader, val_dataloader, criterion, device, vis, max_flops):
+    def __init__(self, model, train_dataloader, val_dataloader, criterion, device, vis, max_flops=800,
+                    population=6, select_num=2, mutation_num=2, crossover_num=2, mutation_prob=0.1):
 
-        # 一些默认超参数值
-        self.population = 6
-        self.select_num = 2
-        self.mutation_num = 2
-        self.crossover_num = 2
-        self.max_iter = 10
-        self.mutation_prob = 0.1
+        # 一些超参数
+        self.max_flops = max_flops
+        self.population = population
+        self.select_num = select_num
+        self.mutation_num = mutation_num
+        self.crossover_num = crossover_num
+        self.mutation_prob = mutation_prob
 
         # 一些变量的初始化
         self.candidates = [] # 每个元素的最后一位存储精度信息(top1 error)
@@ -32,7 +33,6 @@ class PrunednetSearcher(object):
         self.criterion = criterion
         self.device = device
         self.vis = vis
-        self.max_flops = max_flops
 
         self.checked_genes_tuple = {} # keys不包含最后一维精度位，键值存储top1 error
         self.tested_genes_tuple = {}
@@ -157,11 +157,12 @@ class PrunednetSearcher(object):
         if gene_tuple in self.checked_genes_tuple.keys():
             return 0
         gene[-1] = 100.0 # top1 error初始化为100
-        # flops = 1 # test
-        test_model = self.model.__class__(self.model.stage_repeat, gene=gene).to(self.device)
-        flops = get_model_flops(test_model, 'imagenet', pr=False)
-        if flops > self.max_flops:
-            return 0
+        flops = -1
+        if self.max_flops > 0:
+            test_model = self.model.__class__(self.model.stage_repeat, gene=gene).to(self.device)
+            flops = get_model_flops(test_model, 'imagenet', pr=False)
+            if flops > self.max_flops:
+                return 0
         self.checked_genes_tuple[gene_tuple] = -1 # 标记已检测
         return flops
 
@@ -239,7 +240,7 @@ class PrunednetSearcher(object):
                             total=num,
                             percentage=len(genes)/num*100,
                             flops=flops,
-                        ), end="" if len(genes)<num+1 and iter<max_iter else '\n', flush=True
+                        ), end="" if len(genes)<num and iter<max_iter else '\n', flush=True
                     )
             else: iter += 1
         return genes
@@ -247,24 +248,24 @@ class PrunednetSearcher(object):
     def natural_selection(self, candidates, select_num):
         self.test_candidates(candidates)
         sorted_candidates = sorted(candidates, key=lambda x: x[-1])
-        print([acc[-1] for acc in sorted_candidates[:select_num]]) # 打印本次测试得到的精度列表
+        print([acc[-1] for acc in sorted_candidates[:select_num]], flush=True) # 打印本次测试得到的精度列表
         return sorted_candidates[:select_num]
 
-    def search(self):
-        print(' ----------------------------------  iter = {:>2}  ---------------------------------- '.format(0))
-        print("preparing candidates...")
-        candidates = self.get_random_genes(self.population, pr=True)
-        candidates = self.natural_selection(candidates, self.select_num)
-        for iter in range(1, self.max_iter):
-            print(' ----------------------------------  iter = {:>2}  ---------------------------------- '.format(iter))
-            print("preparing candidates...")
+    def search(self, iter, candidates):
+        """执行一次搜索，返回剩余candidates"""
+
+        # print(' ----------------------------------  iter = {:>2}  ---------------------------------- '.format(iter))
+        if iter == 0:
+            candidates = self.get_random_genes(self.population, pr=True)
+            candidates = self.natural_selection(candidates, self.select_num)
+            return candidates
+        else:
             mutant = self.get_mutant_genes(candidates, self.mutation_num, self.mutation_prob, pr=True)
             crossover = self.get_crossover_genes(candidates, self.crossover_num, pr=True)
             rand = self.get_random_genes(self.population - len(mutant) - len(crossover) - len(candidates), pr=True)
             candidates.extend(mutant)
             candidates.extend(crossover)
             candidates.extend(rand)
-            print("{:<30}  {:<8}".format('==> total candidates num: ', len(candidates)))
+            # print("{:<30}  {:<8}".format('==> total candidates num: ', len(candidates)))
             candidates = self.natural_selection(candidates, self.select_num)
-
-            
+            return candidates
