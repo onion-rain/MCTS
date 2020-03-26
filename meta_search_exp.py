@@ -35,8 +35,6 @@ class MetaSearcher(object):
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
-        print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
-        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.25, self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
 
         # 更新一些默认标志
         self.start_epoch = 0
@@ -101,51 +99,8 @@ class MetaSearcher(object):
         )
 
     def run(self):
+        print("")
         self.searcher.search()
-
-
-        # print("")
-        # start_time = datetime.datetime.now()
-        # name = (self.config.dataset + "_" + self.config.arch + self.suffix)
-        # print_flops_params(model=self.model, dataset=self.config.dataset)
-
-        # # initial test
-        # if self.valuator is not None:
-        #     self.valuator.test(self.model, epoch=self.start_epoch-1)
-        # print_bar(start_time, self.config.arch, self.config.dataset)
-        # print("")
-        # for epoch in range(self.start_epoch, self.config.max_epoch):
-        #     # train & valuate
-        #     self.pruningnet_trainer.train(epoch=epoch)
-        #     if self.valuator is not None:
-        #         self.valuator.test(self.model, epoch=epoch)
-        #     print_bar(start_time, self.config.arch, self.config.dataset)
-        #     print("")
-            
-        #     # save checkpoint
-        #     if self.valuator is not None:
-        #         is_best = self.valuator.top1_acc.avg > self.best_acc1
-        #         self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
-        #     else:
-        #         is_best = self.pruningnet_trainer.top1_acc.avg > self.best_acc1
-        #         self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
-        #     if len(self.config.gpu_idx_list) > 1:
-        #         state_dict = self.model.module.state_dict()
-        #     else: state_dict = self.model.state_dict()
-        #     save_dict = {
-        #         'model': self.config.arch,
-        #         'epoch': epoch,
-        #         'model_state_dict': state_dict,
-        #         'best_acc1': self.best_acc1,
-        #         'optimizer_state_dict': self.optimizer.state_dict(),
-        #     }
-        #     if self.cfg is not None:
-        #         save_dict['cfg'] = self.cfg
-        #     save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
-        # print("{}{}".format("best_acc1: ", self.best_acc1))
-
-   
-
 
 
 if __name__ == "__main__":
@@ -158,8 +113,8 @@ if __name__ == "__main__":
                         ' (default: resnet_meta)')
     parser.add_argument('--dataset', type=str, default='imagenet',
                         help='training dataset (default: imagenet)')
-    parser.add_argument('--workers', type=int, default=10, metavar='N',
-                        help='number of data loading workers (default: 10)')
+    parser.add_argument('--workers', type=int, default=20, metavar='N',
+                        help='number of data loading workers (default: 20)')
     parser.add_argument('--batch-size', type=int, default=100, metavar='N',
                         help='input batch size for training (default: 100)')
     parser.add_argument('--epochs', type=int, default=32, metavar='N',
@@ -174,8 +129,8 @@ if __name__ == "__main__":
                     help='Ensure deterministic execution for re-producible results.')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='SGD momentum (default: 0.9)')
-    parser.add_argument('--valuate', action='store_true',
-                        help='valuate each training epoch')
+    # parser.add_argument('--valuate', action='store_true',
+    #                     help='valuate each training epoch')
     parser.add_argument('--resume', dest='resume_path', type=str, default='',
                         metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--refine', action='store_true',
@@ -191,6 +146,9 @@ if __name__ == "__main__":
                         help='refine from pruned model (default: "", which means env is automatically set to args.arch)')
     parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
                         help='visdom plot interval batchs (default: 50)')
+
+    parser.add_argument('--flops', dest='max_flops', type=float, default=800, 
+                        metavar='Flops', help='The maximum amount of computation that can be tolerated(default: 800)')
     args = parser.parse_args()
 
     # debug用
@@ -208,7 +166,7 @@ if __name__ == "__main__":
         weight_decay=args.weight_decay,
         momentum=args.momentum,
         deterministic=args.deterministic,
-        valuate=args.valuate,
+        # valuate=args.valuate,
         resume_path=args.resume_path,
         refine=args.refine,
         usr_suffix=args.usr_suffix,
@@ -217,6 +175,8 @@ if __name__ == "__main__":
         vis_env=args.vis_env,
         vis_legend=args.vis_legend,
         vis_interval=args.vis_interval,
+
+        max_flops=args.max_flops,
     )
     MetaSearcher.run()
     print("end")

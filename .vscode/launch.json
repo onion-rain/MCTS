@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "--workers", "0",
+                "--workers", "1",
 
                 // //train
                 // "--arch", "resnet50_meta",
@@ -55,7 +55,7 @@
                 // "--lp-norm", "2",
                 // "--method", "lasso",
                 
-                //Meta train
+                // // Meta train
                 // "--arch", "resnet50_meta",
                 // "--dataset", "imagenet",
                 // "--gpu", "5",
@@ -68,7 +68,7 @@
                 //Meta search
                 "--arch", "resnet50_meta",
                 "--dataset", "imagenet",
-                "--gpu", "0",
+                "--gpu", "1",
                 "--resume", "checkpoints/imagenet_resnet50_meta_myo_best.pth.tar",
             ],
         },

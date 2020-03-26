@@ -94,10 +94,10 @@ class SlimmerTrainer(Trainer):
             print("\r"
                 "Train: {epoch:3} "
                 "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
-                "loss: {loss_meter:.3f} | "
-                "top1: {top1:3.3f}% | "
-                # "top5: {top5:3.3f} | "
-                "load_time: {time_percent:2.0f}% | "
+                "loss: {loss_meter:7} | "
+                "top1: {top1:6}% | "
+                # "top5: {top5:6} | "
+                "load_time: {time_percent:3.0f}% | "
                 "lr   : {lr:0.1e} ".format(
                     epoch=epoch,
                     done=done,

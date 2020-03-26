@@ -21,10 +21,10 @@ def print_bar(start_time, arch, dataset):
         format(
             model=arch,
             dataset=dataset,
-            dh=interval.seconds//3600,
+            dh=interval.seconds//3600 + interval.days*24,
             dm=interval.seconds%3600//60,
             ds=interval.seconds%60,
-        )
+        ), flush=True
     )
 
 def write_log(filename, content):
@@ -112,8 +112,9 @@ class CrossEntropyLabelSmooth(torch.nn.Module):
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
+    """Computes and stores the average and current value
+    均值默认保留3(round)位小数"""
+    def __init__(self, round=3):
         self.reset()
 
     def reset(self):
@@ -126,7 +127,7 @@ class AverageMeter(object):
         self.val = val
         self.sum += val * n
         self.count += n
-        self.avg = self.sum / self.count
+        self.avg = round(float(self.sum / self.count), 3) # FIXME 待测
 
         
 def print_flops_params(model, dataset='cifar'):
