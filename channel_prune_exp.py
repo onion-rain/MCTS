@@ -33,7 +33,7 @@ class Pruner(object):
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
-        if self.config.check_config(): raise # 检测路径、设备是否存在
+        assert self.config.check_config() == 0
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
         print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))

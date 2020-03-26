@@ -128,7 +128,8 @@ class AverageMeter(object):
         self.val = val
         self.sum += val * n
         self.count += n
-        self.avg = round(float(self.sum / self.count), 3) # FIXME 待测
+        self.avg = round(float(self.sum / self.count), 3)
+        self.err_avg = round(100-self.avg, 3)
 
         
 def print_flops_params(model, dataset='cifar'):

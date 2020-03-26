@@ -21,7 +21,7 @@ class TesterExp(object):
         self.config.update_config(kwargs) # 解析参数更新默认配置
         sys.stdout = Logger(self.config.log_path)
         print("| ----------------- Initializing Tester ------------------ |")
-        if self.config.check_config(): raise # 检测路径、设备是否存在
+        assert self.config.check_config() == 0
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
 
         # suffix

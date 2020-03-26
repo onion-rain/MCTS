@@ -69,7 +69,7 @@
                 "--arch", "resnet50_meta",
                 "--dataset", "imagenet",
                 "--gpu", "1",
-                "--resume", "checkpoints/imagenet_resnet50_meta_myo_best.pth.tar",
+                "--resume", "checkpoints/meta_prune/imagenet_resnet50_meta_myo_best.pth.tar",
             ],
         },
     ]

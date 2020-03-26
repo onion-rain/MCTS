@@ -23,7 +23,7 @@ class PrunednetSearcher(object):
         self.mutation_prob = 0.1
 
         # 一些变量的初始化
-        self.candidates = [] # 每个元素的最后一位存储精度信息
+        self.candidates = [] # 每个元素的最后一位存储精度信息(top1 error)
         self.survival = []
 
         self.model = model
@@ -34,7 +34,7 @@ class PrunednetSearcher(object):
         self.vis = vis
         self.max_flops = max_flops
 
-        self.checked_genes_tuple = {} # keys不包含最后一维精度位
+        self.checked_genes_tuple = {} # keys不包含最后一维精度位，键值存储top1 error
         self.tested_genes_tuple = {}
         self.get_model_inform()
         self.gene_length = len(self.stage_repeat)+1 + sum(self.stage_repeat) + 1 # 最后为精度位（top1 error）
@@ -102,26 +102,23 @@ class PrunednetSearcher(object):
 
                 done = (batch_index+1) * self.val_dataloader.batch_size
                 percentage = 100. * (batch_index+1) / len(self.val_dataloader)
-                time_str = time.strftime('%H:%M:%S')
                 print("\r"
-                "Test: {epoch:4} "
-                "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
-                "loss: {loss_meter:7} | "
-                "top1: {top1:6}% | "
-                # "top5: {top5:6} | "
-                "load_time: {time_percent:3.0f}% | "
-                "UTC+8: {time_str} ".format(
-                    epoch=epoch,
-                    done=done,
-                    total_len=len(self.val_dataloader.dataset),
-                    percentage=percentage,
-                    loss_meter=self.loss_meter.avg if self.loss_meter.avg<999.999 else 999.999,
-                    top1=self.top1_acc.avg,
-                    # top5=self.top5_acc.avg,
-                    time_percent=self.dataload_time.avg/self.batch_time.avg*100,
-                    time_str=time_str
-                ), end=""
-            )
+                    "Test: {epoch:4} "
+                    "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
+                    "loss: {loss_meter:7} | "
+                    "top1 error: {top1:6}% | "
+                    "load_time: {time_percent:3.0f}% | "
+                    "UTC+8: {time_str} ".format(
+                        epoch=epoch,
+                        done=done,
+                        total_len=len(self.val_dataloader.dataset),
+                        percentage=percentage,
+                        loss_meter=self.loss_meter.avg if self.loss_meter.avg<999.999 else 999.999,
+                        top1=self.top1_acc.err_avg,
+                        time_percent=self.dataload_time.avg/self.batch_time.avg*100,
+                        time_str=time.strftime('%H:%M:%S')
+                    ), end=""
+                )
         gene[-1] = 100 - self.top1_acc.avg
         print("")
 
@@ -132,7 +129,20 @@ class PrunednetSearcher(object):
             if gene_tuple not in self.tested_genes_tuple.keys():
                 self.test_gene(gene, epoch=idx)
                 self.tested_genes_tuple[gene_tuple] = gene[-1]
-            else: print("Tested gene, top1 = {}".format(self.tested_genes_tuple[gene_tuple]))
+            else:
+                print(
+                    "Test: {epoch:4} | "
+                    "{Tested:^36} | "
+                    "top1 error: {top1:6}% | "
+                    "load_time: {time_percent:3.0f}% | "
+                    "UTC+8: {time_str} ".format(
+                        epoch=idx,
+                        Tested='tested gene',
+                        top1=100-self.top1_acc.avg,
+                        time_percent=0,
+                        time_str=time.strftime('%H:%M:%S')
+                    )
+                )
             idx += 1
         # print([acc[-1] for acc in candidates]) # 打印本次测试得到的精度列表
 
@@ -229,7 +239,7 @@ class PrunednetSearcher(object):
                             total=num,
                             percentage=len(genes)/num*100,
                             flops=flops,
-                        ), end="" if len(genes)<num and iter<max_iter else '\n', flush=True
+                        ), end="" if len(genes)<num+1 and iter<max_iter else '\n', flush=True
                     )
             else: iter += 1
         return genes
@@ -241,12 +251,12 @@ class PrunednetSearcher(object):
         return sorted_candidates[:select_num]
 
     def search(self):
-        print(' ----------------------------------  iter = {:>3}  ---------------------------------- '.format(0))
+        print(' ----------------------------------  iter = {:>2}  ---------------------------------- '.format(0))
         print("preparing candidates...")
         candidates = self.get_random_genes(self.population, pr=True)
         candidates = self.natural_selection(candidates, self.select_num)
         for iter in range(1, self.max_iter):
-            print(' ----------------------------------  iter = {:>3}  ---------------------------------- '.format(iter))
+            print(' ----------------------------------  iter = {:>2}  ---------------------------------- '.format(iter))
             print("preparing candidates...")
             mutant = self.get_mutant_genes(candidates, self.mutation_num, self.mutation_prob, pr=True)
             crossover = self.get_crossover_genes(candidates, self.crossover_num, pr=True)
@@ -255,6 +265,6 @@ class PrunednetSearcher(object):
             candidates.extend(crossover)
             candidates.extend(rand)
             print("{:<30}  {:<8}".format('==> total candidates num: ', len(candidates)))
-            self.natural_selection(candidates, self.select_num)
+            candidates = self.natural_selection(candidates, self.select_num)
 
             
