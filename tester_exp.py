@@ -16,11 +16,11 @@ class TesterExp(object):
     TODO 由于trainer类大改，本类某些函数可能个已过期
     """
     def __init__(self, **kwargs):
-
-        print("| ----------------- Initializing Tester ------------------ |")
         
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
+        sys.stdout = Logger(self.config.log_path)
+        print("| ----------------- Initializing Tester ------------------ |")
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
 
@@ -89,6 +89,8 @@ if __name__ == "__main__":
                         metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
+    parser.add_argument('--log-path', type=str, default='logs/log.txt',
+                        help='default: logs/log.txt')
     args = parser.parse_args()
 
 

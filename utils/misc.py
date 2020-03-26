@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import math
 import time
@@ -12,7 +13,7 @@ from torch.autograd import Variable
 
 __all__ = ['print_bar', 'write_log', 'print_model_parameters', 'print_nonzeros', 
            'accuracy', 'get_path', 'CrossEntropyLabelSmooth', 'AverageMeter', 
-           'print_flops_params', 'save_checkpoint', 'get_model_flops']
+           'print_flops_params', 'save_checkpoint', 'get_model_flops', 'Logger']
 
 def print_bar(start_time, arch, dataset):
     """calculate duration time"""
@@ -259,3 +260,14 @@ def get_model_flops(one_shot_model, dataset='cifar', pr=False):
 
     return M_flops
 
+class Logger(object):
+    def __init__(self, filepath="log.txt"):
+        self.terminal = sys.stdout
+        self.log = open(filepath, "w+")
+ 
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+ 
+    def flush(self):
+        pass

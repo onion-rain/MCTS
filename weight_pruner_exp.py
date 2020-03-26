@@ -33,10 +33,10 @@ class Pruner(object):
     """
     def __init__(self, **kwargs):
 
-        print("| ----------------- Initializing Pruner ----------------- |")
-
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
+        sys.stdout = Logger(self.config.log_path)
+        print("| ----------------- Initializing Pruner ----------------- |")
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         
@@ -145,6 +145,8 @@ if __name__ == "__main__":
                         help='percentage of weight to prune')
     parser.add_argument('--prune-object', type=str, metavar='object', default='all',
                         help='prune object: "conv", "fc", "all"(default: , "all")')
+    parser.add_argument('--log-path', type=str, default='logs/log.txt',
+                        help='default: logs/log.txt')
 
     args = parser.parse_args()
 

@@ -32,10 +32,10 @@ class Slimmer(object):
     """
     def __init__(self, **kwargs):
 
-        print("| ----------------- Initializing Slimmer ----------------- |")
-
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
+        sys.stdout = Logger(self.config.log_path)
+        print("| ----------------- Initializing Slimmer ----------------- |")
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
 
@@ -436,6 +436,8 @@ if __name__ == "__main__":
                         metavar='PATH', help='path to latest checkpoint (default: none)')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
+    parser.add_argument('--log-path', type=str, default='logs/log.txt',
+                        help='default: logs/log.txt')
 
     parser.add_argument('--slim-percent', type=float, default=0.7, metavar='N',
                         help='slim percent(default: 0.7)')

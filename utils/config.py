@@ -31,6 +31,7 @@ class Configuration(object):
     deterministic = False # 结论确定，若为True则在相同pytorch版本和相同随机种子相同workers情况下结果可复现
     random_seed = 0
     usr_suffix = ''
+    log_path = 'logs/log.txt'
 
     # test专用
     load_model_path = None # 加载预训练参数的路径

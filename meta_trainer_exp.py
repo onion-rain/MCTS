@@ -12,6 +12,7 @@ import os
 import random
 import datetime
 import argparse
+import sys
 
 import models
 from traintest import *
@@ -27,10 +28,11 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 class MetaTrainer(object):
 
     def __init__(self, **kwargs):
-        print("| ----------------- Initializing meta trainer ----------------- |")
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
+        sys.stdout = Logger(self.config.log_path)
+        print("| ----------------- Initializing meta trainer ----------------- |")
         if self.config.check_config(): raise # 检测路径、设备是否存在
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
@@ -190,7 +192,9 @@ if __name__ == "__main__":
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
     parser.add_argument('--usr-suffix', type=str, default='',
-                        help='usr_suffix(default:"", means nothing')
+                        help='usr_suffix(default:"", means no suffix')
+    parser.add_argument('--log-path', type=str, default='logs/log.txt',
+                        help='default: logs/log.txt')
 
     parser.add_argument('--visdom', dest='visdom', action='store_true',
                         help='visualize the training process using visdom')

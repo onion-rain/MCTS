@@ -129,11 +129,12 @@ class PrunednetSearcher(object):
         idx = 0
         for gene in candidates:
             gene_tuple = tuple(gene[:-1])
-            assert gene_tuple not in self.tested_genes_tuple.keys()
-            self.test_gene(gene, epoch=idx)
-            self.tested_genes_tuple[gene_tuple] = gene[-1]
+            if gene_tuple not in self.tested_genes_tuple.keys():
+                self.test_gene(gene, epoch=idx)
+                self.tested_genes_tuple[gene_tuple] = gene[-1]
+            else: print("Tested gene, top1 = {}".format(self.tested_genes_tuple[gene_tuple]))
             idx += 1
-        print([acc[-1] for acc in candidates]) # 打印本次测试得到的精度列表
+        # print([acc[-1] for acc in candidates]) # 打印本次测试得到的精度列表
 
     def check_gene(self, gene):
         """
@@ -236,6 +237,7 @@ class PrunednetSearcher(object):
     def natural_selection(self, candidates, select_num):
         self.test_candidates(candidates)
         sorted_candidates = sorted(candidates, key=lambda x: x[-1])
+        print([acc[-1] for acc in sorted_candidates[:select_num]]) # 打印本次测试得到的精度列表
         return sorted_candidates[:select_num]
 
     def search(self):
@@ -249,7 +251,6 @@ class PrunednetSearcher(object):
             mutant = self.get_mutant_genes(candidates, self.mutation_num, self.mutation_prob, pr=True)
             crossover = self.get_crossover_genes(candidates, self.crossover_num, pr=True)
             rand = self.get_random_genes(self.population - len(mutant) - len(crossover) - len(candidates), pr=True)
-            candidates = []
             candidates.extend(mutant)
             candidates.extend(crossover)
             candidates.extend(rand)
