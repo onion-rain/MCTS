@@ -266,7 +266,7 @@ def get_model_flops(one_shot_model, dataset='cifar', pr=False):
 class Logger(object):
     def __init__(self, filepath="log.txt"):
         self.terminal = sys.stdout
-        self.log = open(filepath, "w+")
+        self.log = open(filepath, "w")
  
     def write(self, message):
         self.terminal.write(message)

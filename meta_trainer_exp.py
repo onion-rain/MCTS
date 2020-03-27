@@ -162,11 +162,11 @@ class MetaTrainer(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='meta Pruningnet train')
-    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='resnet_meta',
+    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='resnet50_pruningnet',
                         choices=models.ALL_MODEL_NAMES,
                         help='model architecture: ' +
                         ' | '.join(name for name in models.ALL_MODEL_NAMES) +
-                        ' (default: resnet_meta)')
+                        ' (default: resnet50_pruningnet)')
     parser.add_argument('--dataset', type=str, default='imagenet',
                         help='training dataset (default: imagenet)')
     parser.add_argument('--workers', type=int, default=10, metavar='N',
@@ -204,6 +204,8 @@ if __name__ == "__main__":
                         help='refine from pruned model (default: "", which means env is automatically set to args.arch)')
     parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
                         help='visdom plot interval batchs (default: 50)')
+
+                        
     args = parser.parse_args()
 
     # debug用

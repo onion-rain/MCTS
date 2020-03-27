@@ -6,7 +6,7 @@ import time
 from traintest.trainer import Trainer
 from utils import *
 
-__all__ = ['PruningnetTrainer']
+__all__ = ['PruningnetTrainer', 'PrunednetTrainer']
 
 class PruningnetTrainer(Trainer):
     """
@@ -49,6 +49,7 @@ class PruningnetTrainer(Trainer):
         else:
             channel_scales = self.model.channel_scales
             stage_repeat = self.model.stage_repeat
+        gene_length = len(stage_repeat)+1 + sum(stage_repeat)
 
         end_time = time.time()
         for batch_index, (input, target) in enumerate(self.train_dataloader):
@@ -56,15 +57,19 @@ class PruningnetTrainer(Trainer):
             self.dataload_time.update(time.time() - end_time)
 
             # 随机生成网络结构
-            mid_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat)).tolist()
-            output_scale_ids = [np.random.randint(low=0, high=len(channel_scales))] # for第一层卷积
-            for i in range(len(stage_repeat)-1): # 每个stage压缩量相同
-                output_scale_ids += [np.random.randint(low=0, high=len(channel_scales))]* stage_repeat[i]
-            output_scale_ids += [-1,]*(stage_repeat[-1]) # 最后一个stage输出通道不压缩
+            # mid_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat)).tolist()
+            # output_scale_ids = [np.random.randint(low=0, high=len(channel_scales))] # for第一层卷积
+            # for i in range(len(stage_repeat)-1): # 每个stage压缩量相同
+            #     output_scale_ids += [np.random.randint(low=0, high=len(channel_scales))]* stage_repeat[i]
+            # output_scale_ids += [-1,]*(stage_repeat[-1]) # 最后一个stage输出通道不压缩
+
+            gene = np.random.randint(low=0, high=len(channel_scales), size=gene_length).tolist()
+            gene[len(stage_repeat)] = -1 # 最后一个stage输出通道数不变
 
             # compute output
             input, target = input.to(self.device), target.to(self.device)
-            output = self.model(input, output_scale_ids, mid_scale_ids)
+            # output = self.model(input, output_scale_ids, mid_scale_ids)
+            output = self.model(input, gene=gene)
             loss = self.criterion(output, target)
 
             # compute gradient and do SGD step
@@ -133,3 +138,15 @@ class PruningnetTrainer(Trainer):
             self.lr_scheduler.step(epoch=epoch)
         
         return self.model
+
+
+
+class PrunednetTrainer(Trainer):
+    """
+    好吧其实就是Trainer
+    """
+    def __init__(self, model, dataloader, criterion, optimizer, device, 
+                 vis=None, vis_interval=20, lr_scheduler=None):
+
+        super(PrunednetTrainer, self).__init__(model, dataloader, criterion, optimizer, 
+                                             device, vis, vis_interval, lr_scheduler)

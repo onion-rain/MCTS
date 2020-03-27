@@ -55,26 +55,26 @@
                 // "--lp-norm", "2",
                 // "--method", "lasso",
                 
-                // // Meta train
-                // "--arch", "resnet50_meta",
-                // "--dataset", "imagenet",
-                // "--gpu", "5",
-                // "--batch-size", "100",
-                // // "--valuate",
-                // // "--visdom",
-                // "--epochs", "32",
-                // "--usr-suffix", "_MetaPruningnet",
-
-                //Meta search
+                // Meta train
                 "--arch", "resnet50_meta",
                 "--dataset", "imagenet",
-                "--gpu", "1",
-                "--resume", "checkpoints/meta_prune/imagenet_resnet50_meta_myo_best.pth.tar",
-                "--flops", "0", 
-                "--population", "5", 
-                "--select-num", "2", 
-                "--mutation-num", "1", 
-                "--crossover-num", "1",
+                "--gpu", "3",
+                "--batch-size", "100",
+                // "--valuate",
+                // "--visdom",
+                "--epochs", "32",
+                "--usr-suffix", "_MetaPruningnet",
+
+                // //Meta search
+                // "--arch", "resnet50_meta",
+                // "--dataset", "imagenet",
+                // "--gpu", "3",
+                // "--resume", "checkpoints/meta_prune/imagenet_resnet50_meta_myo_best.pth.tar",
+                // "--flops", "0", 
+                // "--population", "4", 
+                // "--select-num", "1", 
+                // "--mutation-num", "1", 
+                // "--crossover-num", "1",
             ],
         },
     ]

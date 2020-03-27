@@ -13,7 +13,8 @@ class PrunednetSearcher(object):
     """
     """
     def __init__(self, model, train_dataloader, val_dataloader, criterion, device, vis, max_flops=800,
-                    population=6, select_num=2, mutation_num=2, crossover_num=2, mutation_prob=0.1):
+                    population=6, select_num=2, mutation_num=2, crossover_num=2, mutation_prob=0.1,
+                    checked_genes_tuple={}, tested_genes_tuple={}):
 
         # 一些超参数
         self.max_flops = max_flops
@@ -34,8 +35,8 @@ class PrunednetSearcher(object):
         self.device = device
         self.vis = vis
 
-        self.checked_genes_tuple = {} # keys不包含最后一维精度位，键值存储top1 error
-        self.tested_genes_tuple = {}
+        self.checked_genes_tuple = checked_genes_tuple # keys不包含最后一维精度位，键值存储top1 error
+        self.tested_genes_tuple = tested_genes_tuple
         self.get_model_inform()
         self.gene_length = len(self.stage_repeat)+1 + sum(self.stage_repeat) + 1 # 最后为精度位（top1 error）
 
@@ -61,7 +62,7 @@ class PrunednetSearcher(object):
         # 首先以训练模式 recalibrate batchnorm
         self.model.train() # 训练模式
         end_time = time.time()
-        print("recalibrating batchnorm...", end="")
+        print("recalibrating batchnorm...", end="", flush=True)
         for batch_index, (input, target) in enumerate(self.train_dataloader):
             if batch_index >= 100:
                 break
@@ -268,4 +269,4 @@ class PrunednetSearcher(object):
             candidates.extend(rand)
             # print("{:<30}  {:<8}".format('==> total candidates num: ', len(candidates)))
             candidates = self.natural_selection(candidates, self.select_num)
-            return candidates
+            return candidates, self.checked_genes_tuple, self.tested_genes_tuple

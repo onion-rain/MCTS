@@ -61,6 +61,8 @@ class MetaSearcher(object):
 
         # TODO resume search
         self.candidates = []
+        checked_genes_tuple = {}
+        tested_genes_tuple = {}
         if self.config.research_resume_path != '':
             search_checkpoint = torch.load(config.research_resume_path, map_location=device)
             assert search_checkpoint['model'] == self.config.arch
@@ -69,6 +71,8 @@ class MetaSearcher(object):
             vis_clear = False
             self.candidates = search_checkpoint['candidates']
             best_acc1_error = search_checkpoint['best_acc1_error']
+            checked_genes_tuple = search_checkpoint['checked_genes_tuple']
+            tested_genes_tuple = search_checkpoint['tested_genes_tuple']
 
         # visdom
         self.vis, self.vis_interval = visdom_init(self.config, self.suffix, vis_clear)
@@ -88,6 +92,9 @@ class MetaSearcher(object):
             self.config.mutation_num, 
             self.config.crossover_num, 
             self.config.mutation_prob, 
+            # resume
+            checked_genes_tuple,
+            tested_genes_tuple,
         )
             
         print()
@@ -105,15 +112,17 @@ class MetaSearcher(object):
         start_time = datetime.datetime.now()
         for iter in range(self.start_iter, self.max_iter):
             print_bar(start_time, self.config.arch, self.config.dataset, epoch=iter)
-            self.candidates = self.searcher.search(iter, self.candidates)
+            self.candidates, checked_genes_tuple, tested_genes_tuple = self.searcher.search(iter, self.candidates)
 
             # save checkpoint
-            name = ('MetaPruneSearch_' + self.config.arch + self.suffix)
+            name = ('MetaPruneSearch_' + iter + '_' + self.config.arch + self.suffix)
             save_dict = {
                 'model': self.config.arch,
                 'iter': iter,
                 'candidates': self.candidates,
                 'best_acc1_error': self.candidates[0][-1],
+                'checked_genes_tuple': checked_genes_tuple,
+                'tested_genes_tuple': tested_genes_tuple,
             }
             save_checkpoint(save_dict, is_best=False, epoch=None, file_root='checkpoints/meta_prune/', file_name=name)
 
@@ -121,11 +130,11 @@ class MetaSearcher(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='meta Prunednet search')
-    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='resnet_meta',
+    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='resnet50_pruningnet',
                         choices=models.ALL_MODEL_NAMES,
                         help='model architecture: ' +
                         ' | '.join(name for name in models.ALL_MODEL_NAMES) +
-                        ' (default: resnet_meta)')
+                        ' (default: resnet50_pruningnet)')
     parser.add_argument('--dataset', type=str, default='imagenet',
                         help='training dataset (default: imagenet)')
     parser.add_argument('--workers', type=int, default=20, metavar='N',
@@ -200,6 +209,7 @@ if __name__ == "__main__":
         resume_path=args.resume_path,
         refine=args.refine,
         usr_suffix=args.usr_suffix,
+        log_path=args.log_path,
 
         visdom = args.visdom, # 使用visdom可视化训练过程
         vis_env=args.vis_env,

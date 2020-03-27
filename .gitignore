@@ -1,6 +1,7 @@
 *.pyc
 *.pth
 *.pth.tar
+logs/
 checkpoints/
 slimmed_checkpoints/
 *_pycache__
