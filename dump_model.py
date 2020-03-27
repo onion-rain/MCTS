@@ -25,22 +25,22 @@ def dump_model(model_name=None,
     # model = models.__dict__[model_name](cfg=cfg, num_classes=num_classes)
     # model.load_state_dict(checkpoint['model_state_dict'])
 
-    # save_dict = {
-    #     'arch': checkpoint['arch'],
-    #     'iter': checkpoint['iter'],
-    #     'candidates': checkpoint['candidates'],
-    #     'best_acc1_error': checkpoint['best_acc1_error'],
-    #     'checked_genes_tuple': checkpoint['checked_genes_tuple'],
-    #     'tested_genes_tuple': checkpoint['tested_genes_tuple'],
-    # }
     save_dict = {
-        'best_acc1':16.6360,
-        'epoch':25,
-        'arch':'resnet50_pruningnet',
-        'model_state_dict':checkpoint['model_state_dict'],
-        'optimizer_state_dict':checkpoint['optimizer_state_dict']
+        'arch': checkpoint['model'],
+        'iter': checkpoint['iter'],
+        'candidates': checkpoint['candidates'],
+        'best_acc1_error': checkpoint['best_acc1_error'],
+        'checked_genes_tuple': checkpoint['checked_genes_tuple'],
+        'tested_genes_tuple': checkpoint['tested_genes_tuple'],
     }
-    save_checkpoint(save_dict, is_best=False, epoch=None, file_root='checkpoints/meta_prune/', file_name='imagenet_resnet50_meta_myo_best')
+    # save_dict = {
+    #     'best_acc1':16.6360,
+    #     'epoch':25,
+    #     'arch':'resnet50_pruningnet',
+    #     'model_state_dict':checkpoint['model_state_dict'],
+    #     'optimizer_state_dict':checkpoint['optimizer_state_dict']
+    # }
+    save_checkpoint(save_dict, is_best=False, epoch=None, file_root='checkpoints/', file_name='MetaPruneSearch_31_resnet50_pruningnet')
 
     # for key in checkpoint:
     #     if key != 'model_state_dict' and key != 'optimizer_state_dict':
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     dump_model(
         model_name='resnet110_cs', 
         cfg=None,
-        checkpoint_path='checkpoints/meta_prune/imagenet_resnet50_meta_myo_best_checkpoint.pth.tar',
+        checkpoint_path='checkpoints/MetaPruneSearch_31_resnet50_pruningnet_checkpoint.pth.tar',
         # num_classes=10,
         # save_path='VGG19BN_slimmed0.7_10.0.pth'
         dataset="cifar10"

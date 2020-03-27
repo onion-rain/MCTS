@@ -34,9 +34,9 @@ class Slimmer(object):
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
+        assert self.config.check_config() == 0
         sys.stdout = Logger(self.config.log_path)
         print("| ----------------- Initializing Slimmer ----------------- |")
-        assert self.config.check_config() == 0
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
 
         # 更新一些默认标志
@@ -452,6 +452,7 @@ if __name__ == "__main__":
         gpu_idx = args.gpu, # choose gpu
         resume_path=args.resume_path,
         refine=args.refine,
+        log_path=args.log_path,
 
         slim_percent=args.slim_percent,
     )

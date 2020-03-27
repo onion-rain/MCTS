@@ -25,6 +25,14 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
+# train
+# python meta_trainer_exp.py --arch resnet50_pruningnet --dataset imagenet --batch-size 100 --epochs 32 --gpu 3 --valuate --visdom
+
+# retrain
+# python meta_trainer_exp.py --candidate 0 --arch resnet50_prunednet --search-resume checkpoints/MetaPruneSearch_31_resnet50_pruningnet_checkpoint.pth.tar --epochs 60 --gpu 3 --valuate --visdom --log-path logs/resnet50_prunednet_candidate0.txt
+
+
+
 class MetaTrainer(object):
 
     def __init__(self, **kwargs):
@@ -55,12 +63,27 @@ class MetaTrainer(object):
         if self.config.arch.endswith('pruningnet'):
             self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
             self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
-        elif self.config.arch.endswith('prunednet'):
+
+
+        # TODO 简化！！！！！！！！！
+        elif self.config.arch.endswith('prunednet'): 
+            # data
             self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_init(self.config)
-            assert self.config.research_resume_path != ''
-            search_checkpoint = torch.load(self.config.research_resume_path, map_location=device)
-            candidates = search_checkpoint['candidates']
-            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes, gene=candidates[0]).to(self.device)
+            # model
+            if self.config.search_resume_path != '':
+                search_checkpoint = torch.load(self.config.search_resume_path, map_location=self.device)
+                candidates = search_checkpoint['candidates']
+                print('{:<30}  {:<8}'.format('==> candidate index: ', self.config.candidate_idx))
+                print(candidates[self.config.candidate_idx])
+                self.model = models.__dict__[self.config.arch](num_classes=self.num_classes, gene=candidates[self.config.candidate_idx]).to(self.device)
+            else:
+                self.model = models.__dict__[self.config.arch](num_classes=self.num_classes).to(self.device)
+            checkpoint = None
+            if self.config.resume_path != '': # 断点续练hhh
+                checkpoint = torch.load(self.config.resume_path, map_location=self.device)
+                assert checkpoint['arch'] == self.config.arch
+                print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
+                self.model.load_state_dict(checkpoint['model_state_dict'])
 
 
         # criterion and optimizer
@@ -81,7 +104,7 @@ class MetaTrainer(object):
             last_epoch=self.start_epoch-1, # 我的训练epoch从1开始，而pytorch要通过当前epoch是否等于0判断是不是resume
         )
 
-        # resume
+        # TODO resume 功能待测
         if checkpoint is not None:
             if 'epoch' in checkpoint.keys():
                 self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
@@ -125,12 +148,20 @@ class MetaTrainer(object):
         # step6: valuator
         self.valuator = None
         if self.config.valuate is True:
-            self.valuator = PruningnetTester(
-                dataloader=self.val_dataloader,
-                device=self.device,
-                criterion=self.criterion,
-                vis=self.vis,
-            )
+            if self.config.arch.endswith('pruningnet'):
+                self.valuator = PruningnetTester(
+                    dataloader=self.val_dataloader,
+                    device=self.device,
+                    criterion=self.criterion,
+                    vis=self.vis,
+                )
+            elif self.config.arch.endswith('prunednet'):
+                self.valuator = PrunednetTester(
+                    dataloader=self.val_dataloader,
+                    device=self.device,
+                    criterion=self.criterion,
+                    vis=self.vis,
+                )
 
 
     def run(self):
@@ -224,6 +255,12 @@ if __name__ == "__main__":
                         help='refine from pruned model (default: "", which means env is automatically set to args.arch)')
     parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
                         help='visdom plot interval batchs (default: 50)')
+    
+    # retrain
+    parser.add_argument('--search-resume', dest='search_resume_path', type=str, default='',
+                        metavar='PATH', help='path to latest checkpoint (default: '')')
+    parser.add_argument('--candidate', dest='candidate_idx', type=int, default=0,
+                        metavar='N', help='candidates index choose (default: 0(the best))')
     args = parser.parse_args()
 
     # debug用
@@ -233,11 +270,11 @@ if __name__ == "__main__":
     MetaTrainer = MetaTrainer(
         arch=args.arch,
         dataset=args.dataset,
-        num_workers = args.workers, # 使用多进程加载数据
+        num_workers = args.workers,
         batch_size=args.batch_size,
         max_epoch=args.epochs,
         lr=args.lr,
-        gpu_idx = args.gpu, # choose gpu
+        gpu_idx = args.gpu,
         weight_decay=args.weight_decay,
         momentum=args.momentum,
         deterministic=args.deterministic,
@@ -245,11 +282,15 @@ if __name__ == "__main__":
         resume_path=args.resume_path,
         refine=args.refine,
         usr_suffix=args.usr_suffix,
-
-        visdom = args.visdom, # 使用visdom可视化训练过程
+        log_path=args.log_path,
+        # 使用visdom可视化训练过程
+        visdom = args.visdom, 
         vis_env=args.vis_env,
         vis_legend=args.vis_legend,
         vis_interval=args.vis_interval,
+        #retrain
+        search_resume_path=args.search_resume_path, 
+        candidate_idx=args.candidate_idx,
     )
     MetaTrainer.run()
     print("end")

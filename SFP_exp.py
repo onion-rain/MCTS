@@ -34,9 +34,9 @@ class SFP(object):
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
+        assert self.config.check_config() == 0
         sys.stdout = Logger(self.config.log_path)
         print("| ------------------ Initializing SFP ------------------- |")
-        assert self.config.check_config() == 0
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> srlambda: ', self.config.sr_lambda))
         print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
@@ -258,6 +258,7 @@ if __name__ == "__main__":
         valuate=args.valuate,
         resume_path=args.resume_path,
         refine=args.refine,
+        log_path=args.log_path,
 
         sr=args.sr,
         sr_lambda=args.sr_lambda,

@@ -19,9 +19,9 @@ class TesterExp(object):
         
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
+        assert self.config.check_config() == 0
         sys.stdout = Logger(self.config.log_path)
         print("| ----------------- Initializing Tester ------------------ |")
-        assert self.config.check_config() == 0
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
 
         # suffix
@@ -108,6 +108,7 @@ if __name__ == "__main__":
             valuate=args.valuate,
             resume_path=args.resume_path,
             refine=args.refine,
+            log_path=args.log_path,
         )
     else:
         tester = Tester(

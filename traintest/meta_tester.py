@@ -6,7 +6,7 @@ import time
 from traintest.tester import Tester
 from utils import *
 
-__all__ = ['PruningnetTester']
+__all__ = ['PruningnetTester', 'PrunednetTester']
 
 class PruningnetTester(Tester):
     """
@@ -57,15 +57,12 @@ class PruningnetTester(Tester):
                 self.dataload_time.update(time.time() - end_time)
 
                 # 随机生成网络结构
-                mid_scale_ids = np.random.randint(low=0, high=len(channel_scales), size=sum(stage_repeat)).tolist()
-                output_scale_ids = [np.random.randint(low=0, high=len(channel_scales))] # for第一层卷积
-                for i in range(len(stage_repeat)-1): # 每个stage压缩量相同
-                    output_scale_ids += [np.random.randint(low=0, high=len(channel_scales))]* stage_repeat[i]
-                output_scale_ids += [-1,]*(stage_repeat[-1] + 1) # 最后一个stage不压缩
+                gene = np.random.randint(low=0, high=len(channel_scales), size=gene_length).tolist()
+                gene[len(stage_repeat)] = -1 # 最后一个stage输出通道数不变
 
                 # compute output
                 input, target = input.to(self.device), target.to(self.device)
-                output = self.model(input, output_scale_ids, mid_scale_ids)
+                output = self.model(input, gene)
                 loss = self.criterion(output, target)
 
                 # meters update and visualize
@@ -110,3 +107,13 @@ class PruningnetTester(Tester):
 
         return self.loss_meter, self.top1_acc, self.top5_acc
     
+
+
+class PrunednetTester(Tester):
+    """
+    TODO 待大量测试
+    随机生成各层剪枝比例，metaprune专用
+    """
+    def __init__(self, dataloader=None, device=None, criterion=None, vis=None):
+
+        super(PrunednetTester, self).__init__(dataloader, device, criterion, vis)

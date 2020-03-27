@@ -34,9 +34,9 @@ class Pruner(object):
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
+        assert self.config.check_config() == 0
         sys.stdout = Logger(self.config.log_path)
         print("| ----------------- Initializing Pruner ----------------- |")
-        assert self.config.check_config() == 0
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
         print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
@@ -168,6 +168,7 @@ if __name__ == "__main__":
         gpu_idx = args.gpu, # choose gpu
         resume_path=args.resume_path,
         refine=args.refine,
+        log_path=args.log_path,
 
         prune_percent=args.prune_percent,
         lp_norm=args.lp_norm

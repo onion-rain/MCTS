@@ -72,6 +72,7 @@ class Configuration(object):
     mutation_prob = 0.1
     research_resume_path = ''
     flops_arch=''
+    candidate_idx = 0
 
 
     def update_config(self, kwargs):

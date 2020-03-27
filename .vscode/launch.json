@@ -55,15 +55,14 @@
                 // "--lp-norm", "2",
                 // "--method", "lasso",
                 
-                // Meta train
-                "--arch", "resnet50_pruningnet",
-                "--dataset", "imagenet",
-                "--gpu", "3",
-                "--batch-size", "100",
-                // "--valuate",
-                // "--visdom",
-                "--epochs", "32",
-                "--usr-suffix", "_MetaPruningnet",
+                // // Meta train
+                // "--arch", "resnet50_pruningnet",
+                // "--dataset", "imagenet",
+                // "--gpu", "3",
+                // "--batch-size", "100",
+                // // "--valuate",
+                // // "--visdom",
+                // "--epochs", "32",
 
                 // //Meta search
                 // "--arch", "resnet50_pruningnet",
@@ -76,6 +75,12 @@
                 // "--mutation-num", "1", 
                 // "--crossover-num", "1",
                 // "--flops-arch", "resnet50_prunednet",
+
+                // Meta retrain
+                "--arch", "resnet50_prunednet", 
+                "--search-resume", "checkpoints/MetaPruneSearch_31_resnet50_pruningnet_checkpoint.pth.tar", 
+                "--epochs", "60",
+                "--candidate", "0",
             ],
         },
     ]

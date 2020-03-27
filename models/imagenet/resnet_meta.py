@@ -230,15 +230,15 @@ class ResNet_Pruningnet(nn.Module):
 #     return ResNet_Pruningnet([3, 4, 6, 3], num_classes)
 
 
-def resnet50_pruningnet(cfg=None, num_classes=1000):
+def resnet50_pruningnet(num_classes=1000):
     return ResNet_Pruningnet([3, 4, 6, 3], num_classes)
 
 
-def resnet101_pruningnet(cfg=None, num_classes=1000):
+def resnet101_pruningnet(num_classes=1000):
     return ResNet_Pruningnet([3, 4, 23, 3], num_classes)
 
 
-def resnet152_pruningnet(cfg=None, num_classes=1000):
+def resnet152_pruningnet(num_classes=1000):
     return ResNet_Pruningnet([3, 8, 36, 3], num_classes)
 
 
@@ -403,14 +403,14 @@ class ResNet_Prunednet(nn.Module):
 #     return ResNet_Prunednet([3, 4, 6, 3], num_classes, gene=cfg)
 
 
-def resnet50_prunednet(cfg=None, num_classes=1000):
-    return ResNet_Prunednet([3, 4, 6, 3], num_classes, gene=cfg)
+def resnet50_prunednet(gene=None, num_classes=1000):
+    return ResNet_Prunednet([3, 4, 6, 3], num_classes, gene=gene)
 
 
-def resnet101_prunednet(cfg=None, num_classes=1000):
-    return ResNet_Prunednet([3, 4, 23, 3], num_classes, gene=cfg)
+def resnet101_prunednet(gene=None, num_classes=1000):
+    return ResNet_Prunednet([3, 4, 23, 3], num_classes, gene=gene)
 
 
-def resnet152_prunednet(cfg=None, num_classes=1000):
-    return ResNet_Prunednet([3, 8, 36, 3], num_classes, gene=cfg)
+def resnet152_prunednet(gene=None, num_classes=1000):
+    return ResNet_Prunednet([3, 8, 36, 3], num_classes, gene=gene)
 
