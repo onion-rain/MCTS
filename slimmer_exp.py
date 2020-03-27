@@ -421,23 +421,8 @@ class Slimmer(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='network slimmer')
-    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='vgg19_bn_cifar',
-                        choices=models.ALL_MODEL_NAMES,
-                        help='model architecture: ' +
-                        ' | '.join(name for name in models.ALL_MODEL_NAMES) +
-                        ' (default: resnet18)')
-    parser.add_argument('--dataset', type=str, default='cifar10',
-                        help='training dataset (default: cifar10)')
-    parser.add_argument('--workers', type=int, default=10, metavar='N',
-                        help='number of data loading workers (default: 10)')
-    parser.add_argument('--gpu', type=str, default='0', metavar='gpu_idx',
-                        help='training GPU index(default:"0",which means use GPU0')
-    parser.add_argument('--resume', dest='resume_path', type=str, default='',
-                        metavar='PATH', help='path to latest train checkpoint (default: '')')
-    parser.add_argument('--refine', action='store_true',
-                        help='refine from pruned model, use construction to build the model')
-    parser.add_argument('--log-path', type=str, default='logs/log.txt',
-                        help='default: logs/log.txt')
+    
+    add_trainer_arg_parser(parser)
 
     parser.add_argument('--slim-percent', type=float, default=0.7, metavar='N',
                         help='slim percent(default: 0.7)')

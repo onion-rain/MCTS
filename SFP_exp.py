@@ -186,51 +186,15 @@ class SFP(object):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='network trainer')
-    parser.add_argument('--arch', '-a', type=str, metavar='ARCH', default='vgg19_bn_cifar',
-                        choices=models.ALL_MODEL_NAMES,
-                        help='model architecture: ' +
-                        ' | '.join(name for name in models.ALL_MODEL_NAMES) +
-                        ' (default: resnet18)')
-    parser.add_argument('--dataset', type=str, default='cifar10',
-                        help='training dataset (default: cifar10)')
-    parser.add_argument('--workers', type=int, default=10, metavar='N',
-                        help='number of data loading workers (default: 10)')
-    parser.add_argument('--batch-size', type=int, default=100, metavar='N',
-                        help='input batch size for training (default: 100)')
-    parser.add_argument('--epochs', type=int, default=150, metavar='N',
-                        help='number of epochs to train (default: 150)')
-    parser.add_argument('--lr', dest='lr', type=float, default=1e-1, 
-                        metavar='LR', help='initial learning rate (default: 1e-1)')
-    parser.add_argument('--weight-decay', '-wd', dest='weight_decay', type=float,
-                        default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
-    parser.add_argument('--gpu', type=str, default='0',
-                        help='training GPU index(default:"0",which means use GPU0')
-    parser.add_argument('--deterministic', '--det', action='store_true',
-                    help='Ensure deterministic execution for re-producible results.')
-    parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
-                        help='SGD momentum (default: 0.9)')
-    parser.add_argument('--valuate', action='store_true',
-                        help='valuate each training epoch')
-    parser.add_argument('--resume', dest='resume_path', type=str, default='',
-                        metavar='PATH', help='path to latest train checkpoint (default: '')')
-    parser.add_argument('--refine', action='store_true',
-                        help='refine from pruned model, use construction to build the model')
-    parser.add_argument('--log-path', type=str, default='logs/log.txt',
-                        help='default: logs/log.txt')
+
+    add_trainer_arg_parser(parser)
 
     parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
     parser.add_argument('--srl', dest='sr_lambda', type=float, default=1e-4,
                         help='scale sparse rate (default: 1e-4), suggest 1e-4 for vgg, 1e-5 for resnet/densenet')
 
-    parser.add_argument('--visdom', dest='visdom', action='store_true',
-                        help='visualize the training process using visdom')
-    parser.add_argument('--vis-env', type=str, default='', metavar='ENV',
-                        help='visdom environment (default: "", which means env is automatically set to args.dataset + "_" + args.arch)')
-    parser.add_argument('--vis-legend', type=str, default='', metavar='LEGEND',
-                        help='refine from pruned model (default: "", which means env is automatically set to args.arch)')
-    parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
-                        help='visdom plot interval batchs (default: 50)')
+    add_visdom_arg_parser(parser)
                         
     parser.add_argument('--prune-percent', type=float, default=0.2, metavar='PERCENT', 
                         help='percentage of weight to prune(default: 0.2)')
