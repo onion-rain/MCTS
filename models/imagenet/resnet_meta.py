@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-
+# pruningnet means use fc to generate conv weights, prunednet means construct model with gene
 __all__ = ['ResNet_Pruningnet', 'resnet50_pruningnet', 'resnet101_pruningnet', 'resnet152_pruningnet',
            'ResNet_Prunednet',  'resnet50_prunednet',  'resnet101_prunednet',  'resnet152_prunednet',]
 
@@ -240,7 +240,6 @@ def resnet101_pruningnet(cfg=None, num_classes=1000):
 
 def resnet152_pruningnet(cfg=None, num_classes=1000):
     return ResNet_Pruningnet([3, 8, 36, 3], num_classes)
-
 
 
 

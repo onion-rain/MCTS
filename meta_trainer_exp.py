@@ -51,10 +51,12 @@ class MetaTrainer(object):
         self.device = device_init(self.config)
         # Random Seed 
         seed_init(self.config)
-        # data
-        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
-        # model
-        self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
+        # data & model
+        if self.config.arch.endswith('pruningnet'):
+            self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
+            self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
+        elif self.config.arch.endswith('prunednet'):
+            self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_init(self.config)
         
         # criterion and optimizer
         self.optimizer = torch.optim.SGD(
@@ -91,16 +93,29 @@ class MetaTrainer(object):
         self.vis, self.vis_interval = visdom_init(self.config, self.suffix, vis_clear)
 
         # step6: trainer
-        self.pruningnet_trainer = PruningnetTrainer(
-            self.model, 
-            self.train_dataloader, 
-            self.criterion_smooth, 
-            self.optimizer, 
-            self.device, 
-            self.vis, 
-            self.vis_interval,
-            self.lr_scheduler,
-        )
+        if self.config.arch.endswith('pruningnet'):
+            self.trainer = PruningnetTrainer(
+                self.model, 
+                self.train_dataloader, 
+                self.criterion_smooth, 
+                self.optimizer, 
+                self.device, 
+                self.vis, 
+                self.vis_interval,
+                self.lr_scheduler,
+            )
+        elif self.config.arch.endswith('prunednet'):
+            self.trainer = PrunednetTrainer(
+                self.model, 
+                self.train_dataloader, 
+                self.criterion_smooth, 
+                self.optimizer, 
+                self.device, 
+                self.vis, 
+                self.vis_interval,
+                self.lr_scheduler,
+            )
+
 
         # step6: valuator
         self.valuator = None
@@ -127,7 +142,7 @@ class MetaTrainer(object):
         print("")
         for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
-            self.pruningnet_trainer.train(epoch=epoch)
+            self.trainer.train(epoch=epoch)
             if self.valuator is not None:
                 self.valuator.test(self.model, epoch=epoch)
             print_bar(start_time, self.config.arch, self.config.dataset)
@@ -138,7 +153,7 @@ class MetaTrainer(object):
                 is_best = self.valuator.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
             else:
-                is_best = self.pruningnet_trainer.top1_acc.avg > self.best_acc1
+                is_best = self.trainer.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
             if len(self.config.gpu_idx_list) > 1:
                 state_dict = self.model.module.state_dict()
@@ -204,8 +219,6 @@ if __name__ == "__main__":
                         help='refine from pruned model (default: "", which means env is automatically set to args.arch)')
     parser.add_argument('--vis-interval', type=int, default=50, metavar='N',
                         help='visdom plot interval batchs (default: 50)')
-
-                        
     args = parser.parse_args()
 
     # debug用
