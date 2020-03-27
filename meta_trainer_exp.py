@@ -57,7 +57,12 @@ class MetaTrainer(object):
             self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
         elif self.config.arch.endswith('prunednet'):
             self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_init(self.config)
-        
+            assert self.config.research_resume_path != ''
+            search_checkpoint = torch.load(self.config.research_resume_path, map_location=device)
+            candidates = search_checkpoint['candidates']
+            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes, gene=candidates[0]).to(self.device)
+
+
         # criterion and optimizer
         self.optimizer = torch.optim.SGD(
             params=self.model.parameters(),
@@ -159,7 +164,7 @@ class MetaTrainer(object):
                 state_dict = self.model.module.state_dict()
             else: state_dict = self.model.state_dict()
             save_dict = {
-                'model': self.config.arch,
+                'arch': self.config.arch,
                 'epoch': epoch,
                 'model_state_dict': state_dict,
                 'best_acc1': self.best_acc1,
@@ -184,8 +189,8 @@ if __name__ == "__main__":
                         ' (default: resnet50_pruningnet)')
     parser.add_argument('--dataset', type=str, default='imagenet',
                         help='training dataset (default: imagenet)')
-    parser.add_argument('--workers', type=int, default=10, metavar='N',
-                        help='number of data loading workers (default: 10)')
+    parser.add_argument('--workers', type=int, default=20, metavar='N',
+                        help='number of data loading workers (default: 20)')
     parser.add_argument('--batch-size', type=int, default=100, metavar='N',
                         help='input batch size for training (default: 100)')
     parser.add_argument('--epochs', type=int, default=32, metavar='N',

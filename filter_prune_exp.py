@@ -84,7 +84,7 @@ class Pruner(object):
 
         # step6: valuator
         val_config_dic = {
-            'model': self.model,
+            'arch': self.model,
             'dataloader': self.val_dataloader,
             'device': self.device,
             'vis': self.vis,

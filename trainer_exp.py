@@ -161,7 +161,7 @@ class TrainerExp(object):
                 state_dict = self.model.module.state_dict()
             else: state_dict = self.model.state_dict()
             save_dict = {
-                'model': self.config.arch,
+                'arch': self.config.arch,
                 'epoch': epoch,
                 'model_state_dict': state_dict,
                 'best_acc1': self.best_acc1,

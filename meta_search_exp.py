@@ -69,8 +69,8 @@ class MetaSearcher(object):
         checked_genes_tuple = {}
         tested_genes_tuple = {}
         if self.config.research_resume_path != '':
-            search_checkpoint = torch.load(config.research_resume_path, map_location=device)
-            assert search_checkpoint['model'] == self.config.arch
+            search_checkpoint = torch.load(self.config.research_resume_path, map_location=device)
+            assert search_checkpoint['arch'] == self.config.arch
             self.start_iter = search_checkpoint['iter']+1
             print('{:<30}  {:<8}'.format('==> checkpoint searched iteration: ', search_checkpoint['iter']))
             vis_clear = False
@@ -123,7 +123,7 @@ class MetaSearcher(object):
             # save checkpoint
             name = ('MetaPruneSearch_' + self.config.arch + self.suffix)
             save_dict = {
-                'model': self.config.arch,
+                'arch': self.config.arch,
                 'iter': iter,
                 'candidates': self.candidates,
                 'best_acc1_error': self.candidates[0][-1],

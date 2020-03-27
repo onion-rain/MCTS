@@ -249,6 +249,7 @@ def model_init(config, device, num_classes):
     checkpoint = None
     if config.resume_path != '': # 断点续练hhh
         checkpoint = torch.load(config.resume_path, map_location=device)
+        assert checkpoint['arch'] == config.arch
         print('{:<30}  {:<8}'.format('==> resuming from: ', config.resume_path))
         if config.refine: # 根据cfg加载剪枝后的模型结构
             cfg=checkpoint['cfg']

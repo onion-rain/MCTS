@@ -107,7 +107,7 @@ class SFP(object):
         self.valuator = None
         if self.config.valuate is True:
             val_config_dic = {
-                'model': self.model,
+                'arch': self.model,
                 'dataloader': self.val_dataloader,
                 'device': self.device,
                 'vis': self.vis,
