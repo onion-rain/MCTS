@@ -14,7 +14,7 @@ class PrunednetSearcher(object):
     """
     def __init__(self, model, train_dataloader, val_dataloader, criterion, device, vis, max_flops=800,
                     population=6, select_num=2, mutation_num=2, crossover_num=2, mutation_prob=0.1,
-                    checked_genes_tuple={}, tested_genes_tuple={}):
+                    checked_genes_tuple={}, tested_genes_tuple={}, flops_model=None):
 
         # 一些超参数
         self.max_flops = max_flops
@@ -34,6 +34,7 @@ class PrunednetSearcher(object):
         self.criterion = criterion
         self.device = device
         self.vis = vis
+        self.flops_model = flops_model
 
         self.checked_genes_tuple = checked_genes_tuple # keys不包含最后一维精度位，键值存储top1 error
         self.tested_genes_tuple = tested_genes_tuple
@@ -139,7 +140,7 @@ class PrunednetSearcher(object):
                     "UTC+8: {time_str} ".format(
                         epoch=idx,
                         Tested='tested gene',
-                        top1=100-self.top1_acc.avg,
+                        top1=self.tested_genes_tuple[gene_tuple],
                         time_percent=0,
                         time_str=time.strftime('%H:%M:%S')
                     )
@@ -160,8 +161,8 @@ class PrunednetSearcher(object):
         gene[-1] = 100.0 # top1 error初始化为100
         flops = -1
         if self.max_flops > 0:
-            test_model = self.model.__class__(self.model.stage_repeat, gene=gene).to(self.device)
-            flops = get_model_flops(test_model, 'imagenet', pr=False)
+            flops_model = self.flops_model.__class__(self.model.stage_repeat, gene=gene).to(self.device)
+            flops = get_model_flops(flops_model, 'imagenet', pr=False)
             if flops > self.max_flops:
                 return 0
         self.checked_genes_tuple[gene_tuple] = -1 # 标记已检测
@@ -259,7 +260,7 @@ class PrunednetSearcher(object):
         if iter == 0:
             candidates = self.get_random_genes(self.population, pr=True)
             candidates = self.natural_selection(candidates, self.select_num)
-            return candidates
+            return candidates, self.checked_genes_tuple, self.tested_genes_tuple
         else:
             mutant = self.get_mutant_genes(candidates, self.mutation_num, self.mutation_prob, pr=True)
             crossover = self.get_crossover_genes(candidates, self.crossover_num, pr=True)

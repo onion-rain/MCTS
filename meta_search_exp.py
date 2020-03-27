@@ -27,15 +27,18 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 # sys.stdout = open('logs/log.txt','w')
 
+# python meta_search_exp.py --workers 20 --arch resnet50_pruningnet --dataset imagenet --gpu 2 --resume checkpoints/meta_prune/imagenet_resnet50_meta_myo_best.pth.tar --flops 1500 --population 100 --select-num 30 --mutation-num 30 --crossover-num 30 --log logs/flops1500.txt --usr-suffix _flops1500 --flops-arch resnet50_prunednet
+
 class MetaSearcher(object):
 
     def __init__(self, **kwargs):
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
-        sys.stdout = Logger(self.config.log_path)
-        print("| ----------------- Initializing meta searcher ----------------- |")
         assert self.config.check_config() == 0
+
+        print("| ----------------- Initializing meta searcher ----------------- |")
+        sys.stdout = Logger(self.config.log_path)
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
 
@@ -55,6 +58,8 @@ class MetaSearcher(object):
         self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
         # model
         self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
+        flops_model = models.__dict__[self.config.flops_arch](num_classes=self.num_classes).to(self.device)
+        print('{:<30}  {:<8}'.format('==> flops_arch: ', self.config.flops_arch))
         
         self.criterion = torch.nn.CrossEntropyLoss()
         # self.criterion_smooth = CrossEntropyLabelSmooth(self.num_classes, 0.1)
@@ -95,6 +100,7 @@ class MetaSearcher(object):
             # resume
             checked_genes_tuple,
             tested_genes_tuple,
+            flops_model=flops_model,
         )
             
         print()
@@ -115,7 +121,7 @@ class MetaSearcher(object):
             self.candidates, checked_genes_tuple, tested_genes_tuple = self.searcher.search(iter, self.candidates)
 
             # save checkpoint
-            name = ('MetaPruneSearch_' + iter + '_' + self.config.arch + self.suffix)
+            name = ('MetaPruneSearch_' + self.config.arch + self.suffix)
             save_dict = {
                 'model': self.config.arch,
                 'iter': iter,
@@ -187,6 +193,11 @@ if __name__ == "__main__":
                         metavar='N', help='The number of crossover in the candidates(default: 30)')
     parser.add_argument('--mutation-prob', dest='mutation_prob', type=float, default=0.1, 
                         metavar='prob', help='mutation probability(default: 0.1)')
+    parser.add_argument('--flops-arch', type=str, metavar='ARCH', default='resnet50_prunednet',
+                        choices=models.ALL_MODEL_NAMES,
+                        help='test flops model architecture: ' +
+                        ' | '.join(name for name in models.ALL_MODEL_NAMES) +
+                        ' (default: resnet50_prunednet)')
                         
     args = parser.parse_args()
 
@@ -224,6 +235,7 @@ if __name__ == "__main__":
         mutation_num=args.mutation_num,
         crossover_num=args.crossover_num,
         mutation_prob=args.mutation_prob,
+        flops_arch=args.flops_arch,
     )
     MetaSearcher.run()
     print("end")

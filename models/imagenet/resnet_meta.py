@@ -12,14 +12,14 @@ def parse_gene(gene, stage_repeat):
     """根据gene生成output_scale_ids与mid_scale_ids"""
     if gene is None:
         # gene = [-1, ]*(len(stage_repeat)+1 + sum(stage_repeat))
-        output_scale_ids = [-1,]*(sum(stage_repeat)+2)
+        output_scale_ids = [-1,]*(sum(stage_repeat)+1)
         mid_scale_ids = [-1,]*sum(stage_repeat)
     else:
         mid_scale_ids = gene[len(stage_repeat)+1:len(stage_repeat)+1+sum(stage_repeat)]
         output_scale_ids = [gene[0]] # stage 0
         for i in range(len(stage_repeat)):
             output_scale_ids += [gene[i+1]]*stage_repeat[i]
-        output_scale_ids.append(-1) # features输出通道不变
+        # output_scale_ids.append(-1) # features输出通道不变
     return output_scale_ids, mid_scale_ids
 
 # ------------------------------ Pruningnet ------------------------------
@@ -267,6 +267,7 @@ def conv1x1(in_channels, out_channels, stride=1):
     return nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
 
 class first_conv_Prunednet(nn.Module):
+
     def __init__(self, in_channels, out_channels, stride=1):
         super(first_conv_Prunednet, self).__init__()
 
@@ -281,7 +282,7 @@ class first_conv_Prunednet(nn.Module):
         return out
 
 class Bottleneck_Prunednet(nn.Module):
-    # TODO 根据gene构造网络
+    
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Bottleneck_Prunednet, self).__init__()
         expansion = 4
@@ -295,9 +296,9 @@ class Bottleneck_Prunednet(nn.Module):
         self.conv3 = conv1x1(mid_channels, out_channels, stride=1)
         self.norm3 = nn.BatchNorm2d(out_channels)
 
-        if stride != 1 or self.in_channels != self.out_channels:
+        if stride != 1 or in_channels != out_channels:
             self.shortcut = conv1x1(in_channels, out_channels, stride=stride)
-            self.norm_shortcut = nn.BatchNorm2d(self.out_channels)
+            self.norm_shortcut = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
         # shortcut
@@ -332,7 +333,7 @@ class ResNet_Prunednet(nn.Module):
             gene(list): 存储每层卷积的输入输出通道，用来构造剪之后的网络，前部表示output_scale_ids，后部表示mid_scale_ids
                         若gene为None则构造原始resnet
         """
-        super(ResNet_meta, self).__init__()
+        super(ResNet_Prunednet, self).__init__()
 
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
@@ -343,33 +344,35 @@ class ResNet_Prunednet(nn.Module):
         stage_channels = [64, 256, 512, 1024, 2048] # 原始每层stage的输出通道数，与作者相同
         first_conv = first_conv_Prunednet
         Bottleneck = Bottleneck_Prunednet
-        stage_channels = np.asarray([stage_channels[i]*self.channel_scales[gene[i]] for i in range(len(stage_channels))], dtype=int).tolist()
+        if gene is None:
+            gene = [-1, ]*(len(stage_repeat)+1 + sum(stage_repeat))
         output_scale_ids, mid_scale_ids = parse_gene(gene, self.stage_repeat)
+        output_channels_o = [stage_channels[0]]
+        for i in range(1, len(stage_channels)):
+            output_channels_o += [stage_channels[i],]*stage_repeat[i-1]
+        mid_channels_o = []
+        for i in range(1, len(stage_channels)):
+            mid_channels_o += [int(stage_channels[i]/4),]*stage_repeat[i-1]
+        output_channels = np.asarray([output_channels_o[i]*self.channel_scales[output_scale_ids[i]] for i in range(len(output_scale_ids))], dtype=int).tolist()
+        mid_channels    = np.asarray([mid_channels_o[i]   *self.channel_scales[mid_scale_ids[i]   ] for i in range(len(  mid_scale_ids ))], dtype=int).tolist()
 
         self.features = nn.ModuleList()
 
         # first conv(stage0)
-        self.features.append(first_conv(3, stage_channels[0], stride=2))
+        self.features.append(first_conv(3, output_channels[0], stride=2))
 
-        # stage1
-        self.features.append(Bottleneck(stage_channels[0], stage_channels[1], stride=1))
-        for i in range(1, stage_repeat[0]):
-            self.features.append(Bottleneck(stage_channels[1], stage_channels[1], stride=1))
+        block_num = 1
+        for stage in range(len(stage_repeat)):
+            if stage == 0:
+                self.features.append(Bottleneck(output_channels[block_num-1], mid_channels[block_num-1], output_channels[block_num], stride=1))
+                block_num += 1
+            else:
+                self.features.append(Bottleneck(output_channels[block_num-1], mid_channels[block_num-1], output_channels[block_num], stride=2))
+                block_num += 1
 
-        #stage2
-        self.features.append(Bottleneck(stage_channels[1], stage_channels[2], stride=2))
-        for i in range(1, stage_repeat[1]):
-            self.features.append(Bottleneck(stage_channels[2], stage_channels[2], stride=1))
-
-        #stage3
-        self.features.append(Bottleneck(stage_channels[2], stage_channels[3], stride=2))
-        for i in range(1, stage_repeat[2]):
-            self.features.append(Bottleneck(stage_channels[3], stage_channels[3], stride=1))
-
-        #stage4
-        self.features.append(Bottleneck(stage_channels[3], stage_channels[4], stride=2))
-        for i in range(1, stage_repeat[3]):
-            self.features.append(Bottleneck(stage_channels[4], stage_channels[4], stride=1))
+            for i in range(1, stage_repeat[stage]):
+                self.features.append(Bottleneck(output_channels[block_num-1], mid_channels[block_num-1], output_channels[block_num], stride=1))
+                block_num +=1
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1)) # 输出尺寸为1*1
         self.classifier = nn.Linear(stage_channels[4], num_classes)

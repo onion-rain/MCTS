@@ -71,6 +71,7 @@ class Configuration(object):
     crossover_num = 30
     mutation_prob = 0.1
     research_resume_path = ''
+    flops_arch=''
 
 
     def update_config(self, kwargs):
