@@ -70,7 +70,7 @@ class Configuration(object):
     mutation_num = 30
     crossover_num = 30
     mutation_prob = 0.1
-    research_resume_path = ''
+    search_resume_path = ''
     flops_arch=''
     candidate_idx = 0
 

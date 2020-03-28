@@ -21,8 +21,7 @@ from utils import *
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
-# import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
 # train
@@ -107,7 +106,7 @@ class MetaTrainer(object):
             last_epoch=self.start_epoch-1, # 我的训练epoch从1开始，而pytorch要通过当前epoch是否等于0判断是不是resume
         )
 
-        # TODO resume 功能待测
+        # resume
         if checkpoint is not None:
             if 'model_state_dict' in checkpoint.keys():
                 self.model.load_state_dict(checkpoint['model_state_dict'])

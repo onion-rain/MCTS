@@ -22,8 +22,7 @@ from prune.meta_searcher import PrunednetSearcher
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
-# import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 # sys.stdout = open('logs/log.txt','w')
 
@@ -64,12 +63,12 @@ class MetaSearcher(object):
         self.criterion = torch.nn.CrossEntropyLoss()
         # self.criterion_smooth = CrossEntropyLabelSmooth(self.num_classes, 0.1)
 
-        # TODO resume search
+        # resume search
         self.candidates = []
         checked_genes_tuple = {}
         tested_genes_tuple = {}
-        if self.config.research_resume_path != '':
-            search_checkpoint = torch.load(self.config.research_resume_path, map_location=device)
+        if self.config.search_resume_path != '':
+            search_checkpoint = torch.load(self.config.search_resume_path, map_location=self.device)
             assert search_checkpoint['arch'] == self.config.arch
             self.start_iter = search_checkpoint['iter']+1
             print('{:<30}  {:<8}'.format('==> checkpoint searched iteration: ', search_checkpoint['iter']))
@@ -110,7 +109,7 @@ class MetaSearcher(object):
         print('{:<30}  {:<8}'.format('==> mutation_num: ', self.config.mutation_num))
         print('{:<30}  {:<8}'.format('==> crossover_num: ', self.config.crossover_num))
         print('{:<30}  {:<8}'.format('==> mutation_prob: ', self.config.mutation_prob))
-        print('{:<30}  {:<8}'.format('==> search resume from: ', self.config.research_resume_path))
+        print('{:<30}  {:<8}'.format('==> search resume from: ', self.config.search_resume_path))
             
 
     def run(self):
