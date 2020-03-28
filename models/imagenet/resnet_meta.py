@@ -48,14 +48,15 @@ class first_conv_Pruningnet(nn.Module):
         # self.in_channels为原始通道数，in_channels为pruned通道数
         in_channels = self.in_channels
         out_channels = int(self.out_channels * self.channel_scales[scale_id])
-        block_cfg = torch.FloatTensor([out_channels]).to(x.device)
+        # block_cfg = torch.FloatTensor([out_channels]).to(x.device)
+        block_cfg = torch.FloatTensor([self.channel_scales[scale_id]]).to(x.device)
 
         # conv1
-        conv1_param = F.relu(self.fc11(block_cfg))
+        conv1_param = F.relu(self.fc11(block_cfg), inplace=True)
         conv1_param = self.fc12(conv1_param).view(self.out_channels, self.in_channels, 7, 7)
         out = F.conv2d(x, conv1_param[:out_channels, :in_channels, :, :], 
                             bias=None, stride=self.stride, padding=1, groups=1)
-        out = self.norm1[scale_id](F.relu(out))
+        out = self.norm1[scale_id](F.relu(out, inplace=True))
         
         out = self.maxpool(out)
 
@@ -119,35 +120,35 @@ class Bottleneck_Pruningnet(nn.Module):
         # shortcut
         shortcut = x
         if self.stride != 1 or self.in_channels != self.out_channels:
-            conv_shortcut_param = F.relu(self.fc_shortcut1(block_cfg))
+            conv_shortcut_param = F.relu(self.fc_shortcut1(block_cfg), inplace=True)
             conv_shortcut_param = self.fc_shortcut2(conv_shortcut_param).view(self.out_channels, self.in_channels, 1, 1)
             shortcut = F.conv2d(shortcut, conv_shortcut_param[:out_channels, :in_channels, :, :], 
                                 bias=None, stride=self.stride, padding=0, groups=1)
             shortcut = self.norm_shortcut[scale_ids[2]](shortcut)
 
         # conv1
-        conv1_param = F.relu(self.fc11(block_cfg))
+        conv1_param = F.relu(self.fc11(block_cfg), inplace=True)
         conv1_param = self.fc12(conv1_param).view(self.mid_channels, self.in_channels, 1, 1)
         residual = F.conv2d(x, conv1_param[:mid_channels, :in_channels, :, :], 
                             bias=None, stride=1, padding=0, groups=1)
-        residual = self.norm1[scale_ids[1]](F.relu(residual))
+        residual = self.norm1[scale_ids[1]](F.relu(residual, inplace=True))
 
         # conv2
-        conv2_param = F.relu(self.fc21(block_cfg))
+        conv2_param = F.relu(self.fc21(block_cfg), inplace=True)
         conv2_param = self.fc22(conv2_param).view(self.mid_channels, self.mid_channels, 3, 3)
         residual = F.conv2d(residual, conv2_param[:mid_channels, :mid_channels, :, :], 
                             bias=None, stride=self.stride, padding=1, groups=1)
-        residual = self.norm2[scale_ids[1]](F.relu(residual))
+        residual = self.norm2[scale_ids[1]](F.relu(residual, inplace=True))
 
         # conv3
-        conv3_param = F.relu(self.fc31(block_cfg))
+        conv3_param = F.relu(self.fc31(block_cfg), inplace=True)
         conv3_param = self.fc32(conv3_param).view(self.out_channels, self.mid_channels, 1, 1)
         residual = F.conv2d(residual, conv3_param[:out_channels, :mid_channels, :, :], 
                             bias=None, stride=1, padding=0, groups=1)
         residual = self.norm3[scale_ids[2]](residual)
 
         out = residual + shortcut
-        out = F.relu(out)
+        out = F.relu(out, inplace=True)
         return out
 
 class ResNet_Pruningnet(nn.Module):
@@ -162,6 +163,8 @@ class ResNet_Pruningnet(nn.Module):
 
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
+        self.gene_length = len(stage_repeat)+1 + sum(stage_repeat)
+        self.oc_gene_length = len(stage_repeat)+1
 
         self.channel_scales = [] # 压缩率摇奖池
         for i in range(31):
@@ -277,7 +280,7 @@ class first_conv_Prunednet(nn.Module):
 
     def forward(self, x):
         out = self.conv1(x)
-        out = self.norm1(F.relu(out))
+        out = self.norm1(F.relu(out, inplace=True))
         out = self.maxpool(out)
         return out
 
@@ -285,7 +288,6 @@ class Bottleneck_Prunednet(nn.Module):
     
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Bottleneck_Prunednet, self).__init__()
-        expansion = 4
 
         self.conv1 = conv1x1(in_channels, mid_channels, stride=1)
         self.norm1 = nn.BatchNorm2d(mid_channels)
@@ -309,18 +311,18 @@ class Bottleneck_Prunednet(nn.Module):
 
         # conv1
         residual = self.conv1(x)
-        residual = self.norm1(F.relu(residual))
+        residual = self.norm1(F.relu(residual, inplace=True))
 
         # conv2
         residual = self.conv2(residual)
-        residual = self.norm2(F.relu(residual))
+        residual = self.norm2(F.relu(residual, inplace=True))
 
         # conv3
         residual = self.conv3(residual)
         residual = self.norm3(residual)
 
         out = residual + shortcut
-        out = F.relu(out)
+        out = F.relu(out, inplace=True)
         return out
 
 class ResNet_Prunednet(nn.Module):
@@ -337,11 +339,14 @@ class ResNet_Prunednet(nn.Module):
 
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
+        self.gene_length = len(stage_repeat)+1 + sum(stage_repeat)
+        self.oc_gene_length = len(stage_repeat)+1
         self.gene = gene
 
         self.channel_scales = [] # 压缩率摇奖池
         for i in range(31):
             self.channel_scales.append((10 + i * 3)/100)
+            
         stage_channels = [64, 256, 512, 1024, 2048] # 原始每层stage的输出通道数，与作者相同
         first_conv = first_conv_Prunednet
         Bottleneck = Bottleneck_Prunednet

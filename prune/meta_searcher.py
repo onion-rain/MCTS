@@ -39,7 +39,12 @@ class PrunednetSearcher(object):
         self.checked_genes_tuple = checked_genes_tuple # keys不包含最后一维精度位，键值存储top1 error
         self.tested_genes_tuple = tested_genes_tuple
         self.get_model_inform()
-        self.gene_length = len(self.stage_repeat)+1 + sum(self.stage_repeat) + 1 # 最后为精度位（top1 error）
+        if isinstance(self.model, torch.nn.DataParallel) or isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
+            self.gene_length = model.module.gene_length + 1 # 最后为精度位（top1 error）
+            self.oc_gene_length = model.module.oc_gene_length
+        else: 
+            self.gene_length = model.gene_length + 1 # 最后为精度位（top1 error）
+            self.oc_gene_length = model.oc_gene_length
 
     def get_model_inform(self):
         if isinstance(self.model, torch.nn.DataParallel) or isinstance(self.model, torch.nn.parallel.DistributedDataParallel): # 多gpu训练
@@ -154,7 +159,7 @@ class PrunednetSearcher(object):
         top1 error初始化为100
         检查是否已被检测过
         返回0表示需要被丢弃，返回1表示可用"""
-        gene[len(self.stage_repeat)] = -1 # 最后一个stage输出通道数不变
+        gene[self.oc_gene_length-1] = -1 # 最后一个stage输出通道数不变
         gene_tuple = tuple(gene[:-1])
         if gene_tuple in self.checked_genes_tuple.keys():
             return 0

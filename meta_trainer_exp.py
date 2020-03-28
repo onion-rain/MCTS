@@ -24,12 +24,19 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
-# train
+# train resnet50_pruningnet需要一个v100(32GB)或两个p100(16GB)
 # python meta_trainer_exp.py --arch resnet50_pruningnet --dataset imagenet --batch-size 100 --epochs 32 --gpu 3 --valuate --visdom
+# retrain resnet50一个p100即可(显存占用<10GB，与prunednet.gene有关，不限制flops搜索得到的显存占用9241MB，其他显存占用均小于此值)
+# python meta_trainer_exp.py --arch resnet50_prunednet --dataset imagenet --search-resume checkpoints/meta_prune/MetaPruneSearch_resnet50_pruningnet_flops0_checkpoint.pth.tar --epochs 60 --gpu 0 --valuate --visdom --log-path logs/resnet50_prunednet_candidate0_flops0.txt --candidate 0
+# flops0: gene    = [27, 28, 29, 23, -1, 20, 22, 17, 19, 16, 30,  9, 28, 12, 20, 14, 22, 25, 27, 24, 25, 42.218]
+# flops1900: gene = [20, 13, 16, 16, -1, 21,  9, 23, 21, 21, 14, 26, 19, 17, 27, 19, 15, 11, 17, 22, 25, 42.25]
+# flops1500: gene = [20, 10, 16, 17, -1,  9,  3,  7, 23, 10, 19, 12, 16, 20, 17, 13, 22, 11, 18, 19, 24, 42.506]
 
-# retrain
-# python meta_trainer_exp.py --arch resnet50_prunednet --dataset imagenet --search-resume checkpoints/MetaPruneSearch_31_resnet50_pruningnet_checkpoint.pth.tar --epochs 60 --gpu 3 --valuate --visdom --log-path logs/resnet50_prunednet_candidate0.txt --candidate 0
 
+# train mobilenetv2_pruningnet需要>8个v100(>32GBx4...日了狗了这么大)
+# python meta_trainer_exp.py --arch mobilenetv2_pruningnet --dataset imagenet --batch-size 100 --epochs 32 --gpu 0,1,2,3
+# retrain mobilenetv2_prunednet train都没train哪来的retrain
+# python meta_trainer_exp.py --arch mobilenetv2_prunednet --dataset imagenet --batch-size 100 --search-resume 
 
 
 class MetaTrainer(object):

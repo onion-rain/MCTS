@@ -55,27 +55,28 @@
                 // "--lp-norm", "2",
                 // "--method", "lasso",
                 
-                // // Meta train
+                // Meta train
+                // "--arch", "resnet50_pruningnet",
+                "--arch", "mobilenetv2_pruningnet",
+                "--dataset", "imagenet",
+                "--gpu", "1,2,3",
+                "--batch-size", "10",
+                // "--valuate",
+                // "--visdom",
+                "--epochs", "32",
+
+                // //Meta search
                 // "--arch", "resnet50_pruningnet",
                 // "--dataset", "imagenet",
-                // "--gpu", "3",
-                // "--batch-size", "100",
-                // // "--valuate",
-                // // "--visdom",
-                // "--epochs", "32",
-
-                //Meta search
-                "--arch", "resnet50_pruningnet",
-                "--dataset", "imagenet",
-                "--gpu", "0",
-                "--resume", "checkpoints/meta_prune/imagenet_resnet50_meta_myo_best.pth.tar",
-                "--flops", "0", 
-                "--population", "4", 
-                "--select-num", "1", 
-                "--mutation-num", "1", 
-                "--crossover-num", "1",
-                "--flops-arch", "resnet50_prunednet",
-                "--search-resume", "checkpoints/meta_prune/MetaPruneSearch_resnet50_pruningnet_flops1900_checkpoint.pth.tar",
+                // "--gpu", "0",
+                // "--resume", "checkpoints/meta_prune/imagenet_resnet50_meta_myo_best.pth.tar",
+                // "--flops", "0", 
+                // "--population", "4", 
+                // "--select-num", "1", 
+                // "--mutation-num", "1", 
+                // "--crossover-num", "1",
+                // "--flops-arch", "resnet50_prunednet",
+                // "--search-resume", "checkpoints/meta_prune/MetaPruneSearch_resnet50_pruningnet_flops1900_checkpoint.pth.tar",
 
                 // // Meta retrain
                 // "--arch", "resnet50_prunednet", 

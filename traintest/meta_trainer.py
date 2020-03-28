@@ -46,10 +46,13 @@ class PruningnetTrainer(Trainer):
         if isinstance(self.model, torch.nn.DataParallel) or isinstance(self.model, torch.nn.parallel.DistributedDataParallel): # 多gpu训练
             channel_scales = self.model.module.channel_scales
             stage_repeat = self.model.module.stage_repeat
+            gene_length = self.model.module.gene_length
+            oc_gene_length = self.model.module.oc_gene_length
         else:
             channel_scales = self.model.channel_scales
             stage_repeat = self.model.stage_repeat
-        gene_length = len(stage_repeat)+1 + sum(stage_repeat)
+            gene_length = self.model.gene_length
+            oc_gene_length = self.model.oc_gene_length
 
         end_time = time.time()
         for batch_index, (input, target) in enumerate(self.train_dataloader):
@@ -58,11 +61,10 @@ class PruningnetTrainer(Trainer):
 
             # 随机生成网络结构
             gene = np.random.randint(low=0, high=len(channel_scales), size=gene_length).tolist()
-            gene[len(stage_repeat)] = -1 # 最后一个stage输出通道数不变
+            gene[oc_gene_length-1] = -1 # 最后一个stage输出通道数不变
 
             # compute output
             input, target = input.to(self.device), target.to(self.device)
-            # output = self.model(input, output_scale_ids, mid_scale_ids)
             output = self.model(input, gene=gene)
             loss = self.criterion(output, target)
 

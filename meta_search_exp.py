@@ -26,7 +26,12 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 # sys.stdout = open('logs/log.txt','w')
 
+
+# search resnet50_prunednet需要1块V100(32GB)训练期间显存占用最高达到27GB左右？
 # python meta_search_exp.py --workers 20 --arch resnet50_pruningnet --dataset imagenet --gpu 2 --resume checkpoints/meta_prune/imagenet_resnet50_meta_myo_best.pth.tar --flops 1500 --population 100 --select-num 30 --mutation-num 30 --crossover-num 30 --log logs/flops1500.txt --usr-suffix _flops1500 --flops-arch resnet50_prunednet
+
+# search mobilenetv2_prunednet
+# python meta_search_exp.py
 
 class MetaSearcher(object):
 
