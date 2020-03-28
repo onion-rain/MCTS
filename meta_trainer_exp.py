@@ -34,7 +34,9 @@ warnings.filterwarnings(action="ignore", category=UserWarning)
 
 
 class MetaTrainer(object):
-
+    """
+    以model arch结尾字符区分pruningnet还是prunednet
+    """
     def __init__(self, **kwargs):
 
         self.config = Configuration()
@@ -70,20 +72,21 @@ class MetaTrainer(object):
             # data
             self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_init(self.config)
             # model
-            if self.config.search_resume_path != '':
-                search_checkpoint = torch.load(self.config.search_resume_path, map_location=self.device)
-                candidates = search_checkpoint['candidates']
-                print('{:<30}  {:<8}'.format('==> candidate index: ', self.config.candidate_idx))
-                print(candidates[self.config.candidate_idx])
-                self.model = models.__dict__[self.config.arch](num_classes=self.num_classes, gene=candidates[self.config.candidate_idx]).to(self.device)
-            else:
-                self.model = models.__dict__[self.config.arch](num_classes=self.num_classes).to(self.device)
             checkpoint = None
+            self.gene = None
             if self.config.resume_path != '': # 断点续练hhh
+                assert self.config.search_resume_path == '' # resume_path, search_resume_path二选一
                 checkpoint = torch.load(self.config.resume_path, map_location=self.device)
                 assert checkpoint['arch'] == self.config.arch
                 print('{:<30}  {:<8}'.format('==> resuming from: ', self.config.resume_path))
-                self.model.load_state_dict(checkpoint['model_state_dict'])
+                self.gene = checkpoint['gene']
+            elif self.config.search_resume_path != '': # 从search结果中选取gene
+                search_checkpoint = torch.load(self.config.search_resume_path, map_location=self.device)
+                candidates = search_checkpoint['candidates']
+                print('{:<30}  {:<8}'.format('==> candidate index: ', self.config.candidate_idx))
+                self.gene = candidates[self.config.candidate_idx]
+            print(self.gene)
+            self.model = models.__dict__[self.config.arch](num_classes=self.num_classes, gene=self.gene).to(self.device)
 
 
         # criterion and optimizer
@@ -106,6 +109,8 @@ class MetaTrainer(object):
 
         # TODO resume 功能待测
         if checkpoint is not None:
+            if 'model_state_dict' in checkpoint.keys():
+                self.model.load_state_dict(checkpoint['model_state_dict'])
             if 'epoch' in checkpoint.keys():
                 self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
                 print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
@@ -201,8 +206,8 @@ class MetaTrainer(object):
                 'best_acc1': self.best_acc1,
                 'optimizer_state_dict': self.optimizer.state_dict(),
             }
-            if self.cfg is not None:
-                save_dict['cfg'] = self.cfg
+            if self.config.arch.endswith('prunednet'):
+                save_dict['gene'] = self.gene
             save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
         print("{}{}".format("best_acc1: ", self.best_acc1))
 

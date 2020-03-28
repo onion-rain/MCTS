@@ -337,6 +337,7 @@ class ResNet_Prunednet(nn.Module):
 
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
+        self.gene = gene
 
         self.channel_scales = [] # 压缩率摇奖池
         for i in range(31):
