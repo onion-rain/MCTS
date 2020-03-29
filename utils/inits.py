@@ -30,6 +30,8 @@ def suffix_init(config, usr_suffix=''):
         suffix += '_refine'
     if config.sfp_intervals is not None:
         suffix += '_sfp'
+    if config.max_flops != 0:
+        suffix += '_flops{}'.format(config.max_flops)
     suffix += usr_suffix
     suffix += config.usr_suffix
     print('{:<30}  {:<8}'.format('==> suffix: ', suffix))
@@ -256,7 +258,7 @@ def model_init(config, device, num_classes):
             print(cfg)
     if cfg is None: model = models.__dict__[config.arch](num_classes=num_classes)
     else: model = models.__dict__[config.arch](cfg=cfg, num_classes=num_classes)
-    model.to(device) # 模型转移到设备上
+    model.to(device)
     if len(config.gpu_idx_list) > 1: # 多gpu
         model = torch.nn.DataParallel(model, device_ids=config.gpu_idx_list)
     if checkpoint is not None: # resume
@@ -278,7 +280,7 @@ def distribute_model_init(config, device, num_classes):
             print(cfg)
     if cfg is None: model = models.__dict__[config.arch](num_classes=num_classes)
     else: model = models.__dict__[config.arch](cfg=cfg, num_classes=num_classes)
-    model.to(device) # 模型转移到设备上
+    model.to(device)
     torch.distributed.init_process_group(backend='nccl', init_method='tcp://localhost:65535', rank=0, world_size=1)
     model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
     if checkpoint is not None:

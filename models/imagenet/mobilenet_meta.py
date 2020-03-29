@@ -34,8 +34,6 @@ class first_conv_Pruningnet(nn.Module):
 
         self.fc11 = nn.Linear(1, 32)
         self.fc12 = nn.Linear(32, self.out_channels * self.in_channels * 3 * 3)
-        # self.conv1 = conv1x1(in_channels, out_channels, stride=stride)
-        # self.norm1 = nn.BatchNorm2d(out_channels)
         self.norm1 = nn.ModuleList()
         for scale in channel_scales: # 所有可能的通道数都造一个bn层
             self.norm1.append(nn.BatchNorm2d(int(self.out_channels*scale), affine=False))
@@ -65,22 +63,17 @@ class last_conv_Pruningnet(nn.Module):
         self.out_channels = out_channels
         self.stride = stride
 
-        self.fc11 = nn.Linear(2, 32)
+        self.fc11 = nn.Linear(1, 32)
         self.fc12 = nn.Linear(32, self.out_channels * self.in_channels * 1 * 1)
-        # self.conv1 = conv1x1(in_channels, out_channels, stride=stride)
-        # self.norm1 = nn.BatchNorm2d(out_channels)
-        self.norm1 = nn.ModuleList()
-        for scale in channel_scales: # 所有可能的通道数都造一个bn层
-            self.norm1.append(nn.BatchNorm2d(int(self.out_channels*scale), affine=False))
+        self.norm1 = nn.BatchNorm2d(out_channels)
 
-    def forward(self, x, scale_ids):
+    def forward(self, x, scale_id):
         
         # self.in_channels为原始通道数，in_channels为pruned通道数
-        in_channels  = int(self.in_channels  * self.channel_scales[scale_ids[0]])
-        out_channels = int(self.out_channels * self.channel_scales[scale_ids[1]])
+        in_channels  = int(self.in_channels  * self.channel_scales[scale_id])
+        out_channels = int(self.out_channels)
         block_cfg = torch.FloatTensor([
-            self.channel_scales[scale_ids[0]],
-            self.channel_scales[scale_ids[1]],
+            self.channel_scales[scale_id],
         ]).to(x.device)
 
         # conv1
@@ -88,7 +81,7 @@ class last_conv_Pruningnet(nn.Module):
         conv1_param = self.fc12(conv1_param).view(self.out_channels, self.in_channels, 1, 1)
         out = F.conv2d(x, conv1_param[:out_channels, :in_channels, :, :], 
                             bias=None, stride=self.stride, padding=1, groups=1)
-        out = F.relu(self.norm1[scale_ids[1]](out), inplace=True)
+        out = F.relu(self.norm1(out), inplace=True)
 
         return out
 
@@ -103,26 +96,20 @@ class Bottleneck_Pruningnet(nn.Module):
         self.out_channels = out_channels
         self.stride = stride
 
-        self.fc11 = nn.Linear(3, 32)
-        self.fc12 = nn.Linear(32, self.mid_channels * self.in_channels * 1 * 1)
-        # self.conv1 = conv1x1(self.in_channels, self.mid_channels, stride=1)
-        # self.norm1 = nn.BatchNorm2d(self.mid_channels)
+        self.fc11 = nn.Linear(3, 64)
+        self.fc12 = nn.Linear(64, self.mid_channels * self.in_channels * 1 * 1)
         self.norm1 = nn.ModuleList()
         for scale in channel_scales: # 所有可能的通道数都造一个bn层
             self.norm1.append(nn.BatchNorm2d(int(self.mid_channels*scale), affine=False))
 
-        self.fc21 = nn.Linear(3, 32)
-        self.fc22 = nn.Linear(32, self.mid_channels * self.mid_channels * 3 * 3)
-        # self.conv2 = conv3x3(self.mid_channels, self.mid_channels, stride=stride)
-        # self.norm2 = nn.BatchNorm2d(self.mid_channels)
+        self.fc21 = nn.Linear(3, 64)
+        self.fc22 = nn.Linear(64, self.mid_channels * self.mid_channels * 3 * 3)
         self.norm2 = nn.ModuleList()
         for scale in channel_scales: # 所有可能的通道数都造一个bn层
             self.norm2.append(nn.BatchNorm2d(int(self.mid_channels*scale), affine=False))
 
-        self.fc31 = nn.Linear(3, 32)
-        self.fc32 = nn.Linear(32, self.out_channels * self.mid_channels * 1 * 1)
-        # self.conv3 = conv1x1(self.mid_channels, self.out_channels, stride=1)
-        # self.norm3 = nn.BatchNorm2d(self.out_channels)
+        self.fc31 = nn.Linear(3, 64)
+        self.fc32 = nn.Linear(64, self.out_channels * self.mid_channels * 1 * 1)
         self.norm3 = nn.ModuleList()
         for scale in channel_scales: # 所有可能的通道数都造一个bn层
             self.norm3.append(nn.BatchNorm2d(int(self.out_channels*scale), affine=False))
@@ -248,8 +235,7 @@ class MobileNetV2_Pruningnet(nn.Module):
             if idx==0:
                 x = block(x, output_scale_ids[idx])
             elif idx==len(self.features)-1:
-                x = block(x, [output_scale_ids[idx-1], 
-                              output_scale_ids[idx]])
+                x = block(x, output_scale_ids[idx-1])
             else:
                 x = block(x, [output_scale_ids[idx-1], 
                               mid_scale_ids[idx-1], 

@@ -71,6 +71,7 @@ class MetaTrainer(object):
         if self.config.arch.endswith('pruningnet'):
             self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
             self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
+            # self.model, self.cfg, checkpoint = distribute_model_init(self.config, self.device, self.num_classes)
 
 
         # TODO 简化！！！！！！！！！
@@ -93,7 +94,7 @@ class MetaTrainer(object):
                 self.gene = candidates[self.config.candidate_idx]
             print(self.gene)
             self.model = models.__dict__[self.config.arch](num_classes=self.num_classes, gene=self.gene).to(self.device)
-
+        else: raise NotImplementedError
 
         # criterion and optimizer
         self.optimizer = torch.optim.SGD(

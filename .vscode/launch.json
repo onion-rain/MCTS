@@ -58,9 +58,10 @@
                 // Meta train
                 // "--arch", "resnet50_pruningnet",
                 "--arch", "mobilenetv2_pruningnet",
+                // "--arch", "mobile_pruningnet",
                 "--dataset", "imagenet",
-                "--gpu", "1,2,3",
-                "--batch-size", "10",
+                "--gpu", "",
+                "--batch-size", "100",
                 // "--valuate",
                 // "--visdom",
                 "--epochs", "32",
