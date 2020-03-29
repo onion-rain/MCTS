@@ -65,7 +65,7 @@ class last_conv_Pruningnet(nn.Module):
 
         self.fc11 = nn.Linear(1, 32)
         self.fc12 = nn.Linear(32, self.out_channels * self.in_channels * 1 * 1)
-        self.norm1 = nn.BatchNorm2d(out_channels)
+        self.norm1 = nn.BatchNorm2d(out_channels, affine=True)
 
     def forward(self, x, scale_id):
         
@@ -103,7 +103,7 @@ class Bottleneck_Pruningnet(nn.Module):
             self.norm1.append(nn.BatchNorm2d(int(self.mid_channels*scale), affine=False))
 
         self.fc21 = nn.Linear(3, 64)
-        self.fc22 = nn.Linear(64, self.mid_channels * self.mid_channels * 3 * 3)
+        self.fc22 = nn.Linear(64, self.mid_channels * 1 * 3 * 3) # 组卷积 gproups = mid_channels
         self.norm2 = nn.ModuleList()
         for scale in channel_scales: # 所有可能的通道数都造一个bn层
             self.norm2.append(nn.BatchNorm2d(int(self.mid_channels*scale), affine=False))
@@ -137,9 +137,9 @@ class Bottleneck_Pruningnet(nn.Module):
 
         # conv2
         conv2_param = F.relu(self.fc21(block_cfg), inplace=True)
-        conv2_param = self.fc22(conv2_param).view(self.mid_channels, self.mid_channels, 3, 3)
-        residual = F.conv2d(residual, conv2_param[:mid_channels, :mid_channels, :, :], 
-                            bias=None, stride=self.stride, padding=1, groups=1)
+        conv2_param = self.fc22(conv2_param).view(self.mid_channels, 1, 3, 3)
+        residual = F.conv2d(residual, conv2_param[:mid_channels, :, :, :], 
+                            bias=None, stride=self.stride, padding=1, groups=mid_channels)
         residual = F.relu(self.norm2[scale_ids[1]](residual), inplace=True)
 
         # conv3
@@ -173,16 +173,27 @@ class MobileNetV2_Pruningnet(nn.Module):
         for i in range(31):
             self.channel_scales.append((10 + i * 3)/100)
 
-        network_structure = [ # 原始网络结构
-            # t,  c,  n, s
-            [0,   32, 1, 2], # conv3x3
-            [1,   16, 1, 1], # bottleneck
-            [6,   24, 2, 2], # bottleneck
-            [6,   32, 3, 2], # bottleneck
-            [6,   64, 4, 2], # bottleneck
-            [6,   96, 3, 1], # bottleneck
-            [6,  160, 3, 2], # bottleneck
-            [6,  320, 1, 1], # bottleneck
+        network_structure = [ 
+            # t,    c,  n, s
+            # 原始网络结构
+            # [0,   32, 1, 2], # conv3x3
+            # [1,   16, 1, 1], # bottleneck
+            # [6,   24, 2, 2], # bottleneck
+            # [6,   32, 3, 2], # bottleneck
+            # [6,   64, 4, 2], # bottleneck
+            # [6,   96, 3, 1], # bottleneck
+            # [6,  160, 3, 2], # bottleneck
+            # [6,  320, 1, 1], # bottleneck
+            # [0, 1280, 1, 1], # conv1x1
+            # metaprune作者相同结构
+            [0,   44, 1, 2], # conv3x3
+            [1,   22, 1, 1], # bottleneck
+            [6,   33, 2, 2], # bottleneck
+            [6,   44, 3, 2], # bottleneck
+            [6,   88, 4, 2], # bottleneck
+            [6,  132, 3, 1], # bottleneck
+            [6,  224, 3, 2], # bottleneck
+            [6,  448, 1, 1], # bottleneck
             [0, 1280, 1, 1], # conv1x1
         ]
         stage_expansion = []
@@ -204,8 +215,8 @@ class MobileNetV2_Pruningnet(nn.Module):
         for i in range(1, len(stage_channels)):
             output_channels_o += [stage_channels[i],]*stage_repeat[i]
         mid_channels_o = []
-        for i in range(1, len(stage_channels)-1):
-            mid_channels_o += [int(stage_channels[i]*stage_expansion[i]),]*stage_repeat[i]
+        for i in range(1, len(stage_channels)):
+            mid_channels_o += [int(stage_channels[i-1]*stage_expansion[i]),]*stage_repeat[i-1]
         output_channels = np.asarray([output_channels_o[i]*self.channel_scales[output_scale_ids[i]] for i in range(len(output_scale_ids))], dtype=int).tolist()
         mid_channels    = np.asarray([mid_channels_o[i]   *self.channel_scales[mid_scale_ids[i]   ] for i in range(len(  mid_scale_ids ))], dtype=int).tolist()
 
@@ -356,16 +367,27 @@ class MobileNetV2_Prunednet(nn.Module):
         for i in range(31):
             self.channel_scales.append((10 + i * 3)/100)
 
-        network_structure = [ # 原始网络结构
-            # t,  c,  n, s
-            [0,   32, 1, 2], # conv3x3
-            [1,   16, 1, 1], # bottleneck
-            [6,   24, 2, 2], # bottleneck
-            [6,   32, 3, 2], # bottleneck
-            [6,   64, 4, 2], # bottleneck
-            [6,   96, 3, 1], # bottleneck
-            [6,  160, 3, 2], # bottleneck
-            [6,  320, 1, 1], # bottleneck
+        network_structure = [
+            # t,    c,  n, s
+            # 原始网络结构
+            # [0,   32, 1, 2], # conv3x3
+            # [1,   16, 1, 1], # bottleneck
+            # [6,   24, 2, 2], # bottleneck
+            # [6,   32, 3, 2], # bottleneck
+            # [6,   64, 4, 2], # bottleneck
+            # [6,   96, 3, 1], # bottleneck
+            # [6,  160, 3, 2], # bottleneck
+            # [6,  320, 1, 1], # bottleneck
+            # [0, 1280, 1, 1], # conv1x1
+            # metaprune作者相同结构
+            [0,   44, 1, 2], # conv3x3
+            [1,   22, 1, 1], # bottleneck
+            [6,   33, 2, 2], # bottleneck
+            [6,   44, 3, 2], # bottleneck
+            [6,   88, 4, 2], # bottleneck
+            [6,  132, 3, 1], # bottleneck
+            [6,  224, 3, 2], # bottleneck
+            [6,  448, 1, 1], # bottleneck
             [0, 1280, 1, 1], # conv1x1
         ]
         stage_expansion = []

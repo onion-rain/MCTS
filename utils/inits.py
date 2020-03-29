@@ -190,7 +190,7 @@ def dataset_div_init(config, val_num=50):
             transform=train_transform)
         num_classes = 1000
     else: 
-        print("Dataset undefined")
+        print("ERROR: Dataset undefined!")
         raise NotImplementedError
     
     from utils import dataset_div
@@ -258,6 +258,7 @@ def model_init(config, device, num_classes):
             print(cfg)
     if cfg is None: model = models.__dict__[config.arch](num_classes=num_classes)
     else: model = models.__dict__[config.arch](cfg=cfg, num_classes=num_classes)
+    # print(model)
     model.to(device)
     if len(config.gpu_idx_list) > 1: # 多gpu
         model = torch.nn.DataParallel(model, device_ids=config.gpu_idx_list)

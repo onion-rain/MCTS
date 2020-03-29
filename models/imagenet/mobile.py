@@ -190,6 +190,7 @@ def parse_gene(gene, stage_repeat):
 class MobileNetV2(nn.Module):
     def __init__(self, input_size=224, num_classes=1000):
         super(MobileNetV2, self).__init__()
+        
         self.channel_scales = overall_channel_scale
         stage_repeat = [1,1,2,3,4,3,3,1,1]
         self.stage_repeat = stage_repeat

@@ -169,7 +169,8 @@ class ResNet_Pruningnet(nn.Module):
         self.channel_scales = [] # 压缩率摇奖池
         for i in range(31):
             self.channel_scales.append((10 + i * 3)/100)
-        stage_channels = [64, 256, 512, 1024, 2048] # 原始每层stage的输出通道数，与作者相同
+        # stage_channels = [64, 128, 256, 512, 2048]
+        stage_channels = [64, 256, 512, 1024, 2048] # 原始每层stage的输出通道数，与metaprune作者相同
         first_conv = first_conv_Pruningnet
         Bottleneck = Bottleneck_Pruningnet
 
@@ -347,6 +348,7 @@ class ResNet_Prunednet(nn.Module):
         for i in range(31):
             self.channel_scales.append((10 + i * 3)/100)
             
+        # stage_channels = [64, 128, 256, 512, 2048]
         stage_channels = [64, 256, 512, 1024, 2048] # 原始每层stage的输出通道数，与作者相同
         first_conv = first_conv_Prunednet
         Bottleneck = Bottleneck_Prunednet
