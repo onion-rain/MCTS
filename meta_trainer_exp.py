@@ -34,7 +34,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 
 
 # train mobilenetv2_pruningnet需要1个v100(32GB)
-# python meta_trainer_exp.py --arch mobilenetv2_pruningnet --dataset imagenet --batch-size 500 --epochs 64 --gpu 0 --lr 0.25 --weight-decay 0 --valuate --visdom
+# python meta_trainer_exp.py --arch mobilenetv2_pruningnet --dataset imagenet --batch-size 200 --epochs 64 --gpu 0 --lr 0.25 --weight-decay 0 --valuate --visdom
 # retrain mobilenetv2_prunednet train都没train哪来的retrain
 # python meta_trainer_exp.py --arch mobilenetv2_prunednet --dataset imagenet --batch-size 100 --search-resume 
 

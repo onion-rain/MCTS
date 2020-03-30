@@ -223,7 +223,7 @@ class MobileNetV2(nn.Module):
             if i == 0 :
                 x = block(x, output_scale_ids[i])
             elif i == 18 :
-                x = block(x, output_scale_ids[i])
+                x = block(x, output_scale_ids[i-1])
             else :
                 x = block(x, mid_scale_ids[i-1], output_scale_ids[i-1], output_scale_ids[i])
 
