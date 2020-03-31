@@ -51,9 +51,7 @@ class TesterExp(object):
         )
         
     def run(self):
-        print_model_param_flops(model=self.model, input_res=32, device=self.device)
-        print_model_param_nums(model=self.model)
-        print_flops_params(model=self.model)
+        print_flops_params(model=self.model, dataset=self.config.dataset)
         self.tester.test(self.model, epoch=self.start_epoch)
 
 

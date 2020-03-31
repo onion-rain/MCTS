@@ -13,6 +13,7 @@ import os
 import random
 import datetime
 import argparse
+import sys
 
 import models
 from utils import *
@@ -22,7 +23,7 @@ import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 # import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
 class TrainerExp(object):
@@ -135,7 +136,7 @@ class TrainerExp(object):
         print("")
         start_time = datetime.datetime.now()
         name = (self.config.dataset + "_" + self.config.arch + self.suffix)
-        print_flops_params(model=self.model)
+        print_flops_params(model=self.model, dataset=self.config.dataset)
 
         # initial test
         if self.valuator is not None:
