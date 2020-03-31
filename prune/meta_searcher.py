@@ -175,12 +175,25 @@ class PrunednetSearcher(object):
 
     def get_random_genes(self, num, pr=False):
         """随机生成候选基因(最后一位非精度)"""
+        print("{prefix:30}"
+            "[{done:3}/{total:3} ({percentage:3.0f}%)] "
+            "flops: {flops:.3f} ".format(
+                prefix="generating random genes: ",
+                done=0,
+                total=num,
+                percentage=0,
+                flops=self.max_flops,
+            ), end="", flush=True
+        )
         genes = []
-        while len(genes) < num:
+        iter = 0
+        while len(genes) < num and iter < 100:
             gene = np.random.randint(low=0, high=len(self.channel_scales), size=self.gene_length).tolist()
             flops = self.check_gene(gene)
+            iter += 1
             if flops:
                 genes.append(gene)
+                iter = 0
                 if pr ==True:
                     print("\r{prefix:30}"
                         "[{done:3}/{total:3} ({percentage:3.0f}%)] "
