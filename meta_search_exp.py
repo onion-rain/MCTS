@@ -28,10 +28,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 
 
 # search resnet50_prunednet需要1块V100(32GB)训练期间显存占用最高达到27GB左右？
-# python meta_search_exp.py --workers 20 --arch resnet50_pruningnet --dataset imagenet --gpu 2 --resume checkpoints/meta_prune/imagenet_resnet50_pruningnet_best.pth.tar --flops 1500 --population 100 --select-num 30 --mutation-num 30 --crossover-num 30 --log logs/flops1500.txt --usr-suffix _flops1500 --flops-arch resnet50_prunednet
+# python meta_search_exp.py --workers 20 --arch resnet50_pruningnet --dataset imagenet --gpu 2 --resume checkpoints/meta_prune/imagenet_resnet50_pruningnet_best.pth.tar --flops 1500 --population 100 --select-num 30 --mutation-num 30 --crossover-num 30 --flops-arch resnet50_prunednet
 
 # search mobilenetv2_prunednet需要1块v100(32GB)
-# python meta_search_exp.py --workers 20 --arch mobilenetv2_pruningnet --dataset imagenet --gpu 2 --resume checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar --flops 2000 --population 100 --select-num 30 --mutation-num 30 --crossover-num 30 --log logs/flops2000.txt --flops-arch mobilenetv2_prunednet
+# python meta_search_exp.py --workers 20 --arch mobilenetv2_pruningnet --dataset imagenet --gpu 3 --resume checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar --batch-size 200 --flops 300 --population 100 --select-num 30 --mutation-num 30 --crossover-num 30 --flops-arch mobilenetv2_prunednet
 
 class MetaSearcher(object):
 
@@ -42,7 +42,7 @@ class MetaSearcher(object):
         assert self.config.check_config() == 0
 
         print("| ----------------- Initializing meta searcher ----------------- |")
-        sys.stdout = Logger(self.config.log_path)
+        # sys.stdout = Logger(self.config.log_path)
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
 

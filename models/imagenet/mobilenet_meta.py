@@ -320,7 +320,7 @@ class Bottleneck_Prunednet(nn.Module):
         self.conv1 = conv1x1(in_channels, mid_channels, stride=1)
         self.norm1 = nn.BatchNorm2d(mid_channels)
 
-        self.conv2 = conv3x3(mid_channels, mid_channels, stride=stride)
+        self.conv2 = conv3x3(mid_channels, mid_channels, stride=stride, groups=mid_channels)
         self.norm2 = nn.BatchNorm2d(mid_channels)
 
         self.conv3 = conv1x1(mid_channels, out_channels, stride=1)

@@ -54,5 +54,76 @@ retrained checkpoint: checkpoints/meta_prune/imagenet_resnet50_prunednet_flops15
 
 pruningnet training: ```python meta_trainer_exp.py --arch mobilenetv2_pruningnet --dataset imagenet --batch-size 200 --epochs 64 --gpu 0 --lr 0.25 --weight-decay 0 --valuate --visdom```
 
-prunednet search: ```python meta_search_exp.py --workers 20 --arch mobilenetv2_pruningnet --dataset imagenet --gpu 2 --resume checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar --flops 2000 --population 100 --select-num 30 --mutation-num 30 --crossover-num 30 --log logs/flops2000.txt --flops-arch mobilenetv2_prunednet```
+prunednet search: ```python meta_search_exp.py --workers 20 --arch mobilenetv2_pruningnet --dataset imagenet --gpu 1 --resume checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar --flops 2000 --population 100 --select-num 30 --mutation-num 30 --crossover-num 30 --log logs/flops2000.txt --flops-arch mobilenetv2_prunednet```
 
+prunednet retrain from scratch: ```python meta_trainer_exp.py -a mobilenetv2_prunednet --dataset imagenet --epochs 80 --lr 0.5 --batch-size 500 --valuate --gpu 2 --visdom```
+
+baseline:
+gene: 
+flops: 0.68 GMac
+params: 6.55 M
+top1 acc:
+checkpoint: 
+
+flops0(no flops limit):
+gene: 
+flops: 
+params: 
+top1 acc: 
+pruningnet checkpoint: 
+search checkpoint: 
+retrained checkpoint: 
+
+flops300(no flops limit):
+gene: 
+flops: 
+params: 
+top1 acc: 
+pruningnet checkpoint: 
+search checkpoint: 
+retrained checkpoint: 
+
+flops141(no flops limit):
+gene: 
+flops: 
+params: 
+top1 acc: 
+pruningnet checkpoint: 
+search checkpoint: 
+retrained checkpoint: 
+
+flops125(no flops limit):
+gene: 
+flops: 
+params: 
+top1 acc: 
+pruningnet checkpoint: 
+search checkpoint: 
+retrained checkpoint: 
+
+flops106(no flops limit):
+gene: 
+flops: 
+params: 
+top1 acc: 
+pruningnet checkpoint: 
+search checkpoint: 
+retrained checkpoint: 
+
+flops85(no flops limit):
+gene: 
+flops: 
+params: 
+top1 acc: 
+pruningnet checkpoint: 
+search checkpoint: 
+retrained checkpoint: 
+
+flops44(no flops limit):
+gene: 
+flops: 
+params: 
+top1 acc: 
+pruningnet checkpoint: 
+search checkpoint: 
+retrained checkpoint: 
