@@ -348,9 +348,10 @@ class Bottleneck_Prunednet(nn.Module):
 
 class MobileNetV2_Prunednet(nn.Module):
 
-    def __init__(self, num_classes=1000, gene=None):
+    def __init__(self, stage_repeat=[3, 4, 6, 3], num_classes=1000, gene=None):
         """
         args:
+            stage_repeat: 凑数用的，为了和resnet构造方法形参格式相同
             num_classes(int)：分类数
             gene(list): 存储每层卷积的输入输出通道，用来构造剪之后的网络，前部表示output_scale_ids，后部表示mid_scale_ids
                         若gene为None则构造原始resnet
@@ -421,14 +422,14 @@ class MobileNetV2_Prunednet(nn.Module):
         # bottleneck
         block_num = 1
         for stage in range(1, len(stage_repeat)-1):
-            self.features.append(Bottleneck(output_channels[block_num-1], mid_channels[block_num-1], output_channels[block_num], stride=stage_strides[block_num]))
+            self.features.append(Bottleneck(output_channels[block_num-1], mid_channels[block_num-1], output_channels[block_num], stride=stage_strides[stage]))
             block_num += 1
             for i in range(1, stage_repeat[stage]):
                 self.features.append(Bottleneck(output_channels[block_num-1], mid_channels[block_num-1], output_channels[block_num], stride=1))
                 block_num +=1
         # last conv(stage-1)
         self.features.append(last_conv(output_channels[-2], output_channels[-1], stride=stage_strides[0]))
-
+        
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1)) # 输出尺寸为1*1
         
         self.classifier = nn.Linear(stage_channels[-1], num_classes)

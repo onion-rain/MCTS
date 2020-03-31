@@ -166,7 +166,7 @@ class PrunednetSearcher(object):
         gene[-1] = 100.0 # top1 error初始化为100
         flops = -1
         if self.max_flops > 0:
-            flops_model = self.flops_model.__class__(self.model.stage_repeat, gene=gene).to(self.device)
+            flops_model = self.flops_model.__class__(stage_repeat=self.model.stage_repeat, num_classes=self.model.num_classes, gene=gene).to(self.device)
             flops = get_model_flops(flops_model, 'imagenet', pr=False)
             if flops > self.max_flops:
                 return 0
