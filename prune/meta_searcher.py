@@ -23,6 +23,8 @@ class PrunednetSearcher(object):
         self.mutation_num = mutation_num
         self.crossover_num = crossover_num
         self.mutation_prob = mutation_prob
+        # random随机数从0到len(self.channel_scales)/self.random_range_dividend, flops限制较低的时候原始随机数产生太慢了则增大random_range_dividend
+        self.random_range_dividend = 3.2
 
         # 一些变量的初始化
         self.candidates = [] # 每个元素的最后一位存储精度信息(top1 error)
@@ -186,14 +188,11 @@ class PrunednetSearcher(object):
             ), end="", flush=True
         )
         genes = []
-        iter = 0
-        while len(genes) < num and iter < 100:
-            gene = np.random.randint(low=0, high=len(self.channel_scales), size=self.gene_length).tolist()
+        while len(genes) < num:
+            gene = np.random.randint(low=0, high=len(self.channel_scales)/self.random_range_dividend, size=self.gene_length).tolist()
             flops = self.check_gene(gene)
-            iter += 1
             if flops:
                 genes.append(gene)
-                iter = 0
                 if pr ==True:
                     print("\r{prefix:30}"
                         "[{done:3}/{total:3} ({percentage:3.0f}%)] "
@@ -215,8 +214,8 @@ class PrunednetSearcher(object):
             mutant_gene_ids = np.random.choice(len(candidates), num)
             mutant_genes = [candidates[id] for id in mutant_gene_ids]
             mutant_layer_ids = np.random.choice(np.arange(0, 2), (num, self.gene_length), p=(1-prob, prob)) # 1表示突变0表示不突变
-            mutant_distance = np.random.choice(np.arange(1, len(self.channel_scales)), (num, self.gene_length)) * mutant_layer_ids
-            mutanted_genes = ((mutant_genes + mutant_distance) % len(self.channel_scales)).astype(int)
+            mutant_distance = np.random.choice(np.arange(1, len(self.channel_scales)/self.random_range_dividend), (num, self.gene_length)) * mutant_layer_ids
+            mutanted_genes = ((mutant_genes + mutant_distance) % (len(self.channel_scales)/self.random_range_dividend)).astype(int)
             iter += 1
             for gene in mutanted_genes:
                 flops = self.check_gene(gene)

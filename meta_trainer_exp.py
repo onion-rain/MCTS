@@ -36,7 +36,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # train mobilenetv2_pruningnet需要1个v100(32GB)
 # python meta_trainer_exp.py --arch mobilenetv2_pruningnet --dataset imagenet --batch-size 200 --epochs 64 --gpu 0 --lr 0.25 --weight-decay 0 --valuate --visdom
 # retrain mobilenetv2_prunednet train都没train哪来的retrain
-# python meta_trainer_exp.py -a mobilenetv2_prunednet --dataset imagenet --epochs 80 --lr 0.5 --batch-size 500 --valuate --gpu 2 --visdom
+# python meta_trainer_exp.py -a mobilenetv2_prunednet --dataset imagenet --epochs 80 --lr 0.5 --batch-size 200 --valuate --gpu 2 --visdom --candidate 0 --search-resume checkpoints/meta_prune/MetaPruneSearch_mobilenetv2_pruningnet_flops125.0_checkpoint.pth.tar
 
 
 class MetaTrainer(object):
@@ -47,7 +47,7 @@ class MetaTrainer(object):
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
-        sys.stdout = Logger(self.config.log_path)
+        # sys.stdout = Logger(self.config.log_path)
         print("| ----------------- Initializing meta trainer ----------------- |")
         assert self.config.check_config() == 0
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
