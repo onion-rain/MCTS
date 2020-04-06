@@ -180,19 +180,19 @@ class ResNet_cifar_binary(nn.Module):
         x = self.classifier(x)
         return x
         
-def resnet20_binary(cfg=None, num_classes=10):
+def resnet20_binary(num_classes=10):
     return ResNet_cifar_binary(Basicneck, [3, 3, 3], num_classes)
 
-def resnet32_binary(cfg=None, num_classes=10):
+def resnet32_binary(num_classes=10):
     return ResNet_cifar_binary(Basicneck, [5, 5, 5], num_classes)
 
-def resnet44_binary(gene=None, num_classes=10):
+def resnet44_binary(num_classes=10):
     return ResNet_cifar_binary(Basicneck, [7, 7, 7], num_classes)
 
-def resnet56_binary(gene=None, num_classes=10):
+def resnet56_binary(num_classes=10):
     return ResNet_cifar_binary(Bottleneck, [6, 6, 6], num_classes)
 
-def resnet110_binary(gene=None, num_classes=10):
+def resnet110_binary(num_classes=10):
     return ResNet_cifar_binary(Bottleneck, [12, 12, 12], num_classes)
 
 
