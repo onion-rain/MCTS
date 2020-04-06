@@ -5,7 +5,7 @@ import numpy as np
 
 from quantification.binary import *
 
-__all__ = ['resnet20_binary', 'resnet32_binary', 'resnet44_binary', 'resnet56_binary', 'resnet110_binary']
+__all__ = ['resnet18_binary', 'resnet34_binary', 'resnet50_binary', 'resnet101_binary', 'resnet152_binary']
 
 def conv7x7(in_channels, out_channels, stride=1):
     """7x7 convolution with padding"""
@@ -28,7 +28,8 @@ class first_conv(nn.Module):
     def __init__(self, in_channels, out_channels, stride=1):
         super(first_conv, self).__init__()
 
-        self.conv1 = conv3x3(in_channels, out_channels, stride=stride)
+        self.conv1 = conv7x7(in_channels, out_channels, stride=stride)
+        # self.conv1 = conv3x3(in_channels, out_channels, stride=stride)
         self.norm1 = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
@@ -108,7 +109,7 @@ class Bottleneck(nn.Module):
 
 class ResNet_cifar_binary(nn.Module):
 
-    def __init__(self, block, stage_repeat=[3, 3, 3], num_classes=1000):
+    def __init__(self, block, stage_repeat=[2, 2, 2, 2], num_classes=1000):
         """
         args:
             stage_repeat(list)：每个stage重复的block数
@@ -121,8 +122,7 @@ class ResNet_cifar_binary(nn.Module):
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
 
-        # stage_channels = [64, 128, 256, 512, 2048] # 原始每层stage的输出通道数
-        stage_channels = [16, 64, 128, 256] # 原始每层stage的输出通道数
+        stage_channels = [64, 128, 256, 512, 2048] # 原始每层stage的输出通道数
         assert len(stage_channels)-1 == len(stage_repeat)
         
         output_channels = [stage_channels[0]]
@@ -131,7 +131,8 @@ class ResNet_cifar_binary(nn.Module):
         
         self.features = nn.ModuleList()
 
-        self.features.append(first_conv(3, output_channels[0], stride=1))
+        # self.features.append(first_conv(3, output_channels[0], stride=1))
+        self.features.append(first_conv(3, output_channels[0], stride=2))
 
         mid_channels = []
         for i in range(1, len(stage_channels)):
@@ -164,19 +165,19 @@ class ResNet_cifar_binary(nn.Module):
         x = self.classifier(x)
         return x
         
-def resnet20_binary(num_classes=10):
-    return ResNet_cifar_binary(Basicneck, [3, 3, 3], num_classes)
+def resnet18_binary(num_classes=10):
+    return ResNet_cifar_binary(Basicneck, [2, 2, 2, 2], num_classes)
 
-def resnet32_binary(num_classes=10):
-    return ResNet_cifar_binary(Basicneck, [5, 5, 5], num_classes)
+def resnet34_binary(num_classes=10):
+    return ResNet_cifar_binary(Basicneck, [3, 4, 6, 3], num_classes)
 
-def resnet44_binary(num_classes=10):
-    return ResNet_cifar_binary(Basicneck, [7, 7, 7], num_classes)
+def resnet50_binary(num_classes=10):
+    return ResNet_cifar_binary(Bottleneck, [3, 4, 6, 3], num_classes)
 
-def resnet56_binary(num_classes=10):
-    return ResNet_cifar_binary(Bottleneck, [6, 6, 6], num_classes)
+def resnet101_binary(num_classes=10):
+    return ResNet_cifar_binary(Bottleneck, [3, 4, 23, 3], num_classes)
 
-def resnet110_binary(num_classes=10):
-    return ResNet_cifar_binary(Bottleneck, [12, 12, 12], num_classes)
+def resnet152_binary(num_classes=10):
+    return ResNet_cifar_binary(Bottleneck, [3, 8, 36, 3], num_classes)
 
 

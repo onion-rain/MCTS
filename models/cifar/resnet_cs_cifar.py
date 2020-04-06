@@ -31,7 +31,7 @@ class Basicblock(nn.Module):
         self.norm1 = nn.BatchNorm2d(in_channels)
         self.select = channel_selection(in_channels)
         self.relu1 = nn.ReLU(inplace=True)
-        self.conv1 = conv1x1(cfg[0], cfg[1], stride=1)
+        self.conv1 = conv3x3(cfg[0], cfg[1], stride=1)
         
         self.norm2 = nn.BatchNorm2d(cfg[1])
         self.relu2 = nn.ReLU(inplace=True)
