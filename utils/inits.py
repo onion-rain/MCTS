@@ -3,6 +3,7 @@ import time
 import torchvision as tv
 import numpy as np
 import copy as cp
+import random
 
 import models
 from utils.visualize import Visualizer
@@ -56,10 +57,12 @@ def seed_init(config):
     if config.deterministic:
         if config.num_workers > 1:
             print("ERROR: Setting --deterministic requires setting --workers to 0 or 1")
+        assert config.num_workers <= 1
         random.seed(0)
         torch.manual_seed(0)
-        np.random.seed(self.config.random_seed)
+        np.random.seed(config.random_seed)
         torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
     else: # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
         torch.backends.cudnn.benchmark = True
 
@@ -258,7 +261,7 @@ def model_init(config, device, num_classes):
             print(cfg)
     if cfg is None: model = models.__dict__[config.arch](num_classes=num_classes)
     else: model = models.__dict__[config.arch](cfg=cfg, num_classes=num_classes)
-    # print(model)
+    print(model)
     model.to(device)
     if len(config.gpu_idx_list) > 1: # 多gpu
         model = torch.nn.DataParallel(model, device_ids=config.gpu_idx_list)

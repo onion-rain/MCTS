@@ -13,11 +13,11 @@
             "args": [
                 "--workers", "1",
 
-                // //train
-                // "--arch", "resnet50_meta",
-                // "--dataset", "imagenet",
-                // "--gpu", "0",
-                // // "--valuate",
+                //train
+                "--arch", "resnet20",
+                "--dataset", "cifar10",
+                "--gpu", "0",
+                // "--valuate",
                 
                 // //slimming
                 // "--arch", "resnet20_cs",
@@ -66,18 +66,18 @@
                 // // "--visdom",
                 // "--epochs", "32",
 
-                //Meta search
-                "--arch", "mobilenetv2_pruningnet",
-                "--dataset", "imagenet",
-                "--gpu", "1",
-                "--resume", "checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar",
-                "--flops", "40", 
-                "--population", "5", 
-                "--select-num", "3", 
-                "--mutation-num", "1", 
-                "--crossover-num", "1",
-                "--flops-arch", "mobilenetv2_prunednet",
-                "--search-resume", "checkpoints/meta_prune/MetaPruneSearch_mobilenetv2_pruningnet_flops40.0_checkpoint.pth.tar",
+                // //Meta search
+                // "--arch", "mobilenetv2_pruningnet",
+                // "--dataset", "imagenet",
+                // "--gpu", "1",
+                // "--resume", "checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar",
+                // "--flops", "40", 
+                // "--population", "5", 
+                // "--select-num", "3", 
+                // "--mutation-num", "1", 
+                // "--crossover-num", "1",
+                // "--flops-arch", "mobilenetv2_prunednet",
+                // "--search-resume", "checkpoints/meta_prune/MetaPruneSearch_mobilenetv2_pruningnet_flops40.0_checkpoint.pth.tar",
 
                 // // Meta retrain
                 // "--arch", "resnet50_prunednet", 

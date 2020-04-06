@@ -1,6 +1,8 @@
 import torch
-import troch.nn as nn
+import torch.nn as nn
 import numpy as np
+
+__all__ = ['BinarizeLinear', 'BinarizeConv2d']
 
 def Binarize(tensor, quant_mode='det'):
     if quant_mode=='det':
