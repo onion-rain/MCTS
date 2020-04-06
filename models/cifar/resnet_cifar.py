@@ -42,10 +42,10 @@ class Basicneck(nn.Module):
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Basicneck, self).__init__()
 
-        self.conv1 = conv3x3(in_channels, mid_channels, stride=1)
+        self.conv1 = conv3x3(in_channels, mid_channels, stride=stride)
         self.norm1 = nn.BatchNorm2d(mid_channels)
 
-        self.conv2 = conv3x3(mid_channels, out_channels, stride=stride)
+        self.conv2 = conv3x3(mid_channels, out_channels, stride=1)
         self.norm2 = nn.BatchNorm2d(out_channels)
 
         if stride != 1 or in_channels != out_channels:

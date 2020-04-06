@@ -31,11 +31,11 @@ class Basicblock(nn.Module):
         self.norm1 = nn.BatchNorm2d(in_channels)
         self.select = channel_selection(in_channels)
         self.relu1 = nn.ReLU(inplace=True)
-        self.conv1 = conv3x3(cfg[0], cfg[1], stride=1)
+        self.conv1 = conv3x3(cfg[0], cfg[1], stride=stride)
         
         self.norm2 = nn.BatchNorm2d(cfg[1])
         self.relu2 = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(cfg[1], out_channels, stride=stride)
+        self.conv2 = conv3x3(cfg[1], out_channels, stride=1)
 
 
         if stride != 1 or in_channels != out_channels:

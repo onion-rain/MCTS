@@ -5,7 +5,8 @@ import numpy as np
 
 from quantification.binary import *
 
-__all__ = ['resnet20_binary', 'resnet32_binary', 'resnet44_binary', 'resnet56_binary', 'resnet110_binary']
+__all__ = ['resnet20_binary', 'resnet32_binary', 'resnet44_binary', 'resnet56_binary', 'resnet110_binary',
+           'resnet14_binary']
 
 def conv7x7(in_channels, out_channels, stride=1):
     """7x7 convolution with padding"""
@@ -42,10 +43,10 @@ class Basicneck(nn.Module):
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Basicneck, self).__init__()
 
-        self.conv1 = conv3x3(in_channels, mid_channels, stride=1)
+        self.conv1 = conv3x3(in_channels, mid_channels, stride=stride)
         self.norm1 = nn.BatchNorm2d(mid_channels)
 
-        self.conv2 = conv3x3(mid_channels, out_channels, stride=stride)
+        self.conv2 = conv3x3(mid_channels, out_channels, stride=1)
         self.norm2 = nn.BatchNorm2d(out_channels)
 
         if stride != 1 or in_channels != out_channels:
@@ -120,9 +121,12 @@ class ResNet_cifar_binary(nn.Module):
 
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
+        # self.expansion = 4
+        self.expansion = 1 # binary NN作者结构
 
         # stage_channels = [64, 128, 256, 512, 2048] # 原始每层stage的输出通道数
-        stage_channels = [16, 64, 128, 256] # 原始每层stage的输出通道数
+        # stage_channels = [16, 64, 128, 256] # 原始每层stage的输出通道数
+        stage_channels = [80, 80, 160, 320] # binary NN作者结构
         assert len(stage_channels)-1 == len(stage_repeat)
         
         output_channels = [stage_channels[0]]
@@ -135,7 +139,7 @@ class ResNet_cifar_binary(nn.Module):
 
         mid_channels = []
         for i in range(1, len(stage_channels)):
-            mid_channels += [int(stage_channels[i]/4),]*stage_repeat[i-1]
+            mid_channels += [int(stage_channels[i]/self.expansion),]*stage_repeat[i-1]
 
         block_num = 1
         for stage in range(len(stage_repeat)):
@@ -163,6 +167,9 @@ class ResNet_cifar_binary(nn.Module):
         x = torch.flatten(x, 1) # x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
+        
+def resnet14_binary(num_classes=10):
+    return ResNet_cifar_binary(Basicneck, [2, 2, 2], num_classes)
         
 def resnet20_binary(num_classes=10):
     return ResNet_cifar_binary(Basicneck, [3, 3, 3], num_classes)
