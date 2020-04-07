@@ -33,7 +33,7 @@ class TrainerExp(object):
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
         assert self.config.check_config() == 0
-        sys.stdout = Logger(self.config.log_path)
+        # sys.stdout = Logger(self.config.log_path)
         print("| ----------------- Initializing Trainer ----------------- |")
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
@@ -65,6 +65,12 @@ class TrainerExp(object):
             momentum=self.config.momentum,
             weight_decay=self.config.weight_decay,
         )
+        # self.optimizer = torch.optim.Adam(
+        #     params=self.model.parameters(),
+        #     lr=self.config.lr,
+        #     # momentum=self.config.momentum,
+        #     weight_decay=self.config.weight_decay,
+        # )
         
         self.criterion = torch.nn.CrossEntropyLoss()
 
@@ -72,7 +78,7 @@ class TrainerExp(object):
             optimizer=self.optimizer,
             milestones=[self.config.max_epoch*0.5, self.config.max_epoch*0.75], 
             gamma=0.1,
-            last_epoch=self.start_epoch-1, # 我的训练epoch从1开始，而pytorch要通过当前epoch是否等于0判断是不是resume
+            last_epoch=self.start_epoch-1,
         )
 
         # resume
@@ -102,6 +108,17 @@ class TrainerExp(object):
                 self.optimizer, 
                 self.device, 
                 self.sr_lambda, 
+                self.vis, 
+                self.vis_interval,
+                self.lr_scheduler,
+            )
+        elif self.config.binary:
+            self.trainer = BinaryTrainer(
+                self.model, 
+                self.train_dataloader, 
+                self.criterion, 
+                self.optimizer, 
+                self.device, 
                 self.vis, 
                 self.vis_interval,
                 self.lr_scheduler,
@@ -182,6 +199,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
+    parser.add_argument('--binary', dest='binary', action='store_true',
+                        help='train binary neural network')
     parser.add_argument('--srl', dest='sr_lambda', type=float, default=1e-4,
                         help='scale sparse rate (default: 1e-4), suggest 1e-4 for vgg, 1e-5 for resnet/densenet')
 
@@ -211,6 +230,8 @@ if __name__ == "__main__":
 
         sr=args.sr,
         sr_lambda=args.sr_lambda,
+
+        binary=args.binary,
 
         visdom = args.visdom, # 使用visdom可视化训练过程
         vis_env=args.vis_env,

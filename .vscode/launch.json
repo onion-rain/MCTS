@@ -14,10 +14,11 @@
                 "--workers", "1",
 
                 //train
-                "--arch", "resnet20_binary",
+                "--arch", "resnet14_binary",
                 "--dataset", "cifar10",
                 "--gpu", "0",
                 "--valuate",
+                "--binary",
                 
                 // //slimming
                 // "--arch", "resnet20_cs",

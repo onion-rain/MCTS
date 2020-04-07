@@ -21,7 +21,7 @@ def conv1x1(in_channels, out_channels, stride=1):
     return BinarizeConv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
 
 def activation(input):
-    return F.hardtanh(input, inplace=True)
+    return F.hardtanh(input, inplace=True) # 这玩意是二值量化函数，不是激活函数
 
 class first_conv(nn.Module):
 

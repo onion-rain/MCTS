@@ -33,6 +33,8 @@ def suffix_init(config, usr_suffix=''):
         suffix += '_sfp'
     if config.max_flops != 0:
         suffix += '_flops{}'.format(config.max_flops)
+    # if config.binary is True:
+    #     suffix += '_binary'
     suffix += usr_suffix
     suffix += config.usr_suffix
     print('{:<30}  {:<8}'.format('==> suffix: ', suffix))
@@ -73,17 +75,22 @@ def get_cifar_train_transform():
         tv.transforms.RandomHorizontalFlip(),
         tv.transforms.ToTensor(),
         tv.transforms.Normalize(
-            mean=[0.5, 0.5, 0.5], 
-            std=[0.5, 0.5, 0.5],
+            # mean=[0.5, 0.5, 0.5], 
+            # std=[0.5, 0.5, 0.5],
+            mean=[0.485, 0.456, 0.406], 
+            std=[0.229, 0.224, 0.225],
         ) # 标准化的过程为(input-mean)/std
     ])
 
 def get_cifar_val_transform():
     return tv.transforms.Compose([
+        tv.transforms.CenterCrop(32),
         tv.transforms.ToTensor(), 
         tv.transforms.Normalize(
-            mean=(0.5, 0.5, 0.5), 
-            std=(0.5, 0.5, 0.5)
+            # mean=(0.5, 0.5, 0.5), 
+            # std=(0.5, 0.5, 0.5)
+            mean=[0.485, 0.456, 0.406], 
+            std=[0.229, 0.224, 0.225],
         ) # 标准化的过程为(input-mean)/std
     ])
 

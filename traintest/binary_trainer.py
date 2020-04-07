@@ -1,78 +1,26 @@
-# import ssl
-# #全局取消证书验证
-# ssl._create_default_https_context = ssl._create_unverified_context
-
 import torch
-from tqdm import tqdm
-from torch.nn import functional as F
-# import torchvision as tv
 import numpy as np
-import time
-import os
 import random
-import datetime
-import argparse
+import time
 
+from traintest.trainer import Trainer
 from utils import *
 
-__all__ = ['Trainer']
+__all__ = ['BinaryTrainer']
 
-# fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
-
-class Trainer(object):
+class BinaryTrainer(Trainer):
     """
-    trainer基类，原则上所有trainer都是继承该类
     """
     def __init__(self, model, dataloader, criterion, optimizer, device, 
                  vis=None, vis_interval=20, lr_scheduler=None):
 
-        # visdom
-        self.vis = vis
-        self.vis_interval = vis_interval
-
-        # device
-        self.device = device
-
-        # step1: data
-        self.train_dataloader = dataloader
-
-        # step2: model
-        self.model = model
-
-        # step3: criterion
-        self.criterion = criterion
-
-        # step4: optimizer
-        self.optimizer = optimizer
-
-        # step4: lr_scheduler
-        self.lr_scheduler = lr_scheduler
-
-    def init_meters(self):
-        # meters
-        self.loss_meter = AverageMeter()
-        self.top1_acc = AverageMeter()
-        self.top5_acc = AverageMeter()
-        self.batch_time = AverageMeter()
-        self.dataload_time = AverageMeter()
-        if self.vis is not None:
-            self.loss_vis = AverageMeter()
-            self.top1_vis = AverageMeter()
-
-    def upadate_meters(self, output, target, loss):
-        self.loss_meter.update(loss.item(), output.size(0))
-        prec1, prec5 = accuracy(output.data, target.data, topk=(1, 5))
-        self.top1_acc.update(prec1.data.cpu(), output.size(0))
-        self.top5_acc.update(prec5.data.cpu(), output.size(0))
-        if self.vis is not None:
-            self.loss_vis.update(loss.item(), output.size(0))
-            self.top1_vis.update(prec1.data.cpu(), output.size(0))
-
-
+        super(BinaryTrainer, self).__init__(model, dataloader, criterion, optimizer, 
+                                             device, vis, vis_interval, lr_scheduler)
 
     def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
                 optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
         """注意：如要更新model必须更新optimizer和lr_scheduler"""
+
         if epoch is None:
             epoch = 0
         if model is not None:
@@ -112,7 +60,16 @@ class Trainer(object):
             # compute gradient and do SGD step
             self.optimizer.zero_grad()
             loss.backward()
-            self.optimizer.step()
+
+            for param in list(self.model.parameters()):
+                if hasattr(param, 'org'):
+                    param.data.copy_(param.org)
+
+            self.optimizer.step() # 反向传播传的是全精度gradient
+
+            for param in list(self.model.parameters()):
+                if hasattr(param, 'org'):
+                    param.org.copy_(param.data.clamp_(-1, 1))
 
             # meters update
             self.upadate_meters(output, target, loss)
@@ -175,6 +132,3 @@ class Trainer(object):
             self.lr_scheduler.step(epoch=epoch)
         
         return self.model
-
-
-        

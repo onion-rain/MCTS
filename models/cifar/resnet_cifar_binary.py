@@ -22,7 +22,7 @@ def conv1x1(in_channels, out_channels, stride=1):
     return BinarizeConv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
 
 def activation(input):
-    return F.hardtanh(input, inplace=True)
+    return F.hardtanh(input, inplace=True) # 这玩意是二值量化函数，不是激活函数
 
 class first_conv(nn.Module):
 
@@ -155,7 +155,7 @@ class ResNet_cifar_binary(nn.Module):
                 block_num +=1
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1)) # 输出尺寸为1*1
-        self.classifier = nn.Linear(stage_channels[-1], num_classes)
+        self.classifier = BinarizeLinear(stage_channels[-1], num_classes)
 
 
     def forward(self, x):
@@ -168,7 +168,7 @@ class ResNet_cifar_binary(nn.Module):
         x = self.classifier(x)
         return x
         
-def resnet14_binary(num_classes=10):
+def resnet14_binary(num_classes=10): # binary neural network
     return ResNet_cifar_binary(Basicneck, [2, 2, 2], num_classes)
         
 def resnet20_binary(num_classes=10):

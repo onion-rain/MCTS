@@ -25,9 +25,7 @@ class BinarizeLinear(nn.Linear):
         super(BinarizeLinear, self).__init__(*kargs, **kwargs)
 
     def forward(self, input):
-
-        if input.size(1) != 784:
-            input.data=Binarize(input.data)
+        input.data = Binarize(input.data)
         if not hasattr(self.weight, 'org'):
             self.weight.org = self.weight.data.clone()
         self.weight.data = Binarize(self.weight.org)
@@ -44,11 +42,11 @@ class BinarizeConv2d(nn.Conv2d):
         super(BinarizeConv2d, self).__init__(*kargs, **kwargs)
 
     def forward(self, input):
-        if input.size(1) != 3:
+        if input.size(1) != 3: # 第一层的输入不量化
             input.data = Binarize(input.data)
         if not hasattr(self.weight, 'org'):
             self.weight.org = self.weight.data.clone()
-        self.weight.data=Binarize(self.weight.org)
+        self.weight.data = Binarize(self.weight.org)
 
         out = nn.functional.conv2d(input, self.weight, None, self.stride,
                                    self.padding, self.dilation, self.groups)

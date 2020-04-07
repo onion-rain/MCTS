@@ -50,7 +50,7 @@ class Configuration(object):
     vis_interval = 20 # visdom plot info every N batch
 
     # slimming
-    sr = False
+    sr = False # sparsity regularization
     sr_lambda = 1e-4
     slim_percent = 0.7
 
@@ -73,6 +73,9 @@ class Configuration(object):
     search_resume_path = ''
     flops_arch=''
     candidate_idx = 0
+
+    # binary neural network
+    binary = False 
 
 
     def update_config(self, kwargs):
