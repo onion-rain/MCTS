@@ -40,7 +40,16 @@ def suffix_init(config, usr_suffix=''):
     print('{:<30}  {:<8}'.format('==> suffix: ', suffix))
     return suffix
 
+
+
+
 # ------------------------------- DEVICE INIT-------------------------------
+# d8888b. d88888b db    db d888888b  .o88b. d88888b   d888888b d8b   db d888888b d888888b 
+# 88  `8D 88'     88    88   `88'   d8P  Y8 88'         `88'   888o  88   `88'   `~~88~~' 
+# 88   88 88ooooo Y8    8P    88    8P      88ooooo      88    88V8o 88    88       88    
+# 88   88 88~~~~~ `8b  d8'    88    8b      88~~~~~      88    88 V8o88    88       88    
+# 88  .8D 88.      `8bd8'    .88.   Y8b  d8 88.         .88.   88  V888   .88.      88    
+# Y8888D' Y88888P    YP    Y888888P  `Y88P' Y88888P   Y888888P VP   V8P Y888888P    YP    
 def device_init(config):
     if len(config.gpu_idx_list) > 0:
         device = torch.device('cuda:{}'.format(min(config.gpu_idx_list))) # 起始gpu序号
@@ -50,7 +59,17 @@ def device_init(config):
         print('{:<30}  {:<8}'.format('==> device: ', 'CPU'))
     return device
 
+
+
+
+
 # ------------------------------- SEED INIT-------------------------------
+# .d8888. d88888b d88888b d8888b.   d888888b d8b   db d888888b d888888b 
+# 88'  YP 88'     88'     88  `8D     `88'   888o  88   `88'   `~~88~~' 
+# `8bo.   88ooooo 88ooooo 88   88      88    88V8o 88    88       88    
+#   `Y8b. 88~~~~~ 88~~~~~ 88   88      88    88 V8o88    88       88    
+# db   8D 88.     88.     88  .8D     .88.   88  V888   .88.      88    
+# `8888Y' Y88888P Y88888P Y8888D'   Y888888P VP   V8P Y888888P    YP    
 def seed_init(config):
     """
     其实pytorch只保证在同版本并且没有多线程的情况下相同的seed可以得到相同的结果，
@@ -68,7 +87,17 @@ def seed_init(config):
     else: # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
         torch.backends.cudnn.benchmark = True
 
+
+
+
 # ------------------------------- DATASET INIT-------------------------------
+# d8888b.  .d8b.  d888888b  .d8b.  .d8888. d88888b d888888b   d888888b d8b   db d888888b d888888b 
+# 88  `8D d8' `8b `~~88~~' d8' `8b 88'  YP 88'     `~~88~~'     `88'   888o  88   `88'   `~~88~~' 
+# 88   88 88ooo88    88    88ooo88 `8bo.   88ooooo    88         88    88V8o 88    88       88    
+# 88   88 88~~~88    88    88~~~88   `Y8b. 88~~~~~    88         88    88 V8o88    88       88    
+# 88  .8D 88   88    88    88   88 db   8D 88.        88        .88.   88  V888   .88.      88    
+# Y8888D' YP   YP    YP    YP   YP `8888Y' Y88888P    YP      Y888888P VP   V8P Y888888P    YP    
+
 def get_cifar_train_transform():
     return tv.transforms.Compose([
         tv.transforms.RandomCrop(32, padding=4),
@@ -77,8 +106,8 @@ def get_cifar_train_transform():
         tv.transforms.Normalize(
             # mean=[0.5, 0.5, 0.5], 
             # std=[0.5, 0.5, 0.5],
-            mean=[0.485, 0.456, 0.406], 
-            std=[0.229, 0.224, 0.225],
+            mean=[0.4914, 0.4822, 0.4465], 
+            std=[0.2023, 0.1994, 0.2010],
         ) # 标准化的过程为(input-mean)/std
     ])
 
@@ -89,8 +118,8 @@ def get_cifar_val_transform():
         tv.transforms.Normalize(
             # mean=(0.5, 0.5, 0.5), 
             # std=(0.5, 0.5, 0.5)
-            mean=[0.485, 0.456, 0.406], 
-            std=[0.229, 0.224, 0.225],
+            mean=[0.4914, 0.4822, 0.4465], 
+            std=[0.2023, 0.1994, 0.2010],
         ) # 标准化的过程为(input-mean)/std
     ])
 
@@ -252,7 +281,17 @@ def dataloader_div_init(config, val_num=50):
     )
     return train_dataloader, val_dataloader, num_classes
 
+
+
+
 # ------------------------------- MODEL INIT-------------------------------
+# .88b  d88.  .d88b.  d8888b. d88888b db        d888888b d8b   db d888888b d888888b 
+# 88'YbdP`88 .8P  Y8. 88  `8D 88'     88          `88'   888o  88   `88'   `~~88~~' 
+# 88  88  88 88    88 88   88 88ooooo 88           88    88V8o 88    88       88    
+# 88  88  88 88    88 88   88 88~~~~~ 88           88    88 V8o88    88       88    
+# 88  88  88 `8b  d8' 88  .8D 88.     88booo.     .88.   88  V888   .88.      88    
+# YP  YP  YP  `Y88P'  Y8888D' Y88888P Y88888P   Y888888P VP   V8P Y888888P    YP    
+                                                                                  
 def model_init(config, device, num_classes):
     """模型训练model通用初始化"""
     print('{:<30}  {:<8}'.format('==> creating arch: ', config.arch))
@@ -298,7 +337,18 @@ def distribute_model_init(config, device, num_classes):
         model.load_state_dict(checkpoint['model_state_dict'])
     return model, cfg, checkpoint
 
-# ------------------------------- VISDOM INIT-------------------------------
+
+
+
+
+# ------------------------------- VISDOM INIT -------------------------------
+# db    db d888888b .d8888. d8888b.  .d88b.  .88b  d88.   d888888b d8b   db d888888b d888888b 
+# 88    88   `88'   88'  YP 88  `8D .8P  Y8. 88'YbdP`88     `88'   888o  88   `88'   `~~88~~' 
+# Y8    8P    88    `8bo.   88   88 88    88 88  88  88      88    88V8o 88    88       88    
+# `8b  d8'    88      `Y8b. 88   88 88    88 88  88  88      88    88 V8o88    88       88    
+#  `8bd8'    .88.   db   8D 88  .8D `8b  d8' 88  88  88     .88.   88  V888   .88.      88    
+#    YP    Y888888P `8888Y' Y8888D'  `Y88P'  YP  YP  YP   Y888888P VP   V8P Y888888P    YP    
+                                                                                            
 def visdom_init(config, suffix='', vis_clear=True):
     vis = None
     vis_interval = None
