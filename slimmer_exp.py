@@ -163,8 +163,7 @@ class Slimmer(object):
                 mask = weight_copy.abs().gt(self.threshold).float().to(self.device) # torch.gt(a, b): a>b为1否则为0
                 if torch.sum(mask) == 0:
                     error_str = 'Slim Error: layer' + str(layer_index) + ": " + module._get_name() + ': remain_out_channels = 0! turn down the slim_percent!'
-                    print(error_str)
-                    raise
+                    raise Exception(error_str)
                 slimmed_num += (mask.shape[0] - torch.sum(mask))
                 module.weight.data.mul_(mask)
                 module.bias.data.mul_(mask)
@@ -207,8 +206,8 @@ class Slimmer(object):
                 mask = weight_copy.abs().gt(self.threshold).float().to(self.device) # torch.gt(a, b): a>b为1否则为0
                 if torch.sum(mask) == 0:
                     error_str = 'Slim Error: layer' + str(layer_index) + ": " + module._get_name() + ': remain_out_channels = 0! turn down the slim_percent!'
-                    print(error_str)
-                    raise
+                    # print(error_str)
+                    raise Exception(error_str)
 
 
                 # print(weight_copy)##############################################
@@ -344,8 +343,8 @@ class Slimmer(object):
                 mask = weight_copy.abs().gt(self.threshold).float().to(self.device) # torch.gt(a, b): a>b为1否则为0
                 if torch.sum(mask) == 0:
                     error_str = 'Slim Error: layer' + str(layer_index) + ": " + module._get_name() + ': remain_out_channels = 0! turn down the slim_percent!'
-                    print(error_str)
-                    raise
+                    # print(error_str)
+                    raise Exception(error_str)
 
 
                 # print(weight_copy)##############################################

@@ -10,7 +10,6 @@ __all__ = ['PruningnetTester', 'PrunednetTester']
 
 class PruningnetTester(Tester):
     """
-    TODO 待大量测试
     随机生成各层剪枝比例，metaprune专用
     """
     def __init__(self, dataloader=None, device=None, criterion=None, vis=None):
@@ -115,7 +114,6 @@ class PruningnetTester(Tester):
 
 class PrunednetTester(Tester):
     """
-    TODO 待大量测试
     随机生成各层剪枝比例，metaprune专用
     """
     def __init__(self, dataloader=None, device=None, criterion=None, vis=None):

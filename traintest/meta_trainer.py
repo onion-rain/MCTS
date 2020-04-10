@@ -10,7 +10,6 @@ __all__ = ['PruningnetTrainer', 'PrunednetTrainer']
 
 class PruningnetTrainer(Trainer):
     """
-    TODO 待大量测试
     随机生成各层剪枝比例，metaprune专用
     """
     def __init__(self, model, dataloader, criterion, optimizer, device, 

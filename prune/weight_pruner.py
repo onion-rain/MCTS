@@ -101,8 +101,7 @@ class WeightPruner(object):
                 remain_weight = int(torch.sum(mask))
                 if remain_weight == 0:
                     error_str = 'Prune Error: layer' + str(layer_index) + ": " + module._get_name() + ': there is no remain nonzero_weight! turn down the prune_percent!'
-                    print(error_str)
-                    # raise
+                    raise Exception(error_str)
                 conv_pruned_num += (mask.numel() - remain_weight)
                 module.weight.data.mul_(mask)
                 # print('layer index: {:<5} total weights: {:<10} remaining weights: {:<10}'.
@@ -113,8 +112,7 @@ class WeightPruner(object):
                 remain_weight = int(torch.sum(mask))
                 if remain_weight == 0:
                     error_str = 'Prune Error: layer' + str(layer_index) + ": " + module._get_name() + ': there is no remain nonzero_weight! turn down the prune_percent!'
-                    print(error_str)
-                    # raise
+                    raise Exception(error_str)
                 fc_pruned_num += (mask.numel() - remain_weight)
                 module.weight.data.mul_(mask)
                 # print('layer index: {:<5} total weights: {:<10} remaining weights: {:<10}'.

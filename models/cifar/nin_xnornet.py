@@ -19,6 +19,23 @@ class conv_bn_relu(nn.Module):
         x = self.relu(x)
         return x
 
+class Binary_conv_bn_relu(nn.Module):
+    def __init__(self, input_channels, output_channels,
+                kernel_size=-1, stride=-1, padding=-1, groups=1):
+        super(Binary_conv_bn_relu, self).__init__()
+        self.bn = nn.BatchNorm2d(input_channels)
+        self.active = Binary_active() # TODO
+        self.conv = nn.Conv2d(input_channels, output_channels,
+                kernel_size=kernel_size, stride=stride, padding=padding, groups=groups)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.bn(x)
+        x = self.active(x)
+        x = self.conv(x)
+        x = self.relu(x)
+        return x
+
 class NINNet(nn.Module):
     def __init__(self, cfg=None, num_classes=10):
         super(NINNet, self).__init__()

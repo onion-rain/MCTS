@@ -104,10 +104,10 @@ def get_cifar_train_transform():
         tv.transforms.RandomHorizontalFlip(),
         tv.transforms.ToTensor(),
         tv.transforms.Normalize(
-            # mean=[0.5, 0.5, 0.5], 
-            # std=[0.5, 0.5, 0.5],
-            mean=[0.4914, 0.4822, 0.4465], 
-            std=[0.2023, 0.1994, 0.2010],
+            mean=[0.5, 0.5, 0.5], 
+            std =[0.5, 0.5, 0.5],
+            # mean=[0.4914, 0.4822, 0.4465], 
+            # std=[0.2023, 0.1994, 0.2010],
         ) # 标准化的过程为(input-mean)/std
     ])
 
@@ -116,10 +116,10 @@ def get_cifar_val_transform():
         tv.transforms.CenterCrop(32),
         tv.transforms.ToTensor(), 
         tv.transforms.Normalize(
-            # mean=(0.5, 0.5, 0.5), 
-            # std=(0.5, 0.5, 0.5)
-            mean=[0.4914, 0.4822, 0.4465], 
-            std=[0.2023, 0.1994, 0.2010],
+            mean=[0.5, 0.5, 0.5], 
+            std =[0.5, 0.5, 0.5],
+            # mean=[0.4914, 0.4822, 0.4465], 
+            # std=[0.2023, 0.1994, 0.2010],
         ) # 标准化的过程为(input-mean)/std
     ])
 
@@ -130,7 +130,7 @@ def get_imagenet_train_transform():
         tv.transforms.ToTensor(),
         tv.transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
+            std =[0.229, 0.224, 0.225],
         ) # 标准化的过程为(input-mean)/std
     ])
 
@@ -142,7 +142,7 @@ def get_imagenet_val_transform():
         tv.transforms.ToTensor(),
         tv.transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
+            std =[0.229, 0.224, 0.225],
         ) # 标准化的过程为(input-mean)/std
     ])
 
@@ -188,8 +188,7 @@ def dataset_init(config):
                 transform=val_transform,)
             num_classes = 100
         else: 
-            print("Dataset undefined")
-            raise NotImplementedError
+            raise NotImplementedError("不支持数据集: {}".format(config.dataset))
     elif config.dataset == 'imagenet': # ----------------imagenet dataset------------------
         train_transform = get_imagenet_train_transform()
         val_transform = get_imagenet_val_transform()
@@ -201,8 +200,7 @@ def dataset_init(config):
             transform=val_transform,)
         num_classes = 1000
     else: 
-        print("Dataset undefined")
-        raise NotImplementedError
+        raise NotImplementedError("不支持数据集: {}".format(config.dataset))
     return train_dataset, val_dataset, num_classes
 
 def dataset_div_init(config, val_num=50):
@@ -229,8 +227,7 @@ def dataset_div_init(config, val_num=50):
             transform=train_transform)
         num_classes = 1000
     else: 
-        print("ERROR: Dataset undefined!")
-        raise NotImplementedError
+        raise NotImplementedError("不支持数据集: {}".format(config.dataset))
     
     from utils import dataset_div
     train_dataset, val_dataset = dataset_div(dataset, val_num)

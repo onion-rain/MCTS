@@ -95,8 +95,7 @@ class MetaTrainer(object):
             print(self.gene)
             self.model = models.__dict__[self.config.arch](num_classes=self.num_classes, gene=self.gene).to(self.device)
         else: 
-            print("ERROR: unsupported arch!")
-            raise NotImplementedError
+            raise NotImplementedError("ERROR: unsupported arch!")
 
         # criterion and optimizer
         self.optimizer = torch.optim.SGD(

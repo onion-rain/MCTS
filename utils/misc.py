@@ -144,8 +144,7 @@ def print_flops_params(model, dataset='cifar'):
     elif dataset == "imagenet":
         flops, params = get_model_complexity_info(model, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
     else:
-        print("不支持数据集: {}".format(dataset))
-        raise NotImplementedError
+        raise NotImplementedError("不支持数据集: {}".format(dataset))
     print('{:<30}  {:<8}'.format('==> Computational complexity: ', flops))
     print('{:<30}  {:<8}'.format('==> Number of parameters: ', params))
     # print('Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
@@ -253,8 +252,7 @@ def get_model_flops(one_shot_model, dataset='cifar', pr=False):
     elif dataset == 'imagenet':
         input = Variable(torch.rand(3,224,224).unsqueeze(0), requires_grad = True).to(device)
     else: 
-        print("不支持数据集: {}".format(dataset))
-        raise NotImplementedError
+        raise NotImplementedError("不支持数据集: {}".format(dataset))
     out = one_shot_model(input)
     total_flops = (sum(list_conv) + sum(list_linear) + sum(list_bn) + sum(list_relu) + sum(list_pooling))
     M_flops = total_flops / 1e6
