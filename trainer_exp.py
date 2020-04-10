@@ -23,7 +23,7 @@ import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 # import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
 class TrainerExp(object):

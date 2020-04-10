@@ -3,8 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from quantification.binary import *
-
 __all__ = ['resnet20', 'resnet32', 'resnet44', 'resnet56', 'resnet110']
 
 def conv7x7(in_channels, out_channels, stride=1):

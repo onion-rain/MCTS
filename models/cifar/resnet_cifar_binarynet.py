@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from quantification.binary import *
+from quantification.binarynet import *
 
 __all__ = ['resnet20_binarynet', 'resnet32_binarynet', 'resnet44_binarynet', 'resnet56_binarynet', 'resnet110_binarynet',
            'resnet14_binarynet']
