@@ -89,7 +89,7 @@ class Bottleneck(nn.Module):
         # shortcut
         shortcut = x
         if hasattr(self, 'conv_shortcut'):
-            shortcut = self.shortcut(shortcut)
+            shortcut = self.conv_shortcut(shortcut)
 
         # conv1
         residual = self.conv1(x)
@@ -119,7 +119,6 @@ class ResNet_cifar(nn.Module):
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
 
-        # stage_channels = [64, 128, 256, 512, 2048] # 原始每层stage的输出通道数
         stage_channels = [16, 64, 128, 256] # 原始每层stage的输出通道数
         assert len(stage_channels)-1 == len(stage_repeat)
         

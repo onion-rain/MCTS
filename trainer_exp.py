@@ -185,9 +185,10 @@ class TrainerExp(object):
             }
             if self.cfg is not None:
                 save_dict['cfg'] = self.cfg
-            save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
+            checkpoint_path = save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
         
         print("{}{}".format("best_acc1: ", self.best_acc1))
+        print("{}{}".format("checkpoint_path: ", checkpoint_path))
 
 
 

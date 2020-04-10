@@ -5,8 +5,8 @@ import numpy as np
 
 from quantification.binary import *
 
-__all__ = ['resnet20_binary', 'resnet32_binary', 'resnet44_binary', 'resnet56_binary', 'resnet110_binary',
-           'resnet14_binary']
+__all__ = ['resnet20_binarynet', 'resnet32_binarynet', 'resnet44_binarynet', 'resnet56_binarynet', 'resnet110_binarynet',
+           'resnet14_binarynet']
 
 def conv7x7(in_channels, out_channels, stride=1):
     """7x7 convolution with padding"""
@@ -107,7 +107,7 @@ class Bottleneck(nn.Module):
         return out
 
 
-class ResNet_cifar_binary(nn.Module):
+class binarynet(nn.Module):
 
     def __init__(self, block, stage_repeat=[3, 3, 3], num_classes=1000):
         """
@@ -117,7 +117,7 @@ class ResNet_cifar_binary(nn.Module):
             gene(list): 存储每层卷积的输入输出通道，用来构造剪之后的网络，前部表示output_scale_ids，后部表示mid_scale_ids
                         若gene为None则构造原始resnet
         """
-        super(ResNet_cifar_binary, self).__init__()
+        super(binarynet, self).__init__()
 
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
@@ -168,22 +168,22 @@ class ResNet_cifar_binary(nn.Module):
         x = self.classifier(x)
         return x
         
-def resnet14_binary(num_classes=10): # binary neural network
-    return ResNet_cifar_binary(Basicneck, [2, 2, 2], num_classes)
+def resnet14_binarynet(num_classes=10): # binary neural network
+    return ResNet_cifar_binarynet(Basicneck, [2, 2, 2], num_classes)
         
-def resnet20_binary(num_classes=10):
-    return ResNet_cifar_binary(Basicneck, [3, 3, 3], num_classes)
+def resnet20_binarynet(num_classes=10):
+    return ResNet_cifar_binarynet(Basicneck, [3, 3, 3], num_classes)
 
-def resnet32_binary(num_classes=10):
-    return ResNet_cifar_binary(Basicneck, [5, 5, 5], num_classes)
+def resnet32_binarynet(num_classes=10):
+    return ResNet_cifar_binarynet(Basicneck, [5, 5, 5], num_classes)
 
-def resnet44_binary(num_classes=10):
-    return ResNet_cifar_binary(Basicneck, [7, 7, 7], num_classes)
+def resnet44_binarynet(num_classes=10):
+    return ResNet_cifar_binarynet(Basicneck, [7, 7, 7], num_classes)
 
-def resnet56_binary(num_classes=10):
-    return ResNet_cifar_binary(Bottleneck, [6, 6, 6], num_classes)
+def resnet56_binarynet(num_classes=10):
+    return ResNet_cifar_binarynet(Bottleneck, [6, 6, 6], num_classes)
 
-def resnet110_binary(num_classes=10):
-    return ResNet_cifar_binary(Bottleneck, [12, 12, 12], num_classes)
+def resnet110_binarynet(num_classes=10):
+    return ResNet_cifar_binarynet(Bottleneck, [12, 12, 12], num_classes)
 
 
