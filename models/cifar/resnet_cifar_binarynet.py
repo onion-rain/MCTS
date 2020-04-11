@@ -8,10 +8,6 @@ from quantification.binarynet import *
 __all__ = ['resnet20_binarynet', 'resnet32_binarynet', 'resnet44_binarynet', 'resnet56_binarynet', 'resnet110_binarynet',
            'resnet14_binarynet']
 
-def conv7x7(in_channels, out_channels, stride=1):
-    """7x7 convolution with padding"""
-    return BinarizeConv2d(in_channels, out_channels, kernel_size=7, stride=stride, bias=False)
-
 def conv3x3(in_channels, out_channels, stride=1, groups=1, padding=1):
     """3x3 convolution with padding"""
     return BinarizeConv2d(in_channels, out_channels, kernel_size=3, stride=stride,

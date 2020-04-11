@@ -5,10 +5,6 @@ import numpy as np
 
 __all__ = ['resnet20', 'resnet32', 'resnet44', 'resnet56', 'resnet110']
 
-def conv7x7(in_channels, out_channels, stride=1):
-    """7x7 convolution with padding"""
-    return nn.Conv2d(in_channels, out_channels, kernel_size=7, stride=stride, bias=False)
-
 def conv3x3(in_channels, out_channels, stride=1, groups=1, padding=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride,

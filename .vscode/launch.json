@@ -17,8 +17,8 @@
                 "--arch", "nin_xnornet",
                 "--dataset", "cifar10",
                 "--gpu", "0",
-                "--valuate",
-                "--binary",
+                // "--valuate",
+                // "--binary",
                 
                 // //slimming
                 // "--arch", "resnet20_cs",

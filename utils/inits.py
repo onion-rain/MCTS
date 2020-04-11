@@ -77,8 +77,7 @@ def seed_init(config):
     """
     if config.deterministic:
         if config.num_workers > 1:
-            print("ERROR: Setting --deterministic requires setting --workers to 0 or 1")
-        assert config.num_workers <= 1
+            raise Exception("ERROR: Setting --deterministic requires setting --workers to 0 or 1")
         random.seed(0)
         torch.manual_seed(0)
         np.random.seed(config.random_seed)
@@ -104,10 +103,10 @@ def get_cifar_train_transform():
         tv.transforms.RandomHorizontalFlip(),
         tv.transforms.ToTensor(),
         tv.transforms.Normalize(
-            mean=[0.5, 0.5, 0.5], 
-            std =[0.5, 0.5, 0.5],
-            # mean=[0.4914, 0.4822, 0.4465], 
-            # std=[0.2023, 0.1994, 0.2010],
+            # mean=[0.5, 0.5, 0.5], 
+            # std =[0.5, 0.5, 0.5],
+            mean=[0.4914, 0.4822, 0.4465], 
+            std=[0.2023, 0.1994, 0.2010],
         ) # 标准化的过程为(input-mean)/std
     ])
 
@@ -116,10 +115,10 @@ def get_cifar_val_transform():
         tv.transforms.CenterCrop(32),
         tv.transforms.ToTensor(), 
         tv.transforms.Normalize(
-            mean=[0.5, 0.5, 0.5], 
-            std =[0.5, 0.5, 0.5],
-            # mean=[0.4914, 0.4822, 0.4465], 
-            # std=[0.2023, 0.1994, 0.2010],
+            # mean=[0.5, 0.5, 0.5], 
+            # std =[0.5, 0.5, 0.5],
+            mean=[0.4914, 0.4822, 0.4465], 
+            std=[0.2023, 0.1994, 0.2010],
         ) # 标准化的过程为(input-mean)/std
     ])
 

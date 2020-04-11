@@ -256,7 +256,7 @@ def resnet152_pruningnet(num_classes=1000):
 
 
 # ------------------------------ Prunednet ------------------------------
-
+# FIXME conv7x7 padding应该为3
 def conv7x7(in_channels, out_channels, stride=1):
     """7x7 convolution with padding"""
     return nn.Conv2d(in_channels, out_channels, kernel_size=7, stride=stride, bias=False)
