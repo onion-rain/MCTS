@@ -1,18 +1,14 @@
 # pytorch-xnornet
 
-
-
 论文地址：[XNOR-Net: ImageNet Classification Using Binary Convolutional Neural Networks](https://arxiv.org/abs/1603.05279v4)
 
-
 参考代码：https://github.com/jiecaoyu/XNOR-Net-PyTorch
-
 
 ## baseline
 
 ### network-in-network baseline:
 
-`python trainer_exp.py --arch nin --dataset cifar10 --lr 0.01 --gpu 1 --valuate --epochs 200 --deterministic --workers 1`
+`python trainer_exp.py --arch nin --dataset cifar10 --lr 0.1 --gpu 1 --valuate --epochs 200 --deterministic --workers 1`
 
 cfg = [192, 160, 96, 192, 192, 192, 192, 192]
 
@@ -24,45 +20,19 @@ groups = [1,]*9
 
 ...
 
-Train: 199 [ 50000/ 50000 (100%)] loss:  0.007 | top1: 99.956% | load_time:  0% | lr  : 1.0e-04
+Train: 199 [  50000/  50000 (100%)] loss:   0.009 | top1: 99.938% | load_time:   0% | lr   : 1.0e-03
 
-Test: 199 [ 10000/ 10000 (100%)] loss:  0.325 | top1: 91.16% | load_time: 67% | UTC+8: 16:52:09
+Test:  199 [  10000/  10000 (100%)] loss:   0.278 | top1:  91.94% | load_time:  61% | UTC+8: 12:22:12
 
--------- model: nin -- dataset: cifar10 -- duration: 0h:49.12 --------
+--------  model: nin  --  dataset: cifar10  --  duration:  0h:47.25  --------
 
-best_acc1: 91.45
+best_acc1: 92.37
 
 checkpoint_path: checkpoints/cifar10_nin_checkpoint.pth.tar
 
-end
-
-### network-in-network_group-conv baseline:（no channel shuffle）
-
-`python trainer_exp.py --arch nin_gc --dataset cifar10 --lr 0.01 --gpu 1 --valuate --epochs 200 --deterministic --workers 1`
-
-cfg = [256, 256, 256, 512, 512, 512, 1024, 1024]
-
-groups = [1, 2, 2, 16, 4, 4, 32, 8, 1]
-
-==> Computational complexity:  0.2 GMac
-
-==> Number of parameters:    722.46 k
-
-Train: 199 [ 50000/ 50000 (100%)] loss:  0.012 | top1: 99.936% | load_time:  0% | lr  : 1.0e-04
-
-Test: 199 [ 10000/ 10000 (100%)] loss:  0.328 | top1: 90.29% | load_time: 47% | UTC+8: 16:10:25
-
--------- model: nin_gc -- dataset: cifar10 -- duration: 1h:09.14 --------
-
-best_acc1: 90.55
-
-checkpoint_path: checkpoints/cifar10_nin_gc_checkpoint.pth.tar
-
-end
-
 ### network-in-network_group-conv baseline:（with channel shuffle）
 
-`python trainer_exp.py --arch nin_gc --dataset cifar10 --lr 0.01 --gpu 1 --valuate --epochs 200 --deterministic --workers 1`
+`python trainer_exp.py --arch nin_gc --dataset cifar10 --lr 0.1 --gpu 1 --valuate --epochs 200 --deterministic --workers 1`
 
 cfg = [256, 256, 256, 512, 512, 512, 1024, 1024]
 
@@ -72,7 +42,15 @@ groups = [1, 2, 2, 16, 4, 4, 32, 8, 1]
 
 ==> Number of parameters:    722.46 k
 
-# TODO
+Train: 199 [  50000/  50000 (100%)] loss:    0.01 | top1: 99.974% | load_time:   0% | lr   : 1.0e-03
+
+Test:  199 [  10000/  10000 (100%)] loss:   0.247 | top1:  92.64% | load_time:  39% | UTC+8: 10:59:53
+
+--------  model: nin_gc  --  dataset: cifar10  --  duration:  1h:11.08  --------
+
+best_acc1: 92.72
+
+checkpoint_path: checkpoints/cifar10_nin_gc_checkpoint.pth.tar
 
 ## XNOR-net
 
@@ -84,55 +62,38 @@ cfg = [192, 160, 96, 192, 192, 192, 192, 192]
 
 groups = [1,]*9
 
-
-
 ==> Computational complexity:  0.02 GMac
 
-==> Number of parameters:    969.82 k
+==> Number of parameters:     674.91 k
 
 ...
 
-Train: 199 [ 50000/ 50000 (100%)] loss:  0.653 | top1: 77.198% | load_time:  0% | lr  : 1.0e-04
+Train: 199 [  50000/  50000 (100%)] loss:   0.443 | top1:  84.87% | load_time:   0% | lr   : 1.0e-03
 
-Test: 199 [ 10000/ 10000 (100%)] loss:  0.697 | top1: 76.08% | load_time: 55% | UTC+8: 13:14:48
+Test:  199 [  10000/  10000 (100%)] loss:   0.564 | top1:  80.77% | load_time:  56% | UTC+8: 19:28:43
 
--------- model: nin_xnornet -- dataset: cifar10 -- duration: 2h:09.33 --------
+--------  model: nin_xnornet  --  dataset: cifar10  --  duration:  2h:13.38  --------
 
-best_acc1: 76.67
+best_acc1: 82.75
 
 checkpoint_path: checkpoints/cifar10_nin_xnornet_checkpoint.pth.tar
 
-end
+### network-in-network_group-conv xnornet:
 
-### network-in-network_group-conv xnornet:（no channel shuffle）
-
-`python trainer_exp.py --arch nin_gc_xnornet --dataset cifar10 --lr 0.01 --valuate --epochs 200 --deterministic --workers 1 --gpu 0`
+`python trainer_exp.py --arch nin_gc_xnornet --dataset cifar10 --lr 0.1 --valuate --epochs 150 --deterministic --workers 1 --gpu 0`
 
 ==> Computational complexity:  0.02 GMac
 
-==> Number of parameters:    720.93 k
+==> Number of parameters:    589.85 k
 
+...
 
+Train: 149 [  50000/  50000 (100%)] loss:   0.647 | top1: 77.714% | load_time:   0% | lr   : 1.0e-03
 
-Train: 199 [ 50000/ 50000 (100%)] loss:  0.806 | top1: 71.862% | load_time:  0% | lr  : 1.0e-04
+Test:  149 [  10000/  10000 (100%)] loss:   0.856 | top1:   70.3% | load_time:  24% | UTC+8: 22:16:40
 
-Test: 199 [ 10000/ 10000 (100%)] loss:  0.858 | top1:  69.9% | load_time: 37% | UTC+8: 18:46:41
+--------  nin_gc_xnornet  --  cifar10  --  best_top1: 75.760  --  duration:  2h:19.37  --------
 
--------- model: nin_gc_xnornet -- dataset: cifar10 -- duration: 3h:27.12 --------
-
-best_acc1: 71.37
+best_acc1: 75.76
 
 checkpoint_path: checkpoints/cifar10_nin_gc_xnornet_checkpoint.pth.tar
-
-
-### network-in-network_group-conv xnornet:（with channel shuffle）
-
-`python trainer_exp.py --arch nin_gc_xnornet --dataset cifar10 --lr 0.01 --valuate --epochs 200 --deterministic --workers 1 --gpu 0`
-
-==> Computational complexity:  0.02 GMac
-
-==> Number of parameters:    720.93 k
-
-
-
-# TODO

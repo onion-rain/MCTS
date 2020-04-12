@@ -75,7 +75,7 @@ class NIN(nn.Module):
             Binary_conv_bn_relu(cfg[1], cfg[2], kernel_size=1, stride=1, padding=0, groups=groups[2], shuffle_groups=shuffle_groups[2]),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
 
-            Binary_conv_bn_relu(cfg[2], cfg[3], kernel_size=5, stride=1, padding=2, groups=groups[3], shuffle_groups=shuffle_groups[3]),
+            Binary_conv_bn_relu(cfg[2], cfg[3], kernel_size=3, stride=1, padding=1, groups=groups[3], shuffle_groups=shuffle_groups[3]),
             Binary_conv_bn_relu(cfg[3], cfg[4], kernel_size=1, stride=1, padding=0, groups=groups[4], shuffle_groups=shuffle_groups[4]),
             Binary_conv_bn_relu(cfg[4], cfg[5], kernel_size=1, stride=1, padding=0, groups=groups[5], shuffle_groups=shuffle_groups[5]),
             nn.AvgPool2d(kernel_size=3, stride=2, padding=1),
@@ -85,6 +85,14 @@ class NIN(nn.Module):
             conv_bn_relu(cfg[7], num_classes, kernel_size=1, stride=1, padding=0, groups=groups[8], shuffle_groups=shuffle_groups[8]),
             nn.AvgPool2d(kernel_size=8, stride=1, padding=0),
         )
+
+        # for m in self.modules():
+        #     if isinstance(m, nn.Conv2d):
+        #         nn.init.xavier_uniform_(m.weight.data) # tanh中表现好
+        #         m.bias.data.zero_()
+        #     elif isinstance(m, nn.Linear):
+        #         m.weight.data.normal_(0, 0.01)
+        #         m.bias.data.zero_()
         
     def forward(self, x):
         x = self.sequential(x)

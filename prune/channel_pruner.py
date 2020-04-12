@@ -4,7 +4,7 @@ import math
 import datetime
 from sklearn.linear_model import Lasso
 
-__all__ = ['print_bar', 'Thinet_prune']
+__all__ = ['pruner_print_bar', 'Thinet_prune']
 
 # # 提取隐藏层features
 # class FeatureExtractor:
@@ -28,7 +28,7 @@ __all__ = ['print_bar', 'Thinet_prune']
 
 
 
-def print_bar(str, channel_num, start_time):
+def pruner_print_bar(str, channel_num, start_time):
     """calculate duration time"""
     interval = datetime.datetime.now() - start_time
     print("-------- pruned: {str}  --  channel num: {channel_num}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
@@ -312,7 +312,7 @@ def Thinet_prune(model, sparsity, dataloader, device, method, p):
     input_iter = iter(dataloader)
     tuples = get_tuples(model)
 
-    print_bar("get_tuples", None, start_time)
+    pruner_print_bar("get_tuples", None, start_time)
 
     for (module_name, module, next_bn, next_module, fn_input_feature, fn_next_input_feature) in tuples:
         # 此处module和next_module均为conv module
@@ -335,4 +335,4 @@ def Thinet_prune(model, sparsity, dataloader, device, method, p):
 
         weight_reconstruction(next_module, next_input_feature, next_output_feature, device)
 
-        print_bar(module_name, module.out_channels, start_time)
+        pruner_print_bar(module_name, module.out_channels, start_time)

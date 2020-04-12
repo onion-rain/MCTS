@@ -121,7 +121,7 @@ class MetaSearcher(object):
         print("")
         start_time = datetime.datetime.now()
         for iter in range(self.start_iter, self.max_iter):
-            print_bar(start_time, self.config.arch, self.config.dataset, epoch=iter)
+            print_bar(start_time, self.config.arch, self.config.dataset, 100-self.candidates[0][-1], epoch=iter)
             self.candidates, checked_genes_tuple, tested_genes_tuple = self.searcher.search(iter, self.candidates)
 
             # save checkpoint

@@ -187,23 +187,24 @@ class MetaTrainer(object):
         # initial test
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
-        print_bar(start_time, self.config.arch, self.config.dataset)
+        print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
         print("")
         for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
             self.trainer.train(epoch=epoch)
             if self.valuator is not None:
                 self.valuator.test(self.model, epoch=epoch)
-            print_bar(start_time, self.config.arch, self.config.dataset)
-            print("")
-            
-            # save checkpoint
-            if self.valuator is not None:
+                
                 is_best = self.valuator.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
             else:
                 is_best = self.trainer.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
+
+            print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+            print("")
+            
+            # save checkpoint
             if len(self.config.gpu_idx_list) > 1:
                 state_dict = self.model.module.state_dict()
             else: state_dict = self.model.state_dict()

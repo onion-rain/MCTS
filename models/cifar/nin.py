@@ -64,6 +64,14 @@ class NIN(nn.Module):
             nn.AvgPool2d(kernel_size=8, stride=1, padding=0),
         )
         
+        # for m in self.modules():
+        #     if isinstance(m, nn.Conv2d):
+        #         nn.init.xavier_uniform_(m.weight.data) # tanh中表现好
+        #         m.bias.data.zero_()
+        #     elif isinstance(m, nn.Linear):
+        #         m.weight.data.normal_(0, 0.01)
+        #         m.bias.data.zero_()
+        
     def forward(self, x):
         x = self.sequential(x)
         x = x.view(x.size(0), self.num_classes)

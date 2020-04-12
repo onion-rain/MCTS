@@ -112,7 +112,7 @@ def get_cifar_train_transform():
 
 def get_cifar_val_transform():
     return tv.transforms.Compose([
-        tv.transforms.CenterCrop(32),
+        # tv.transforms.CenterCrop(32),
         tv.transforms.ToTensor(), 
         tv.transforms.Normalize(
             # mean=[0.5, 0.5, 0.5], 
