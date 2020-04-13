@@ -41,18 +41,18 @@ class Binary_conv_bn_relu(nn.Module):
                  kernel_size=3, stride=1, padding=0, groups=1, shuffle_groups=1):
         super(Binary_conv_bn_relu, self).__init__()
         self.shuffle_groups = shuffle_groups
-        self.norm = nn.BatchNorm2d(input_channels)
-        self.active = BinaryActive()
-        self.conv = BinarizeConv2d(input_channels, output_channels, kernel_size, 
+        self.norm = nn.BatchNorm2d(input_channels) # norm前置保证activation mean为0
+        self.conv = BinaryConv2d(input_channels, output_channels, kernel_size, 
                                     stride=stride, padding=padding, groups=groups)
+        # self.norm = nn.BatchNorm2d(output_channels)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         if self.shuffle_groups > 1:
             x = channel_shuffle(x, groups=self.shuffle_groups)
         x = self.norm(x)
-        x = self.active(x)
         x = self.conv(x)
+        # x = self.norm(x)
         x = self.relu(x)
         return x
 

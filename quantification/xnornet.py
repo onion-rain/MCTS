@@ -1,16 +1,16 @@
 import torch
 import torch.nn.functional as F
 
-__all__ = ["BinaryActive", "BinarizeConv2d"]
+__all__ = ["BinaryConv2d"]
 
-# d8888b. d888888b d8b   db  .d8b.  d8888b. db    db          .d8b.   .o88b. d888888b d888888b db    db d88888b 
-# 88  `8D   `88'   888o  88 d8' `8b 88  `8D `8b  d8'         d8' `8b d8P  Y8 `~~88~~'   `88'   88    88 88'     
-# 88oooY'    88    88V8o 88 88ooo88 88oobY'  `8bd8'          88ooo88 8P         88       88    Y8    8P 88ooooo 
-# 88~~~b.    88    88 V8o88 88~~~88 88`8b      88            88~~~88 8b         88       88    `8b  d8' 88~~~~~ 
-# 88   8D   .88.   88  V888 88   88 88 `88.    88            88   88 Y8b  d8    88      .88.    `8bd8'  88.     
-# Y8888P' Y888888P VP   V8P YP   YP 88   YD    YP    C88888D YP   YP  `Y88P'    YP    Y888888P    YP    Y88888P 
+# d8888b. d888888b d8b   db  .d8b.  d8888b. d888888b d88888D d88888b          .d8b.   .o88b. d888888b d888888b db    db  .d8b.  d888888b d888888b  .d88b.  d8b   db 
+# 88  `8D   `88'   888o  88 d8' `8b 88  `8D   `88'   YP  d8' 88'             d8' `8b d8P  Y8 `~~88~~'   `88'   88    88 d8' `8b `~~88~~'   `88'   .8P  Y8. 888o  88 
+# 88oooY'    88    88V8o 88 88ooo88 88oobY'    88       d8'  88ooooo         88ooo88 8P         88       88    Y8    8P 88ooo88    88       88    88    88 88V8o 88 
+# 88~~~b.    88    88 V8o88 88~~~88 88`8b      88      d8'   88~~~~~         88~~~88 8b         88       88    `8b  d8' 88~~~88    88       88    88    88 88 V8o88 
+# 88   8D   .88.   88  V888 88   88 88 `88.   .88.    d8' db 88.             88   88 Y8b  d8    88      .88.    `8bd8'  88   88    88      .88.   `8b  d8' 88  V888 
+# Y8888P' Y888888P VP   V8P YP   YP 88   YD Y888888P d88888P Y88888P C88888D YP   YP  `Y88P'    YP    Y888888P    YP    YP   YP    YP    Y888888P  `Y88P'  VP   V8P 
 
-class binary_active(torch.autograd.Function):
+class binarize_activation(torch.autograd.Function):
     '''
     Binarize the input activations and calculate the mean across channel dimension.
     '''
@@ -28,13 +28,13 @@ class binary_active(torch.autograd.Function):
         grad_input[input.le(-1)] = 0
         return grad_input
 
-class BinaryActive(torch.nn.Module):
+class BinarizeActivation(torch.nn.Module):
     def __init__(self):
-        super(BinaryActive, self).__init__()
+        super(BinarizeActivation, self).__init__()
  
     def forward(self, input):
         # See the autograd section for explanation of what happens here.
-        return binary_active.apply(input)
+        return binarize_activation.apply(input)
 
 
 
@@ -54,24 +54,19 @@ class binarize_weight(torch.autograd.Function):
         return input.sign()
     @staticmethod
     def backward(self, grad_output):
-        # STE, 由于preprocess做过mean center和clamp, weight已经∈[-1, 1]
+        # STE, 由于weight_preprocess做过mean center和clamp, weight已经∈[-1, 1]
         return grad_output.clone()
 
-def preprocess(weight):
+def weight_preprocess(weight):
     # mean center
     mean = weight.mean(1, keepdim=True)
     weight = weight.sub(mean)
     # clamp
+    # TODO 这样直接clamp损失比较大，考虑先缩放一下
     weight = weight.clamp(-1.0, 1.0)
     return weight
-    # # mean center
-    # mean = weight.data.mean(1, keepdim=True)
-    # weight = weight.data.sub(mean)
-    # # clamp
-    # weight = weight.data.clamp(-1.0, 1.0)
-    # return weight
 
-def bianrize(weight):
+def weight_bianrize(weight):
     element_num = weight[0].nelement()
     size = weight.size()
     alpha = weight.norm(1, 3, keepdim=True).sum(2, keepdim=True).sum(1, keepdim=True).div(element_num).expand(size)
@@ -79,28 +74,35 @@ def bianrize(weight):
     weight = weight.mul(alpha)
     return weight
 
-# class BinarizeWeight(torch.nn.Module):
+class BinarizeWeight(torch.nn.Module):
 
-#     def __init__(self):
-#         super(BinarizeWeight, self).__init__()
+    def __init__(self):
+        super(BinarizeWeight, self).__init__()
  
-#     def forward(self, weight):
-#         # See the autograd section for explanation of what happens here.
-#         weight = preprocess(weight)
-#         weight = bianrize(weight)
-#         return weight
+    def forward(self, weight):
+        # See the autograd section for explanation of what happens here.
+        weight = weight_preprocess(weight) # 网络中保存的weiht为全精度（主要是每次更新就给更新成全精度了），每次前向传播再进行二值化（等训练结束梯度不更新了就不需要二值化了）
+        weight = weight_bianrize(weight)
+        return weight
 
 
-class BinarizeConv2d(torch.nn.Conv2d):
+# d8888b. d888888b d8b   db  .d8b.  d8888b. db    db          .o88b.  .d88b.  d8b   db db    db .d888b. d8888b. 
+# 88  `8D   `88'   888o  88 d8' `8b 88  `8D `8b  d8'         d8P  Y8 .8P  Y8. 888o  88 88    88 VP  `8D 88  `8D 
+# 88oooY'    88    88V8o 88 88ooo88 88oobY'  `8bd8'          8P      88    88 88V8o 88 Y8    8P    odD' 88   88 
+# 88~~~b.    88    88 V8o88 88~~~88 88`8b      88            8b      88    88 88 V8o88 `8b  d8'  .88'   88   88 
+# 88   8D   .88.   88  V888 88   88 88 `88.    88            Y8b  d8 `8b  d8' 88  V888  `8bd8'  j88.    88  .8D 
+# Y8888P' Y888888P VP   V8P YP   YP 88   YD    YP    C88888D  `Y88P'  `Y88P'  VP   V8P    YP    888888D Y8888D' 
+                                                                                                              
+class BinaryConv2d(torch.nn.Conv2d):
 
     def __init__(self, *kargs, **kwargs):
-        super(BinarizeConv2d, self).__init__(*kargs, **kwargs)
-        # self.binarize = BinarizeWeight()
+        super(BinaryConv2d, self).__init__(*kargs, **kwargs)
+        self.binarize_activation = BinarizeActivation()
+        self.binarize_weight = BinarizeWeight()
 
     def forward(self, input):
-        # binary_weight = self.binarize(self.weight)
-        binary_weight = preprocess(self.weight) # 网络中保存的weiht为全精度，每次前向传播再进行二值化
-        binary_weight = bianrize(binary_weight)
-        out = F.conv2d(input, binary_weight, self.bias, self.stride,
+        binary_input = self.binarize_activation(input)
+        binary_weight = self.binarize_weight(self.weight)
+        out = F.conv2d(binary_input, binary_weight, self.bias, self.stride,
                         self.padding, self.dilation, self.groups)
         return out
