@@ -80,9 +80,8 @@ class BinarizeWeight(torch.nn.Module):
         super(BinarizeWeight, self).__init__()
  
     def forward(self, weight):
-        # See the autograd section for explanation of what happens here.
-        weight = weight_preprocess(weight) # 网络中保存的weiht为全精度（主要是每次更新就给更新成全精度了），每次前向传播再进行二值化（等训练结束梯度不更新了就不需要二值化了）
-        weight = weight_bianrize(weight)
+        weight = weight_preprocess(weight)
+        weight = weight_bianrize(weight) # 网络中保存的weiht为全精度（主要是每次更新gradient就给更新成全精度了），每次前向传播再进行二值化（等训练结束gradient不更新了就不需要二值化了）
         return weight
 
 

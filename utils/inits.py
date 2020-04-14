@@ -80,7 +80,7 @@ def seed_init(config):
             raise Exception("ERROR: Setting --deterministic requires setting --workers to 0 or 1")
         random.seed(0)
         torch.manual_seed(0)
-        np.random.seed(config.random_seed)
+        np.random.seed(0)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
     else: # 让程序在开始时花费一点额外时间，为整个网络的每个卷积层搜索最适合它的卷积实现算法，进而实现网络的加速
