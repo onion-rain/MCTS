@@ -63,7 +63,7 @@ class NIN(nn.Module):
     args:
         a_bits(int): activation量化位数
         w_bits(int): weight量化位数
-        TODO g_bits(int): gradient量化位数
+        g_bits(int): gradient量化位数
     """
     def __init__(self, cfg=None, a_bits=1, w_bits=1, g_bits=32, groups=None, shuffle=True, num_classes=10):
         super(NIN, self).__init__()
@@ -80,23 +80,23 @@ class NIN(nn.Module):
         self.sequential = nn.Sequential(
             conv_bn_relu(3, cfg[0], kernel_size=5, stride=1, padding=2, groups=groups[0], shuffle_groups=shuffle_groups[0]),
             Quantized_conv_bn_relu(cfg[0], cfg[1], kernel_size=1, stride=1, padding=0, groups=groups[1], 
-                                    shuffle_groups=shuffle_groups[1], a_bits=a_bits, w_bits=w_bits),
+                                    shuffle_groups=shuffle_groups[1], a_bits=a_bits, w_bits=w_bits, g_bits=g_bits),
             Quantized_conv_bn_relu(cfg[1], cfg[2], kernel_size=1, stride=1, padding=0, groups=groups[2], 
-                                    shuffle_groups=shuffle_groups[2], a_bits=a_bits, w_bits=w_bits),
+                                    shuffle_groups=shuffle_groups[2], a_bits=a_bits, w_bits=w_bits, g_bits=g_bits),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
 
             Quantized_conv_bn_relu(cfg[2], cfg[3], kernel_size=3, stride=1, padding=1, groups=groups[3], 
-                                    shuffle_groups=shuffle_groups[3], a_bits=a_bits, w_bits=w_bits),
+                                    shuffle_groups=shuffle_groups[3], a_bits=a_bits, w_bits=w_bits, g_bits=g_bits),
             Quantized_conv_bn_relu(cfg[3], cfg[4], kernel_size=1, stride=1, padding=0, groups=groups[4], 
-                                    shuffle_groups=shuffle_groups[4], a_bits=a_bits, w_bits=w_bits),
+                                    shuffle_groups=shuffle_groups[4], a_bits=a_bits, w_bits=w_bits, g_bits=g_bits),
             Quantized_conv_bn_relu(cfg[4], cfg[5], kernel_size=1, stride=1, padding=0, groups=groups[5], 
-                                    shuffle_groups=shuffle_groups[5], a_bits=a_bits, w_bits=w_bits),
+                                    shuffle_groups=shuffle_groups[5], a_bits=a_bits, w_bits=w_bits, g_bits=g_bits),
             nn.AvgPool2d(kernel_size=3, stride=2, padding=1),
 
             Quantized_conv_bn_relu(cfg[5], cfg[6], kernel_size=3, stride=1, padding=1, groups=groups[6], 
-                                    shuffle_groups=shuffle_groups[6], a_bits=a_bits, w_bits=w_bits),
+                                    shuffle_groups=shuffle_groups[6], a_bits=a_bits, w_bits=w_bits, g_bits=g_bits),
             Quantized_conv_bn_relu(cfg[6], cfg[7], kernel_size=1, stride=1, padding=0, groups=groups[7], 
-                                    shuffle_groups=shuffle_groups[7], a_bits=a_bits, w_bits=w_bits),
+                                    shuffle_groups=shuffle_groups[7], a_bits=a_bits, w_bits=w_bits, g_bits=g_bits),
             conv_bn_relu(cfg[7], num_classes, kernel_size=1, stride=1, padding=0, groups=groups[8], shuffle_groups=shuffle_groups[8]),
             nn.AvgPool2d(kernel_size=8, stride=1, padding=0),
         )

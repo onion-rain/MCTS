@@ -88,12 +88,12 @@ checkpoint_path: checkpoints/cifar10_nin_xnornet_checkpoint.pth.tar
 
 ...
 
-Train: 149 [  50000/  50000 (100%)] loss:   0.647 | top1: 77.714% | load_time:   0% | lr   : 1.0e-03
+Train: 149 [  50000/  50000 (100%)] loss:   0.641 | top1:  77.95% | load_time:   0% | lr   : 1.0e-03
 
-Test:  149 [  10000/  10000 (100%)] loss:   0.856 | top1:   70.3% | load_time:  24% | UTC+8: 22:16:40
+Test:  149 [  10000/  10000 (100%)] loss:   0.766 | top1:  73.25% | load_time:  33% | UTC+8: 00:57:14
 
---------  nin_gc_xnornet  --  cifar10  --  best_top1: 75.760  --  duration:  2h:19.37  --------
+--------  nin_gc_xnornet  --  cifar10  --  best_top1: 75.620  --  duration:  2h:18.25  --------
 
-best_acc1: 75.76
+best_acc1: 75.62
 
 checkpoint_path: checkpoints/cifar10_nin_gc_xnornet_checkpoint.pth.tar

@@ -150,7 +150,7 @@ class Round(torch.autograd.Function):
         return output
     @staticmethod
     def backward(self, grad_input):
-        grad_output = grad_input#.clone()
+        grad_output = grad_input
         return grad_output
 
 random.seed(0)
@@ -158,8 +158,9 @@ torch.manual_seed(0)
 np.random.seed(0)
 
 x = torch.randn(2, 3, requires_grad=True)
-y = 2 * x
-y = torch.round(x)
+# y = torch.round(x)
+y = Round.apply(x)
+y = 2 * y
 
 y = y.sum()
 y.backward()
