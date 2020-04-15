@@ -39,13 +39,13 @@ class conv_bn_relu(nn.Module):
 class Quantized_conv_bn_relu(nn.Module):
     def __init__(self, input_channels, output_channels,
                  kernel_size=3, stride=1, padding=0, groups=1, shuffle_groups=1,
-                 a_bits=1, w_bits=1):
+                 a_bits=1, w_bits=1, g_bits=32):
         super(Quantized_conv_bn_relu, self).__init__()
         self.shuffle_groups = shuffle_groups
         self.norm = nn.BatchNorm2d(input_channels) # norm前置保证activation mean为0
-        self.conv = QuantizedConv2d(input_channels, output_channels, kernel_size, 
-                                    stride=stride, padding=padding, groups=groups,
-                                    a_bits=a_bits, w_bits=w_bits)
+        self.conv = QuantizedConv2d(a_bits=a_bits, w_bits=w_bits, g_bits=g_bits,
+                                    in_channels=input_channels, out_channels=output_channels, kernel_size=kernel_size, 
+                                    stride=stride, padding=padding, groups=groups,)
         # self.norm = nn.BatchNorm2d(output_channels)
         self.relu = nn.ReLU(inplace=True)
 
@@ -100,26 +100,18 @@ class NIN(nn.Module):
             conv_bn_relu(cfg[7], num_classes, kernel_size=1, stride=1, padding=0, groups=groups[8], shuffle_groups=shuffle_groups[8]),
             nn.AvgPool2d(kernel_size=8, stride=1, padding=0),
         )
-
-        # for m in self.modules():
-        #     if isinstance(m, nn.Conv2d):
-        #         nn.init.xavier_uniform_(m.weight.data) # tanh中表现好
-        #         m.bias.data.zero_()
-        #     elif isinstance(m, nn.Linear):
-        #         m.weight.data.normal_(0, 0.01)
-        #         m.bias.data.zero_()
         
     def forward(self, x):
         x = self.sequential(x)
         x = x.view(x.size(0), self.num_classes)
         return x
 
-def nin_dorefanet(cfg=None, a_bits=1, w_bits=1 num_classes=10):
-    return NIN(cfg=cfg, num_classes=num_classes)
+def nin_dorefanet(cfg=None, a_bits=1, w_bits=1, g_bits=32, num_classes=10):
+    return NIN(cfg=cfg, a_bits=a_bits, w_bits=w_bits, g_bits=g_bits, num_classes=num_classes)
 
-def nin_gc_dorefanet(cfg=None, num_classes=10):
+def nin_gc_dorefanet(cfg=None, a_bits=1, w_bits=1, g_bits=32, num_classes=10):
     return NIN(
         cfg=[256, 256, 256, 512, 512, 512, 1024, 1024], 
         groups=[1, 2, 2, 16, 4, 4, 32, 8, 1], 
-        num_classes=num_classes
+        a_bits=a_bits, w_bits=w_bits, g_bits=g_bits, num_classes=num_classes
     )

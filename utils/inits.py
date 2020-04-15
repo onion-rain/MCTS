@@ -16,6 +16,12 @@ __all__ = ['suffix_init',
            'visdom_init',]
 
 
+# .d8888. db    db d88888b d88888b d888888b db    db         d888888b d8b   db d888888b d888888b 
+# 88'  YP 88    88 88'     88'       `88'   `8b  d8'           `88'   888o  88   `88'   `~~88~~' 
+# `8bo.   88    88 88ooo   88ooo      88     `8bd8'             88    88V8o 88    88       88    
+#   `Y8b. 88    88 88~~~   88~~~      88     .dPYb.             88    88 V8o88    88       88    
+# db   8D 88b  d88 88      88        .88.   .8P  Y8.           .88.   88  V888   .88.      88    
+# `8888Y' ~Y8888P' YP      YP      Y888888P YP    YP C88888D Y888888P VP   V8P Y888888P    YP    
 def suffix_init(config, usr_suffix=''):
     """
     获取后缀字符串，用在checkpoin、visdom_envirionment、visdom_legend等的命名
@@ -33,8 +39,10 @@ def suffix_init(config, usr_suffix=''):
         suffix += '_sfp'
     if config.max_flops != 0:
         suffix += '_flops{}'.format(config.max_flops)
-    # if config.binary is True:
+    # if config.binarynet is True:
     #     suffix += '_binary'
+    if config.arch.endswith("dorefanet"):
+        suffix +='_a{a}w{w}g{g}'.format(a=config.a_bits, w=config.w_bits, g=config.g_bits)
     suffix += usr_suffix
     suffix += config.usr_suffix
     print('{:<30}  {:<8}'.format('==> suffix: ', suffix))
@@ -301,8 +309,13 @@ def model_init(config, device, num_classes):
         if config.refine: # 根据cfg加载剪枝后的模型结构
             cfg=checkpoint['cfg']
             print(cfg)
-    if cfg is None: model = models.__dict__[config.arch](num_classes=num_classes)
-    else: model = models.__dict__[config.arch](cfg=cfg, num_classes=num_classes)
+    model = models.__dict__[config.arch]
+    if config.arch.endswith('dorefanet'):
+        model = model(a_bits=config.a_bits, w_bits=config.w_bits, g_bits=config.g_bits, num_classes=num_classes)
+    elif cfg is not None:
+        model = model(cfg=cfg, num_classes=num_classes)
+    else:
+        model = model(num_classes=num_classes)
     # print(model)
     model.to(device)
     if len(config.gpu_idx_list) > 1: # 多gpu
@@ -324,8 +337,14 @@ def distribute_model_init(config, device, num_classes):
         if config.refine: # 根据cfg加载剪枝后的模型结构
             cfg=checkpoint['cfg']
             print(cfg)
-    if cfg is None: model = models.__dict__[config.arch](num_classes=num_classes)
-    else: model = models.__dict__[config.arch](cfg=cfg, num_classes=num_classes)
+    model = models.__dict__[config.arch]
+    if config.arch.endswith('dorefanet'):
+        model = model(a_bits=config.a_bits, w_bits=config.w_bits, g_bits=config.g_bits, num_classes=num_classes)
+    elif cfg is not None:
+        model = model(cfg=cfg, num_classes=num_classes)
+    else:
+        model = model(num_classes=num_classes)
+    # print(model)
     model.to(device)
     torch.distributed.init_process_group(backend='nccl', init_method='tcp://localhost:65535', rank=0, world_size=1)
     model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)

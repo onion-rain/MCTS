@@ -46,8 +46,9 @@ def quantize_activation(activation, bits):
 #  `Y88'Y8 ~Y8888P' YP   YP VP   V8P    YP    Y888888P d88888P Y88888P C88888D  `8b8' `8d8'  Y88888P Y888888P  Y888P  YP   YP    YP    `8888Y' 
 
 def quantize_weight(weight, bits):
+    weight = torch.tanh(weight)
     weight = affine(weight)
-    weight = quantize(weigh, bits)
+    weight = quantize(weight, bits)
     weight = 2 * weight -1 # range扩展为[-1, 1]
     return weight
 

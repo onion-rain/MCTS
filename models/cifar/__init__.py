@@ -6,5 +6,6 @@ from .resnet_cs_cifar import *
 from .resnet_cifar_binarynet import *
 from .nin import *
 from .nin_xnornet import *
+from .nin_dorefanet import *
 
 from .test import test

@@ -74,8 +74,14 @@ class Configuration(object):
     flops_arch=''
     candidate_idx = 0
 
-    # binary neural network
-    binary = False 
+    # binarynet
+    binarynet = False 
+
+    # DoReFaNet
+    a_bits = 1 # activation量化位数
+    w_bits = 1 # weight量化位数
+    g_bits = 32 # gradient量化位数
+
 
 
     def update_config(self, kwargs):

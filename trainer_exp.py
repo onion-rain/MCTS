@@ -112,7 +112,7 @@ class TrainerExp(object):
                 self.vis_interval,
                 self.lr_scheduler,
             )
-        elif self.config.binary:
+        elif self.config.binarynet:
             self.trainer = BinaryTrainer(
                 self.model, 
                 self.train_dataloader, 
@@ -144,6 +144,12 @@ class TrainerExp(object):
                 criterion=self.criterion,
                 vis=self.vis,
             )
+            
+        if self.config.arch.endswith('dorefanet'):
+            print()
+            print('{:<30}  {:<8}'.format('==> acitvation_bits: ', self.config.a_bits))
+            print('{:<30}  {:<8}'.format('==> weight_bits: ',     self.config.w_bits))
+            print('{:<30}  {:<8}'.format('==> gradient_bits: ',   self.config.g_bits))
         
 
     def run(self):
@@ -201,10 +207,19 @@ if __name__ == "__main__":
 
     parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
-    parser.add_argument('--binary', dest='binary', action='store_true',
-                        help='train binary neural network')
     parser.add_argument('--srl', dest='sr_lambda', type=float, default=1e-4,
                         help='scale sparse rate (default: 1e-4), suggest 1e-4 for vgg, 1e-5 for resnet/densenet')
+
+    parser.add_argument('--binarynet', dest='binarynet', action='store_true',
+                        help='train binarynet')
+
+    parser.add_argument('--a-bits', dest='a_bits', type=int, default=1,
+                        help='activation quantization bits(default: 1)')
+    parser.add_argument('--w-bits', dest='w_bits', type=int, default=1,
+                        help='weight quantization bits(default: 1)')
+    parser.add_argument('--g-bits', dest='g_bits', type=int, default=32,
+                        help='gradient quantization bits(default: 32)')
+
 
     add_visdom_arg_parser(parser)
     args = parser.parse_args()
@@ -233,7 +248,11 @@ if __name__ == "__main__":
         sr=args.sr,
         sr_lambda=args.sr_lambda,
 
-        binary=args.binary,
+        binarynet=args.binarynet,
+
+        a_bits=args.a_bits,
+        w_bits=args.w_bits,
+        g_bits=args.g_bits,
 
         visdom = args.visdom, # 使用visdom可视化训练过程
         vis_env=args.vis_env,

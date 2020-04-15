@@ -14,9 +14,9 @@
                 "--workers", "1",
 
                 //train
-                "--arch", "nin_gc_xnornet",
+                "--arch", "nin_dorefanet",
                 "--dataset", "cifar10",
-                "--gpu", "0",
+                "--gpu", "1",
                 // "--valuate",
                 // "--binary",
                 

@@ -80,6 +80,7 @@ class BinaryConv2d(torch.nn.Conv2d):
     def forward(self, input):
         binary_input = binarize_activation(input)
         binary_weight = binarize_weight(self.weight)
+        
         alpha = get_alpha(self.weight) # scaling factor
         binary_weight = binary_weight.mul(alpha)
 

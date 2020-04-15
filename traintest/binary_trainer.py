@@ -10,6 +10,7 @@ __all__ = ['BinaryTrainer']
 
 class BinaryTrainer(Trainer):
     """
+    Binarynet专用
     """
     def __init__(self, model, dataloader, criterion, optimizer, device, 
                  vis=None, vis_interval=20, lr_scheduler=None):
