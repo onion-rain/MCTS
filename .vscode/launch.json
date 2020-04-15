@@ -17,8 +17,8 @@
                 "--arch", "resnet20_dorefanet",
                 "--dataset", "cifar10",
                 "--gpu", "1",
-                "--a_bits", "1",
-                "--w_bits", "1",
+                "--a_bits", "32",
+                "--w_bits", "32",
                 // "--valuate",
                 // "--binary",
                 // "--resume", "checkpoints/cifar10_nin_dorefanet_a1w1g32_checkpoint.pth.tar"

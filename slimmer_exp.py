@@ -437,6 +437,7 @@ if __name__ == "__main__":
         resume_path=args.resume_path,
         refine=args.refine,
         log_path=args.log_path,
+        test_only=args.test_only,
 
         slim_percent=args.slim_percent,
     )

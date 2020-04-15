@@ -258,6 +258,7 @@ if __name__ == "__main__":
         refine=args.refine,
         usr_suffix=args.usr_suffix,
         log_path=args.log_path,
+        test_only=args.test_only,
         # 使用visdom可视化训练过程
         visdom = args.visdom, 
         vis_env=args.vis_env,

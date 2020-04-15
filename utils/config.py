@@ -32,6 +32,7 @@ class Configuration(object):
     # random_seed = 0
     usr_suffix = ''
     log_path = 'logs/log.txt'
+    test_only = False
 
     # test专用
     load_model_path = None # 加载预训练参数的路径

@@ -37,6 +37,8 @@ def add_trainer_arg_parser(parser):
                          help='usr_suffix(default:"", means no usr suffix)')
      parser.add_argument('--log-path', type=str, default='logs/log.txt',
                          help='default: logs/log.txt')
+     parser.add_argument('--test_only', '--test_only', action='store_true',
+                         help='Execute a test then return.(default: False)')
 
 
 def add_visdom_arg_parser(parser):

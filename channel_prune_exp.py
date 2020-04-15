@@ -135,6 +135,7 @@ if __name__ == "__main__":
         resume_path=args.resume_path,
         refine=args.refine,
         log_path=args.log_path,
+        test_only=args.test_only,
 
         prune_percent=args.prune_percent,
         lp_norm=args.lp_norm,

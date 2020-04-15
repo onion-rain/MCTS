@@ -9,10 +9,9 @@ def affine(input):
     # range变为[0, 1]
     max_abs = input.abs().max()
     if max_abs > 0:
-        output = input.div(max_abs).add(1).div(2)
+        output = (input/max_abs + 1) / 2
     else:
         output = input
-    # output = torch.clamp(input * 0.1, 0, 1)  # 特征A截断前先进行缩放（* 0.1），以减小截断误差
     return output
 
 class Round(torch.autograd.Function):
@@ -41,7 +40,10 @@ def quantize(input, bits):
 def quantize_activation(activation, bits):
     if bits == 32:
         return activation
-    activation = affine(activation) # 作者说他assume这之前那个有界的激活函数已经将activation限制在[0, 1]了，但是relu貌似并不有界？
+    # 作者说他assume这之前那个有界的激活函数已经将activation限制在[0, 1]了, 咱也不知道作者咋设计的网络，只好自己clamp了
+    # activation = torch.clamp(activation*0.1, 0, 1)
+    activation = torch.tanh(activation)
+    activation = affine(activation)
     activation = quantize(activation, bits)
     return activation
 
@@ -88,4 +90,31 @@ class QuantizedConv2d(torch.nn.Conv2d):
         quantized_weight = quantize_weight(self.weight, self.w_bits)
         out = F.conv2d(quantized_activation, quantized_weight, self.bias, self.stride,
                         self.padding, self.dilation, self.groups)
+        return out
+
+
+#  .d88b.  db    db  .d8b.  d8b   db d888888b d888888b d88888D d88888b d8888b.         db      d888888b d8b   db d88888b  .d8b.  d8888b. 
+# .8P  Y8. 88    88 d8' `8b 888o  88 `~~88~~'   `88'   YP  d8' 88'     88  `8D         88        `88'   888o  88 88'     d8' `8b 88  `8D 
+# 88    88 88    88 88ooo88 88V8o 88    88       88       d8'  88ooooo 88   88         88         88    88V8o 88 88ooooo 88ooo88 88oobY' 
+# 88    88 88    88 88~~~88 88 V8o88    88       88      d8'   88~~~~~ 88   88         88         88    88 V8o88 88~~~~~ 88~~~88 88`8b   
+# `8P  d8' 88b  d88 88   88 88  V888    88      .88.    d8' db 88.     88  .8D         88booo.   .88.   88  V888 88.     88   88 88 `88. 
+#  `Y88'Y8 ~Y8888P' YP   YP VP   V8P    YP    Y888888P d88888P Y88888P Y8888D' C88888D Y88888P Y888888P VP   V8P Y88888P YP   YP 88   YD
+
+class QuantizedLinear(torch.nn.Conv2d):
+    """
+    args:
+        a_bits(int): activation量化位数
+        w_bits(int): weight量化位数
+        TODO g_bits(int): gradient量化位数
+    """
+    def __init__(self, a_bits=1, w_bits=1, g_bits=32, *kargs, **kwargs):
+        super(QuantizedLinear, self).__init__(*kargs, **kwargs)
+        self.a_bits = a_bits
+        self.w_bits = w_bits
+        self.g_bits = g_bits
+
+    def forward(self, input):
+        quantized_activation = quantize_activation(input, self.a_bits)
+        quantized_weight = quantize_weight(self.weight, self.w_bits)
+        out = F.linear(quantized_activation, quantized_weight, self.bias)
         return out

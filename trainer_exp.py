@@ -23,7 +23,7 @@ import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 # import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
 class TrainerExp(object):
@@ -45,6 +45,8 @@ class TrainerExp(object):
         self.best_acc1 = 0
         self.checkpoint = None
         vis_clear = True
+        if self.config.test_only:
+            assert self.config.resume_path != ''
 
         # suffix
         self.suffix = suffix_init(self.config)
@@ -163,6 +165,8 @@ class TrainerExp(object):
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
         print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+        if self.config.test_only:
+            return
         print("")
         for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
@@ -244,6 +248,7 @@ if __name__ == "__main__":
         refine=args.refine,
         usr_suffix=args.usr_suffix,
         log_path=args.log_path,
+        test_only=args.test_only,
 
         sr=args.sr,
         sr_lambda=args.sr_lambda,
