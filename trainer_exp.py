@@ -213,11 +213,11 @@ if __name__ == "__main__":
     parser.add_argument('--binarynet', dest='binarynet', action='store_true',
                         help='train binarynet')
 
-    parser.add_argument('--a-bits', dest='a_bits', type=int, default=1,
+    parser.add_argument('--a_bits', dest='a_bits', type=int, default=1,
                         help='activation quantization bits(default: 1)')
-    parser.add_argument('--w-bits', dest='w_bits', type=int, default=1,
+    parser.add_argument('--w_bits', dest='w_bits', type=int, default=1,
                         help='weight quantization bits(default: 1)')
-    parser.add_argument('--g-bits', dest='g_bits', type=int, default=32,
+    parser.add_argument('--g_bits', dest='g_bits', type=int, default=32,
                         help='gradient quantization bits(default: 32)')
 
 

@@ -53,7 +53,7 @@ class NIN(nn.Module):
             conv_bn_relu(cfg[1], cfg[2], kernel_size=1, stride=1, padding=0, groups=groups[2], shuffle_groups=shuffle_groups[2]),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
 
-            conv_bn_relu(cfg[2], cfg[3], kernel_size=5, stride=1, padding=2, groups=groups[3], shuffle_groups=shuffle_groups[3]),
+            conv_bn_relu(cfg[2], cfg[3], kernel_size=3, stride=1, padding=1, groups=groups[3], shuffle_groups=shuffle_groups[3]),
             conv_bn_relu(cfg[3], cfg[4], kernel_size=1, stride=1, padding=0, groups=groups[4], shuffle_groups=shuffle_groups[4]),
             conv_bn_relu(cfg[4], cfg[5], kernel_size=1, stride=1, padding=0, groups=groups[5], shuffle_groups=shuffle_groups[5]),
             nn.AvgPool2d(kernel_size=3, stride=2, padding=1),

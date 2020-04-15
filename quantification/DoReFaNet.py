@@ -3,10 +3,16 @@ import torch.nn.functional as F
 
 __all__ = ["QuantizedConv2d"]
 
+# TODO gradient量化未实现
+
 def affine(input):
     # range变为[0, 1]
     max_abs = input.abs().max()
-    output = input.div(max_abs).add(1).div(2)
+    if max_abs > 0:
+        output = input.div(max_abs).add(1).div(2)
+    else:
+        output = input
+    # output = torch.clamp(input * 0.1, 0, 1)  # 特征A截断前先进行缩放（* 0.1），以减小截断误差
     return output
 
 class Round(torch.autograd.Function):
@@ -33,7 +39,9 @@ def quantize(input, bits):
 #  `Y88'Y8 ~Y8888P' YP   YP VP   V8P    YP    Y888888P d88888P Y88888P C88888D YP   YP  `Y88P'    YP    Y888888P    YP    YP   YP    YP    Y888888P  `Y88P'  VP   V8P 
 
 def quantize_activation(activation, bits):
-    activation = affine(activation)
+    if bits == 32:
+        return activation
+    activation = affine(activation) # 作者说他assume这之前那个有界的激活函数已经将activation限制在[0, 1]了，但是relu貌似并不有界？
     activation = quantize(activation, bits)
     return activation
 
@@ -46,6 +54,8 @@ def quantize_activation(activation, bits):
 #  `Y88'Y8 ~Y8888P' YP   YP VP   V8P    YP    Y888888P d88888P Y88888P C88888D  `8b8' `8d8'  Y88888P Y888888P  Y888P  YP   YP    YP    `8888Y' 
 
 def quantize_weight(weight, bits):
+    if bits == 32:
+        return weight
     weight = torch.tanh(weight)
     weight = affine(weight)
     weight = quantize(weight, bits)

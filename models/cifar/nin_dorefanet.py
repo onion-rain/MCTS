@@ -39,22 +39,22 @@ class conv_bn_relu(nn.Module):
 class Quantized_conv_bn_relu(nn.Module):
     def __init__(self, input_channels, output_channels,
                  kernel_size=3, stride=1, padding=0, groups=1, shuffle_groups=1,
-                 a_bits=1, w_bits=1, g_bits=32):
+                 a_bits=1, w_bits=1, g_bits=32,):
         super(Quantized_conv_bn_relu, self).__init__()
         self.shuffle_groups = shuffle_groups
-        self.norm = nn.BatchNorm2d(input_channels) # norm前置保证activation mean为0
+        # self.norm = nn.BatchNorm2d(input_channels) # norm前置保证activation mean为0
         self.conv = QuantizedConv2d(a_bits=a_bits, w_bits=w_bits, g_bits=g_bits,
                                     in_channels=input_channels, out_channels=output_channels, kernel_size=kernel_size, 
                                     stride=stride, padding=padding, groups=groups,)
-        # self.norm = nn.BatchNorm2d(output_channels)
+        self.norm = nn.BatchNorm2d(output_channels)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         if self.shuffle_groups > 1:
             x = channel_shuffle(x, groups=self.shuffle_groups)
-        x = self.norm(x)
-        x = self.conv(x)
         # x = self.norm(x)
+        x = self.conv(x)
+        x = self.norm(x)
         x = self.relu(x)
         return x
 
