@@ -139,7 +139,7 @@ class TrainerExp(object):
 
         # step6: valuator
         self.valuator = None
-        if self.config.valuate is True:
+        if (self.config.valuate == True) or (self.config.test_only == True):
             self.valuator = Tester(
                 dataloader=self.val_dataloader,
                 device=self.device,
@@ -162,7 +162,7 @@ class TrainerExp(object):
         print_flops_params(model=self.model, dataset=self.config.dataset)
 
         # initial test
-        if self.valuator is not None:
+        if (self.valuator is not None) or (self.config.test_only == True):
             self.valuator.test(self.model, epoch=self.start_epoch-1)
         print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
         if self.config.test_only:
@@ -178,7 +178,7 @@ class TrainerExp(object):
                 self.best_acc1 = max(self.valuator.top1_acc.avg, self.best_acc1)
             else:
                 is_best = self.trainer.top1_acc.avg > self.best_acc1
-                self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
+                self.best_acc1 = max(self.trainer.top1_acc.avg, self.best_acc1)
 
             print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
             print("")

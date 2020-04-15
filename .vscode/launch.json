@@ -14,11 +14,13 @@
                 "--workers", "1",
 
                 //train
-                "--arch", "resnet20_dorefanet",
+                "--arch", "nin_dorefanet", 
                 "--dataset", "cifar10",
                 "--gpu", "1",
-                "--a_bits", "32",
-                "--w_bits", "32",
+                "--a_bits", "4",
+                "--w_bits", "4",
+                // "--test_only", 
+                // "--resume", "checkpoints/cifar10_nin_dorefanet_a4w4g32_checkpoint.pth.tar"
                 // "--valuate",
                 // "--binary",
                 // "--resume", "checkpoints/cifar10_nin_dorefanet_a1w1g32_checkpoint.pth.tar"
