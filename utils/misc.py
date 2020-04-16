@@ -134,18 +134,55 @@ class AverageMeter(object):
         self.avg = round(float(self.sum / self.count), 3)
         self.err_avg = round(100-self.avg, 3)
 
-        
-def print_flops_params(model, dataset='cifar'):
+def flops_to_string(flops, units=None, precision=2):
+    if units is None:
+        if flops // 10**9 > 0:
+            return str(round(flops / 10.**9, precision)) + ' GMac'
+        elif flops // 10**6 > 0:
+            return str(round(flops / 10.**6, precision)) + ' MMac'
+        elif flops // 10**3 > 0:
+            return str(round(flops / 10.**3, precision)) + ' KMac'
+        else:
+            return str(flops) + ' Mac'
+    else:
+        if units == 'GMac':
+            return str(round(flops / 10.**9, precision)) + ' ' + units
+        elif units == 'MMac':
+            return str(round(flops / 10.**6, precision)) + ' ' + units
+        elif units == 'KMac':
+            return str(round(flops / 10.**3, precision)) + ' ' + units
+        else:
+            return str(flops) + ' Mac'
+
+def params_to_string(params_num, units=None, precision=2):
+    if units is None:
+        if params_num // 10 ** 6 > 0:
+            return str(round(params_num / 10 ** 6, 2)) + ' M'
+        elif params_num // 10 ** 3:
+            return str(round(params_num / 10 ** 3, 2)) + ' k'
+        else:
+            return str(params_num)
+    else:
+        if units == 'M':
+            return str(round(params_num / 10.**6, precision)) + ' ' + units
+        elif units == 'K':
+            return str(round(params_num / 10.**3, precision)) + ' ' + units
+        else:
+            return str(params_num)
+
+def print_flops_params(model, dataset='cifar', print_per_layer_stat=False):
     """
     打印网络flops (GMac)
     打印网络参数量params (M)
     """
     if dataset.startswith("cifar"):
-        flops, params = get_model_complexity_info(model, (3, 32, 32), as_strings=True, print_per_layer_stat=False)
+        flops, params = get_model_complexity_info(model, (3, 32, 32), as_strings=False, print_per_layer_stat=print_per_layer_stat)
     elif dataset == "imagenet":
-        flops, params = get_model_complexity_info(model, (3, 224, 224), as_strings=True, print_per_layer_stat=False)
+        flops, params = get_model_complexity_info(model, (3, 224, 224), as_strings=True, print_per_layer_stat=print_per_layer_stat)
     else:
         raise NotImplementedError("不支持数据集: {}".format(dataset))
+    flops = flops_to_string(flops)
+    params = params_to_string(params)
     print('{:<30}  {:<8}'.format('==> Computational complexity: ', flops))
     print('{:<30}  {:<8}'.format('==> Number of parameters: ', params))
     # print('Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))

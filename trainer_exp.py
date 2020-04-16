@@ -23,8 +23,9 @@ import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 # import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
+# ssh -L 8097:nico1:8097 tiaoban -p 2222
 
 class TrainerExp(object):
     
@@ -45,8 +46,8 @@ class TrainerExp(object):
         self.best_acc1 = 0
         self.checkpoint = None
         vis_clear = True
-        if self.config.test_only:
-            assert self.config.resume_path != ''
+        # if self.config.test_only:
+        #     assert self.config.resume_path != ''
 
         # suffix
         self.suffix = suffix_init(self.config)
@@ -139,7 +140,7 @@ class TrainerExp(object):
 
         # step6: valuator
         self.valuator = None
-        if (self.config.valuate == True) or (self.config.test_only == True):
+        if self.config.valuate == True:
             self.valuator = Tester(
                 dataloader=self.val_dataloader,
                 device=self.device,
@@ -159,10 +160,11 @@ class TrainerExp(object):
         print("")
         start_time = datetime.datetime.now()
         name = (self.config.dataset + "_" + self.config.arch + self.suffix)
+        # get_model_flops(self.model, dataset=self.config.dataset, pr=True)
         print_flops_params(model=self.model, dataset=self.config.dataset)
 
         # initial test
-        if (self.valuator is not None) or (self.config.test_only == True):
+        if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
         print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
         if self.config.test_only:
