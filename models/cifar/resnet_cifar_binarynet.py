@@ -10,10 +10,19 @@ __all__ = ['resnet20_binarynet', 'resnet32_binarynet', 'resnet44_binarynet', 're
 
 def conv3x3(in_channels, out_channels, stride=1, groups=1, padding=1):
     """3x3 convolution with padding"""
-    return BinarizeConv2d(in_channels, out_channels, kernel_size=3, stride=stride,
+    return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride,
                      padding=padding, groups=groups, bias=False, dilation=1)
 
 def conv1x1(in_channels, out_channels, stride=1):
+    """1x1 convolution"""
+    return nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
+
+def binarized_conv3x3(in_channels, out_channels, stride=1, groups=1, padding=1):
+    """3x3 convolution with padding"""
+    return BinarizeConv2d(in_channels, out_channels, kernel_size=3, stride=stride,
+                     padding=padding, groups=groups, bias=False, dilation=1)
+
+def binarized_conv1x1(in_channels, out_channels, stride=1):
     """1x1 convolution"""
     return BinarizeConv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
 
@@ -39,14 +48,14 @@ class Basicneck(nn.Module):
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Basicneck, self).__init__()
 
-        self.conv1 = conv3x3(in_channels, mid_channels, stride=stride)
+        self.conv1 = binarized_conv3x3(in_channels, mid_channels, stride=stride)
         self.norm1 = nn.BatchNorm2d(mid_channels)
 
-        self.conv2 = conv3x3(mid_channels, out_channels, stride=1)
+        self.conv2 = binarized_conv3x3(mid_channels, out_channels, stride=1)
         self.norm2 = nn.BatchNorm2d(out_channels)
 
         if stride != 1 or in_channels != out_channels:
-            self.conv_shortcut = conv1x1(in_channels, out_channels, stride=stride)
+            self.conv_shortcut = binarized_conv1x1(in_channels, out_channels, stride=stride)
 
     def forward(self, x):
         # shortcut
@@ -70,17 +79,17 @@ class Bottleneck(nn.Module):
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Bottleneck, self).__init__()
 
-        self.conv1 = conv1x1(in_channels, mid_channels, stride=1)
+        self.conv1 = binarized_conv1x1(in_channels, mid_channels, stride=1)
         self.norm1 = nn.BatchNorm2d(mid_channels)
 
-        self.conv2 = conv3x3(mid_channels, mid_channels, stride=stride)
+        self.conv2 = binarized_conv3x3(mid_channels, mid_channels, stride=stride)
         self.norm2 = nn.BatchNorm2d(mid_channels)
 
-        self.conv3 = conv1x1(mid_channels, out_channels, stride=1)
+        self.conv3 = binarized_conv1x1(mid_channels, out_channels, stride=1)
         self.norm3 = nn.BatchNorm2d(out_channels)
 
         if stride != 1 or in_channels != out_channels:
-            self.conv_shortcut = conv1x1(in_channels, out_channels, stride=stride)
+            self.conv_shortcut = binarized_conv1x1(in_channels, out_channels, stride=stride)
 
     def forward(self, x):
         # shortcut
@@ -103,7 +112,7 @@ class Bottleneck(nn.Module):
         return out
 
 
-class binarynet(nn.Module):
+class ResNet_cifar(nn.Module):
 
     def __init__(self, block, stage_repeat=[3, 3, 3], num_classes=1000):
         """
@@ -113,7 +122,7 @@ class binarynet(nn.Module):
             gene(list): 存储每层卷积的输入输出通道，用来构造剪之后的网络，前部表示output_scale_ids，后部表示mid_scale_ids
                         若gene为None则构造原始resnet
         """
-        super(binarynet, self).__init__()
+        super(ResNet_cifar, self).__init__()
 
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
@@ -165,21 +174,21 @@ class binarynet(nn.Module):
         return x
         
 def resnet14_binarynet(num_classes=10): # binary neural network
-    return ResNet_cifar_binarynet(Basicneck, [2, 2, 2], num_classes)
+    return ResNet_cifar(Basicneck, [2, 2, 2], num_classes)
         
 def resnet20_binarynet(num_classes=10):
-    return ResNet_cifar_binarynet(Basicneck, [3, 3, 3], num_classes)
+    return ResNet_cifar(Basicneck, [3, 3, 3], num_classes)
 
 def resnet32_binarynet(num_classes=10):
-    return ResNet_cifar_binarynet(Basicneck, [5, 5, 5], num_classes)
+    return ResNet_cifar(Basicneck, [5, 5, 5], num_classes)
 
 def resnet44_binarynet(num_classes=10):
-    return ResNet_cifar_binarynet(Basicneck, [7, 7, 7], num_classes)
+    return ResNet_cifar(Basicneck, [7, 7, 7], num_classes)
 
 def resnet56_binarynet(num_classes=10):
-    return ResNet_cifar_binarynet(Bottleneck, [6, 6, 6], num_classes)
+    return ResNet_cifar(Bottleneck, [6, 6, 6], num_classes)
 
 def resnet110_binarynet(num_classes=10):
-    return ResNet_cifar_binarynet(Bottleneck, [12, 12, 12], num_classes)
+    return ResNet_cifar(Bottleneck, [12, 12, 12], num_classes)
 
 

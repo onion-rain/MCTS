@@ -62,9 +62,9 @@ cfg = [192, 160, 96, 192, 192, 192, 192, 192]
 
 groups = [1,]*9
 
-==> Computational complexity:  0.02 GMac
+==> Computational complexity:   17.26 MMac
 
-==> Number of parameters:     674.91 k
+==> Number of parameters:       674.91 k
 
 ...
 
@@ -82,9 +82,9 @@ checkpoint_path: checkpoints/cifar10_nin_xnornet_checkpoint.pth.tar
 
 `python trainer_exp.py --arch nin_gc_xnornet --dataset cifar10 --lr 0.1 --valuate --epochs 150 --deterministic --workers 1 --gpu 0`
 
-==> Computational complexity:  0.02 GMac
+==> Computational complexity:   24.71 MMac
 
-==> Number of parameters:    589.85 k
+==> Number of parameters:       589.85 k
 
 ...
 
@@ -97,3 +97,7 @@ Test:  149 [  10000/  10000 (100%)] loss:   0.766 | top1:  73.25% | load_time:  
 best_acc1: 75.62
 
 checkpoint_path: checkpoints/cifar10_nin_gc_xnornet_checkpoint.pth.tar
+
+![test_top1](imgs/xnornet/nin_xnornet_test_top1.jpg)
+
+![train_top1](imgs/xnornet/nin_xnornet_train_top1.jpg)

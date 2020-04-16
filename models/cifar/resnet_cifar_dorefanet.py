@@ -12,16 +12,16 @@ def conv3x3(in_channels, out_channels, stride=1, groups=1, padding=1):
     return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride,
                      padding=padding, groups=groups, bias=False, dilation=1)
 
+def conv1x1(in_channels, out_channels, stride=1):
+    """1x1 convolution"""
+    return nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
+
 def quantized_conv3x3(in_channels, out_channels, stride=1, groups=1, padding=1,
             a_bits=1, w_bits=1, g_bits=32):
     """3x3 convolution with padding"""
     return QuantizedConv2d(a_bits=a_bits, w_bits=w_bits, g_bits=g_bits,
                         in_channels=in_channels, out_channels=out_channels, kernel_size=3, 
                         stride=stride, padding=padding, groups=groups, bias=False)
-
-def conv1x1(in_channels, out_channels, stride=1):
-    """1x1 convolution"""
-    return nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
 
 def quantized_conv1x1(in_channels, out_channels, stride=1,
             a_bits=1, w_bits=1, g_bits=32):
