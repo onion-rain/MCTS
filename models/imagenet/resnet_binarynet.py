@@ -5,7 +5,7 @@ import numpy as np
 
 # TODO 未测试
 
-from quantification.binarynet import *
+from quantize.binarynet import *
 
 __all__ = ['resnet18_binarynet', 'resnet34_binarynet', 'resnet50_binarynet', 'resnet101_binarynet', 'resnet152_binarynet']
 

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from quantification.DoReFaNet import *
+from quantize.DoReFaNet import *
 
 __all__ = ['resnet20_dorefanet', 'resnet32_dorefanet', 'resnet44_dorefanet', 'resnet56_dorefanet', 'resnet110_dorefanet']
 

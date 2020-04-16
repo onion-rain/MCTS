@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 
-from quantification.DoReFaNet import *
+from quantize.DoReFaNet import *
 
 __all__ = ['nin_dorefanet', 'nin_gc_dorefanet']
 

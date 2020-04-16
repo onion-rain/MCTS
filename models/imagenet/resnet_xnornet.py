@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from quantification.xnornet import *
+from quantize.xnornet import *
 
 __all__ = ['resnet18_xnornet', 'resnet34_xnornet', 'resnet50_xnornet', 'resnet101_xnornet', 'resnet152_xnornet']
 

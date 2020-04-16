@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 
-from quantification.xnornet import *
+from quantize.xnornet import *
 
 __all__ = ['nin_xnornet', 'nin_gc_xnornet']
 
