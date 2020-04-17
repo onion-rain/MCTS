@@ -112,6 +112,17 @@ best_acc1: 91.04
 
 checkpoint_path: checkpoints/cifar10_nin_dorefanet_a16w16g32_original_weight_l_checkpoint.pth.tar
 
+|          量化位数          | Computational complexity | Number of parameters | best_acc1 |
+| :--------------------: | :----------------------: | :------------------: | :-------: |
+|          a1w1          |        17.11 MMac        |       674.91 k       |   67.37   |
+|          a2w2          |        17.11 MMac        |       674.91 k       |   81.22   |
+|          a4w4          |        17.11 MMac        |       674.91 k       |   90.45   |
+| a4w4(quantized weight) |        17.11 MMac        |       674.91 k       |   73.84   |
+|          a8w8          |        17.11 MMac        |       674.91 k       |   91.09   |
+|         a16w16         |        17.11 MMac        |       674.91 k       |   91.04   |
+
+ 注：由于没有专用的硬件平台和算法库，此处的量化均为先量化后反量化来模拟，故模型大小和flops不变
+
 ![test_top1](imgs/dorefa/nin_dorefa_test_top1.jpg)
 
 ![train_top1](imgs/dorefa/nin_dorefa_train_top1.jpg)
@@ -165,6 +176,14 @@ Test:   99 [  10000/  10000 (100%)] loss:   0.338 | top1:   91.9% | load_time:  
 best_acc1: 92.09
 
 checkpoint_path: checkpoints/cifar10_resnet20_dorefanet_a16w16g32_original_weight_l_checkpoint.pth.tar
+
+|  bits  | Computational complexity | Number of parameters | best_acc1 |
+| :----: | :----------------------: | :------------------: | :-------: |
+|  a4w4  |        1.35 MMac         |        1.11 M        |   91.38   |
+|  a8w8  |        1.35 MMac         |        1.11 M        |   91.72   |
+| a16w16 |        1.35 MMac         |        1.11 M        |   92.09   |
+
+ 注：由于没有专用的硬件平台和算法库，此处的量化均为先量化后反量化来模拟，故模型大小和flops不变
 
 ![test_top1](imgs/dorefa/resnet20_dorefa_test_top1.jpg)
 

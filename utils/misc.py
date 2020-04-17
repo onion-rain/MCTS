@@ -178,7 +178,7 @@ def print_flops_params(model, dataset='cifar', print_per_layer_stat=False):
     if dataset.startswith("cifar"):
         flops, params = get_model_complexity_info(model, (3, 32, 32), as_strings=False, print_per_layer_stat=print_per_layer_stat)
     elif dataset == "imagenet":
-        flops, params = get_model_complexity_info(model, (3, 224, 224), as_strings=True, print_per_layer_stat=print_per_layer_stat)
+        flops, params = get_model_complexity_info(model, (3, 224, 224), as_strings=False, print_per_layer_stat=print_per_layer_stat)
     else:
         raise NotImplementedError("不支持数据集: {}".format(dataset))
     flops = flops_to_string(flops)

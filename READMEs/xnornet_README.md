@@ -98,6 +98,15 @@ best_acc1: 75.62
 
 checkpoint_path: checkpoints/cifar10_nin_gc_xnornet_checkpoint.pth.tar
 
+| model           |                    cfg                     |            groups             | Computational complexity | Number of parameters | best_acc1 |
+| --------------- | :----------------------------------------: | :---------------------------: | :----------------------: | :------------------: | :-------: |
+| nin baseline    |  [192, 160, 96, 192, 192, 192, 192, 192]   |            [1,]*9             |        0.23 GMac         |       969.82 k       |   92.37   |
+| nin_gc baseline | [256, 256, 256, 512, 512, 512, 1024, 1024] | [1, 2, 2, 16, 4, 4, 32, 8, 1] |         0.2 GMac         |       722.46 k       |   92.72   |
+| nin_xnornet     |  [192, 160, 96, 192, 192, 192, 192, 192]   |            [1,]*9             |        17.26 MMac        |       674.91 k       |   82.75   |
+| nin_gc_xnornet  | [256, 256, 256, 512, 512, 512, 1024, 1024] | [1, 2, 2, 16, 4, 4, 32, 8, 1] |        24.71 MMac        |       589.85 k       |   75.62   |
+
+
+
 ![test_top1](imgs/xnornet/nin_xnornet_test_top1.jpg)
 
 ![train_top1](imgs/xnornet/nin_xnornet_train_top1.jpg)

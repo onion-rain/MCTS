@@ -188,6 +188,8 @@ class MetaTrainer(object):
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
         print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+        if self.config.test_only:
+            return
         print("")
         for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
