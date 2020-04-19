@@ -33,8 +33,8 @@ def add_trainer_arg_parser(parser):
                          metavar='PATH', help='path to latest train checkpoint (default: '')')
      parser.add_argument('--refine', action='store_true',
                          help='refine from pruned model, use construction to build the model')
-     parser.add_argument('--usr_suffix', type=str, default='',
-                         help='usr_suffix(default:"", means no usr suffix)')
+     parser.add_argument('--suffix-usr', type=str, default='',
+                         help='usr suffix(default:"", means no usr suffix)')
      parser.add_argument('--log_path', type=str, default='logs/log.txt',
                          help='default: logs/log.txt')
      parser.add_argument('--test_only', '--test_only', action='store_true',

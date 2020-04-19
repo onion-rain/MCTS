@@ -22,13 +22,13 @@ __all__ = ['suffix_init',
 #   `Y8b. 88    88 88~~~   88~~~      88     .dPYb.             88    88 V8o88    88       88    
 # db   8D 88b  d88 88      88        .88.   .8P  Y8.           .88.   88  V888   .88.      88    
 # `8888Y' ~Y8888P' YP      YP      Y888888P YP    YP C88888D Y888888P VP   V8P Y888888P    YP    
-def suffix_init(config, usr_suffix=''):
+def suffix_init(config, suffix_usr=''):
     """
     获取后缀字符串，用在checkpoin、visdom_envirionment、visdom_legend等的命名
     args:
         config(Configuration)
             config.visdom
-        usr_suffix(str): 用户可以添加自己的suffix
+        suffix_usr(str): 用户可以添加自己的suffix
     """
     suffix = ''
     if config.sr is True:
@@ -45,8 +45,8 @@ def suffix_init(config, usr_suffix=''):
         suffix += '_{}'.format(config.quantize_type)
     if config.quantize_type.endswith("dorefa"):
         suffix +='_a{a}w{w}g{g}'.format(a=config.a_bits, w=config.w_bits, g=config.g_bits)
-    suffix += usr_suffix
-    suffix += config.usr_suffix
+    suffix += suffix_usr
+    suffix += config.suffix_usr
     print('{:<30}  {:<8}'.format('==> suffix: ', suffix))
     return suffix
 

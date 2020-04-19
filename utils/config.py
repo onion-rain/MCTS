@@ -30,7 +30,7 @@ class Configuration(object):
     refine = False # 是否根据structure加载剪枝后的模型结构
     deterministic = False # 结论确定，若为True则在相同pytorch版本和相同随机种子相同workers情况下结果可复现
     # random_seed = 0
-    usr_suffix = ''
+    suffix_usr = ''
     log_path = 'logs/log.txt'
     test_only = False
 

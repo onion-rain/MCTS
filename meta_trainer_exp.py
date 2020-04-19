@@ -258,7 +258,7 @@ if __name__ == "__main__":
         valuate=args.valuate,
         resume_path=args.resume_path,
         refine=args.refine,
-        usr_suffix=args.usr_suffix,
+        suffix_usr=args.suffix_usr,
         log_path=args.log_path,
         test_only=args.test_only,
         # 使用visdom可视化训练过程
