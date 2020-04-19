@@ -219,6 +219,8 @@ if __name__ == "__main__":
     parser.add_argument('--binarynet', dest='binarynet', action='store_true',
                         help='train binarynet')
 
+    parser.add_argument('--quantize-type', type=str, default='',
+                        help='choose a quantize method(default: '')')
     parser.add_argument('--a_bits', dest='a_bits', type=int, default=1,
                         help='activation quantization bits(default: 1)')
     parser.add_argument('--w_bits', dest='w_bits', type=int, default=1,
@@ -257,6 +259,7 @@ if __name__ == "__main__":
 
         binarynet=args.binarynet,
 
+        quantize_type=args.quantize_type,
         a_bits=args.a_bits,
         w_bits=args.w_bits,
         g_bits=args.g_bits,

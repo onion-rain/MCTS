@@ -14,7 +14,8 @@
 
 ### Network in Network
 
-`python trainer_exp.py --arch nin_dorefanet --dataset cifar10 --lr 0.1 --valuate --epochs 60 --deterministic --workers 1 --gpu 2 --a_bits 1 --w_bits 1 --visdom --usr-suffix _original_weight_l`
+<!-- `python trainer_exp.py --arch nin_dorefanet --dataset cifar10 --lr 0.1 --valuate --epochs 60 --deterministic --workers 1 --gpu 2 --a_bits 1 --w_bits 1 --visdom --usr-suffix _original_weight_l` -->
+`python trainer_exp.py --arch nin_quantized --dataset cifar10 --lr 0.1 --valuate --epochs 60 --deterministic --workers 1 --gpu 2 --quantize dorefa --a_bits 1 --w_bits 1 --visdom`
 
 注：epochs=100的话在40~50期间训练集与测试集top会掉到10%且后续训练无法提升，故epochs改为60
 

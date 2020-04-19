@@ -14,13 +14,13 @@
                 "--workers", "1",
 
                 //train
-                "--arch", "mobilenetv2_prunednet", 
-                "--dataset", "imagenet",
+                "--arch", "nin_xnornet", 
+                "--dataset", "cifar10",
                 "--gpu", "0",
                 // "--a_bits", "1",
                 // "--w_bits", "1",
-                "--test_only", 
-                "--resume", "checkpoints/meta_prune/imagenet_mobilenetv2_prunednet_flops44_best.pth.tar"
+                // "--test_only", 
+                // "--resume", "checkpoints/meta_prune/imagenet_mobilenetv2_prunednet_flops44_best.pth.tar"
                 // "--valuate",
                 // "--binary",
                 // "--resume", "checkpoints/cifar10_nin_dorefanet_a1w1g32_checkpoint.pth.tar"

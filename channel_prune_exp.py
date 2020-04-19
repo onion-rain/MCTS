@@ -9,8 +9,9 @@ import numpy as np
 import copy
 import argparse
 import datetime
+import sys
 
-from tester import Tester
+from traintest import *
 from prune.channel_pruner import *
 import models
 from utils import *
@@ -32,7 +33,7 @@ class Pruner(object):
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
         assert self.config.check_config() == 0
-        sys.stdout = Logger(self.config.log_path)
+        # sys.stdout = Logger(self.config.log_path)
         print("| ----------------- Initializing Pruner ----------------- |")
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
@@ -124,6 +125,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='network pruner')
     
     add_trainer_arg_parser(parser)
+
+    parser.add_argument('--prune-percent', type=float, default=0.5, 
+                        help='percentage of weight to prune(default: 0.5)')
+    parser.add_argument('--lp-norm', '-lp', dest='lp_norm', type=int, default=2, 
+                        help='the order of norm(default: 2)')
+    parser.add_argument('--method', type=str, default='greedy', 
+                        help="'greedy': select one contributed to the smallest next feature after another\
+                            'lasso': select pruned channels by lasso regression\
+                            'random': randomly select")
 
     args = parser.parse_args()
 

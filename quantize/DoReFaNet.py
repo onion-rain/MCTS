@@ -3,6 +3,7 @@ import torch.nn.functional as F
 
 __all__ = ["QuantizedConv2d"]
 
+# 任意bits量化
 # TODO gradient量化未实现
 
 def affine(input):
@@ -22,6 +23,7 @@ class Round(torch.autograd.Function):
         return output
     @staticmethod
     def backward(self, grad_input):
+        # STE
         return grad_input.clone()
 
 def quantize(input, bits):

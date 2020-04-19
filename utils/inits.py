@@ -41,7 +41,9 @@ def suffix_init(config, usr_suffix=''):
         suffix += '_flops{}'.format(config.max_flops)
     # if config.binarynet is True:
     #     suffix += '_binary'
-    if config.arch.endswith("dorefanet"):
+    if config.quantize_type != '':
+        suffix += '_{}'.format(config.quantize_type)
+    if config.quantize_type.endswith("dorefa"):
         suffix +='_a{a}w{w}g{g}'.format(a=config.a_bits, w=config.w_bits, g=config.g_bits)
     suffix += usr_suffix
     suffix += config.usr_suffix
@@ -310,8 +312,8 @@ def model_init(config, device, num_classes):
             cfg=checkpoint['cfg']
             print(cfg)
     model = models.__dict__[config.arch]
-    if config.arch.endswith('dorefanet'):
-        model = model(a_bits=config.a_bits, w_bits=config.w_bits, g_bits=config.g_bits, num_classes=num_classes)
+    if config.arch.endswith('quantized'):
+        model = model(type=config.quantize_type, a_bits=config.a_bits, w_bits=config.w_bits, g_bits=config.g_bits, num_classes=num_classes)
     elif cfg is not None:
         model = model(cfg=cfg, num_classes=num_classes)
     else:
