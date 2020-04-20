@@ -89,14 +89,9 @@ class QuantizedConv2d(torch.nn.Conv2d):
 
     def forward(self, input):
         quantized_activation = quantize_activation(input, self.a_bits)
-        # update original weight 精度高 a4w4 nin_dorefanet top1 90.45
         quantized_weight = quantize_weight(self.weight, self.w_bits)
         out = F.conv2d(quantized_activation, quantized_weight, self.bias, self.stride,
                         self.padding, self.dilation, self.groups)
-        # # update quantized weight 精度低 a4w4 nin_dorefanet top1 73.84
-        # self.weight = torch.nn.Parameter(quantize_weight(self.weight, self.w_bits))
-        # out = F.conv2d(quantized_activation, self.weight, self.bias, self.stride,
-        #                 self.padding, self.dilation, self.groups)
         return out
 
 

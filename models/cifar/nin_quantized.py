@@ -44,18 +44,18 @@ class bn_conv_relu(nn.Module):
                  a_bits=1, w_bits=1, g_bits=32,):
         super(bn_conv_relu, self).__init__()
         self.shuffle_groups = shuffle_groups
-        self.norm = nn.BatchNorm2d(input_channels) # norm前置保证activation mean为0
+        # self.norm = nn.BatchNorm2d(input_channels) # norm前置保证activation mean为0
         self.conv = nn.Conv2d(input_channels, output_channels, kernel_size, 
                               stride=stride, padding=padding, groups=groups)
-        # self.norm = nn.BatchNorm2d(output_channels)
+        self.norm = nn.BatchNorm2d(output_channels)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         if self.shuffle_groups > 1:
             x = channel_shuffle(x, groups=self.shuffle_groups)
-        x = self.norm(x)
-        x = self.conv(x)
         # x = self.norm(x)
+        x = self.conv(x)
+        x = self.norm(x)
         x = self.relu(x)
         return x
 
@@ -116,7 +116,9 @@ class NIN(nn.Module):
         else:
             shuffle_groups = [1,]*9
 
-        if type == 'dorefa':
+        if type == 'none':
+            quantized_bn_conv_relu = bn_conv_relu
+        elif type == 'dorefa':
             quantized_bn_conv_relu = Quantized_bn_conv_relu
         elif type == 'xnor':
             quantized_bn_conv_relu = Xnor_bn_conv_relu

@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 
+from .xnornet import binarize_activation
+
 __all__ = ["TernaryConv2d"]
 
 # 三值化
@@ -66,7 +68,7 @@ class TernaryConv2d(torch.nn.Conv2d):
         super(TernaryConv2d, self).__init__(*kargs, **kwargs)
 
     def forward(self, input):
-        # ternary_input, _ = ternarize_activation(input)
+        # binary_input = binarize_activation(input)
         ternary_weight, threshold = ternarize_weight(self.weight)
 
         alpha = get_alpha(self.weight, threshold) # scaling factor
@@ -74,4 +76,6 @@ class TernaryConv2d(torch.nn.Conv2d):
 
         out = F.conv2d(input, ternary_weight, self.bias, self.stride,
                         self.padding, self.dilation, self.groups)
+        # out = F.conv2d(binary_input, ternary_weight, self.bias, self.stride,
+        #                 self.padding, self.dilation, self.groups)
         return out
