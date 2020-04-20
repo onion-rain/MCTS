@@ -17,7 +17,7 @@
                 "--arch", "resnet20_q", 
                 "--dataset", "cifar10",
                 "--gpu", "0",
-                "--quantize-type", "dorefa",
+                "--quantize-type", "ternary",
                 "--a_bits", "2",
                 "--w_bits", "2",
                 // "--test_only", 

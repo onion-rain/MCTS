@@ -35,7 +35,7 @@ class Basicneck(nn.Module):
                             padding=1, groups=1, bias=False, dilation=1)
         self.norm2 = nn.BatchNorm2d(out_channels)
         if stride != 1 or in_channels != out_channels:
-            self.conv_shortcut = nn.Conv2d(in_channels, mid_channels, kernel_size=1, stride=stride, bias=False)
+            self.conv_shortcut = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
     def forward(self, x):
         # shortcut
         shortcut = x
@@ -60,10 +60,10 @@ class Bottleneck(nn.Module):
         self.conv2 = nn.Conv2d(mid_channels, mid_channels, kernel_size=3, stride=stride,
                             padding=1, groups=1, bias=False, dilation=1)
         self.norm2 = nn.BatchNorm2d(mid_channels)
-        self.conv3 = nn.Conv2d(in_channels, mid_channels, kernel_size=1, stride=1, bias=False)
+        self.conv3 = nn.Conv2d(mid_channels, out_channels, kernel_size=1, stride=1, bias=False)
         self.norm3 = nn.BatchNorm2d(out_channels)
         if stride != 1 or in_channels != out_channels:
-            self.conv_shortcut = nn.Conv2d(in_channels, mid_channels, kernel_size=1, stride=stride, bias=False)
+            self.conv_shortcut = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False)
     def forward(self, x):
         # shortcut
         shortcut = x
@@ -232,7 +232,9 @@ class ResNet_cifar(nn.Module):
         return x
         
 def resnet20_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
-    if type == 'dorefa':
+    if type == 'none':
+        block = Basicneck
+    elif type == 'dorefa':
         block = Quantized_Basicneck
     elif type == 'xnor':
         block = Xnor_Basicneck
@@ -244,7 +246,9 @@ def resnet20_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
         a_bits=a_bits, w_bits=w_bits, g_bits=g_bits, num_classes=num_classes)
 
 def resnet32_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
-    if type == 'dorefa':
+    if type == 'none':
+        block = Basicneck
+    elif type == 'dorefa':
         block = Quantized_Basicneck
     elif type == 'xnor':
         block = Xnor_Basicneck
@@ -256,7 +260,9 @@ def resnet32_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
         a_bits=a_bits, w_bits=w_bits, g_bits=g_bits, num_classes=num_classes)
 
 def resnet44_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
-    if type == 'dorefa':
+    if type == 'none':
+        block = Basicneck
+    elif type == 'dorefa':
         block = Quantized_Basicneck
     elif type == 'xnor':
         block = Xnor_Basicneck
@@ -268,7 +274,9 @@ def resnet44_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
         a_bits=a_bits, w_bits=w_bits, g_bits=g_bits, num_classes=num_classes)
 
 def resnet56_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
-    if type == 'dorefa':
+    if type == 'none':
+        block = Bottleneck
+    elif type == 'dorefa':
         block = Quantized_Bottleneck
     elif type == 'xnor':
         block = Xnor_Bottleneck
@@ -280,7 +288,9 @@ def resnet56_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
         a_bits=a_bits, w_bits=w_bits, g_bits=g_bits, num_classes=num_classes)
 
 def resnet110_q(type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
-    if type == 'dorefa':
+    if type == 'none':
+        block = Bottleneck
+    elif type == 'dorefa':
         block = Quantized_Bottleneck
     elif type == 'xnor':
         block = Xnor_Bottleneck
