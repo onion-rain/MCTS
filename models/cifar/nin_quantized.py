@@ -6,9 +6,7 @@ from quantize.xnornet import *
 from quantize.ternarynet import *
 from quantize.DoReFaNet import *
 
-__all__ = [
-    'nin_quantized', 'nin_gc_quantized',
-]
+__all__ = ['nin_q', 'nin_gc_q',]
 
 def channel_shuffle(x, groups):
     """shuffle channels of a 4-D Tensor"""
@@ -156,10 +154,10 @@ class NIN(nn.Module):
         x = x.view(x.size(0), self.num_classes)
         return x
 
-def nin_quantized(cfg=None, type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
+def nin_q(cfg=None, type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
     return NIN(cfg=cfg, type=type, a_bits=a_bits, w_bits=w_bits, g_bits=g_bits, num_classes=num_classes)
 
-def nin_gc_quantized(cfg=None, type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
+def nin_gc_q(cfg=None, type='dorefa', a_bits=1, w_bits=1, g_bits=32, num_classes=10):
     return NIN(
         cfg=[256, 256, 256, 512, 512, 512, 1024, 1024], 
         groups=[1, 2, 2, 16, 4, 4, 32, 8, 1], 

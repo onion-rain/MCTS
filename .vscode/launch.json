@@ -14,11 +14,12 @@
                 "--workers", "1",
 
                 //train
-                "--arch", "nin_xnornet", 
+                "--arch", "resnet20_q", 
                 "--dataset", "cifar10",
                 "--gpu", "0",
-                // "--a_bits", "1",
-                // "--w_bits", "1",
+                "--quantize-type", "dorefa",
+                "--a_bits", "2",
+                "--w_bits", "2",
                 // "--test_only", 
                 // "--resume", "checkpoints/meta_prune/imagenet_mobilenetv2_prunednet_flops44_best.pth.tar"
                 // "--valuate",

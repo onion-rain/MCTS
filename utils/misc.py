@@ -11,7 +11,7 @@ import datetime
 from torch.autograd import Variable
 
 
-__all__ = ['print_bar', 'write_log', 'print_model_parameters', 'print_nonzeros', 
+__all__ = ['print_bar', 'print_bar_name', 'write_log', 'print_model_parameters', 'print_nonzeros', 
            'accuracy', 'get_path', 'CrossEntropyLabelSmooth', 'AverageMeter', 
            'print_flops_params', 'save_checkpoint', 'get_model_flops', 'Logger']
 
@@ -24,6 +24,21 @@ def print_bar(start_time, arch, dataset, best_top1=0, epoch=None):
         format(
             model=arch,
             dataset=dataset,
+            best_top1=best_top1,
+            dh=interval.seconds//3600 + interval.days*24,
+            dm=interval.seconds%3600//60,
+            ds=interval.seconds%60,
+        ), flush=True,
+    )
+
+def print_bar_name(start_time, name, best_top1=0, epoch=None):
+    """calculate duration time"""
+    if epoch is not None:
+        print("--  {:^3}  ".format(epoch), end='')
+    interval = datetime.datetime.now() - start_time
+    print("--------  {name}  --  best_top1: {best_top1:.3f}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+        format(
+            name=name,
             best_top1=best_top1,
             dh=interval.seconds//3600 + interval.days*24,
             dm=interval.seconds%3600//60,

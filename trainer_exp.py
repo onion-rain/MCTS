@@ -148,7 +148,7 @@ class TrainerExp(object):
                 vis=self.vis,
             )
             
-        if self.config.arch.endswith('dorefanet'):
+        if self.config.quantize_type.endswith('dorefa'):
             print()
             print('{:<30}  {:<8}'.format('==> acitvation_bits: ', self.config.a_bits))
             print('{:<30}  {:<8}'.format('==> weight_bits: ',     self.config.w_bits))
@@ -166,7 +166,8 @@ class TrainerExp(object):
         # initial test
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
-        print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+        # print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+            print_bar_name(start_time, name, self.best_acc1)
         if self.config.test_only:
             return
         print("")
@@ -182,7 +183,8 @@ class TrainerExp(object):
                 is_best = self.trainer.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.trainer.top1_acc.avg, self.best_acc1)
 
-            print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+            # print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+            print_bar_name(start_time, name, self.best_acc1)
             print("")
             
             # save checkpoint

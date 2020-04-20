@@ -312,7 +312,7 @@ def model_init(config, device, num_classes):
             cfg=checkpoint['cfg']
             print(cfg)
     model = models.__dict__[config.arch]
-    if config.arch.endswith('quantized'):
+    if config.arch.endswith('_q'):
         model = model(type=config.quantize_type, a_bits=config.a_bits, w_bits=config.w_bits, g_bits=config.g_bits, num_classes=num_classes)
     elif cfg is not None:
         model = model(cfg=cfg, num_classes=num_classes)

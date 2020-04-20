@@ -166,7 +166,7 @@ class ResNet_cifar(nn.Module):
         x = self.classifier(x)
         return x
         
-def resnet20_dorefanet(a_bits=1, w_bits=1, g_bits=32, num_classes=10):
+def resnet20_dorefanet(a_bits=4, w_bits=4, g_bits=32, num_classes=10):
     return ResNet_cifar(Basicneck, [3, 3, 3], 
     a_bits=a_bits, w_bits=w_bits, g_bits=g_bits, num_classes=num_classes)
 
