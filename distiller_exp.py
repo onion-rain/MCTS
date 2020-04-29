@@ -59,8 +59,7 @@ class DistillerExp(object):
         self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_init(self.config)
         # model
         self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
-        self.teacher_model, self.teacher_cfg, teacher_checkpoint = teacher_model_init(self.config, self.device, self.num_classes)
-        
+
         # criterion and optimizer
         self.optimizer = torch.optim.SGD(
             params=self.model.parameters(),
@@ -70,7 +69,7 @@ class DistillerExp(object):
         )
         
         self.criterion = torch.nn.CrossEntropyLoss()
-        self.kd_criterion = loss_fn_kd
+        self.kd_criterion = loss_kd(self.config.kd_alpha, self.config.kd_temperature)
 
         self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
             optimizer=self.optimizer,
@@ -78,7 +77,7 @@ class DistillerExp(object):
             gamma=0.1,
             last_epoch=self.start_epoch-1,
         )
-
+        
         # resume
         if checkpoint is not None:
             if 'epoch' in checkpoint.keys():
@@ -101,10 +100,6 @@ class DistillerExp(object):
             self.kd_criterion, 
             self.optimizer, 
             self.device, 
-
-            self.config.kd_alpha,
-            self.config.kd_temperature,
-            
             self.vis, 
             self.vis_interval,
             self.lr_scheduler,
@@ -119,12 +114,10 @@ class DistillerExp(object):
                 criterion=self.criterion,
                 vis=self.vis,
             )
-            
-        if self.config.quantize_type.endswith('dorefa'):
-            print()
-            print('{:<30}  {:<8}'.format('==> acitvation_bits: ', self.config.a_bits))
-            print('{:<30}  {:<8}'.format('==> weight_bits: ',     self.config.w_bits))
-            print('{:<30}  {:<8}'.format('==> gradient_bits: ',   self.config.g_bits))
+
+        print("")
+        self.teacher_model, self.teacher_cfg, teacher_checkpoint = teacher_model_init(self.config, self.device, self.num_classes)
+        print("{:<30}  {:<8}".format('==> teacher model best acc1: ', teacher_checkpoint['best_acc1']))
         
 
     def run(self):

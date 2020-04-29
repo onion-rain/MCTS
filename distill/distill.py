@@ -16,25 +16,24 @@ import argparse
 from utils import *
 from traintest.trainer import Trainer
 
-__all__ = ['loss_fn_kd', 'fetch_teacher_outputs', 'Distiller']
+__all__ = ['loss_kd', 'fetch_teacher_outputs', 'Distiller']
 
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
-def loss_fn_kd(outputs, labels, teacher_outputs, alpha, temperature):
+def loss_kd(alpha, temperature):
     """
     Compute the knowledge-distillation (KD) loss given outputs, labels.
     "Hyperparameters": temperature and alpha
-
-    NOTE: the KL Divergence for PyTorch comparing the softmaxs of teacher
-    and student expects the input tensor to be log probabilities!
     """
-    KD_loss = torch.nn.KLDivLoss()\
-        (F.log_softmax(outputs/temperature, dim=1), F.softmax(teacher_outputs/temperature, dim=1)) \
-        * (alpha * temperature * temperature) \
-        + F.cross_entropy(outputs, labels) \
-        * (1. - alpha)
+    def loss_kd_in(outputs, labels, teacher_outputs):
+        KD_loss = torch.nn.KLDivLoss()\
+            (F.log_softmax(outputs/temperature, dim=1), F.softmax(teacher_outputs/temperature, dim=1)) \
+            * (alpha * temperature * temperature) \
+            + F.cross_entropy(outputs, labels) \
+            * (1. - alpha)
+        return KD_loss
 
-    return KD_loss
+    return loss_kd_in
 
 def fetch_teacher_outputs(teacher_model, dataloader, device):
     # Helper function: get [batch_idx, teacher_outputs] list by running teacher model once
@@ -61,13 +60,11 @@ def fetch_teacher_outputs(teacher_model, dataloader, device):
 
 class Distiller(Trainer):
 
-    def __init__(self, model, dataloader, criterion, optimizer, device, alpha, temperature,
+    def __init__(self, model, dataloader, criterion, optimizer, device, 
                  vis=None, vis_interval=20, lr_scheduler=None):
-        # TODO alpha, temperature在创建criterion就确定，把fetch_teacher_outputs做成闭包
+                 
         super(Distiller, self).__init__(model, dataloader, criterion, optimizer, 
                                              device, vis, vis_interval, lr_scheduler)
-        self.alpha = alpha
-        self.temperature = temperature
 
     def train(self, teacher_outputs, model=None, epoch=None, train_dataloader=None, criterion=None,
                 optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
@@ -102,7 +99,7 @@ class Distiller(Trainer):
             input, target = input.to(self.device), target.to(self.device)
             output = self.model(input)
             # teacher_output = torch.from_numpy(teacher_outputs[batch_index]).to(self.device)
-            loss = self.criterion(output, target, teacher_outputs[batch_index], self.alpha, self.temperature)
+            loss = self.criterion(output, target, teacher_outputs[batch_index])
 
             # compute gradient and do SGD step
             self.optimizer.zero_grad()

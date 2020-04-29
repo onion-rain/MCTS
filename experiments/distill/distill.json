@@ -6,7 +6,6 @@
     "epochs": 100,
     "deterministic": true,
     "workers": 1,
-    "gpu": "0",
     "visdom": false,
     "kd_teacher_arch": "resnet20", 
     "kd_teacher_checkpoint": "checkpoints/baseline/cifar10_resnet20_best.pth.tar",
