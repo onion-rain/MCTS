@@ -1,6 +1,39 @@
+import json
 import models
 
-__all__ = ['add_trainer_arg_parser', 'add_visdom_arg_parser']
+__all__ = ['Params_json', 'add_trainer_arg_parser', 'add_visdom_arg_parser']
+
+
+class Params_json():
+    """Class that loads hyperparameters from a json file.
+
+    Example:
+    ```
+    params = Params_json(json_path)
+    print(params.learning_rate)
+    params.learning_rate = 0.5  # change the value of learning_rate in params
+    ```
+    """
+
+    def __init__(self, json_path):
+        with open(json_path) as f:
+            params = json.load(f)
+            self.__dict__.update(params)
+
+    def save(self, json_path):
+        with open(json_path, 'w') as f:
+            json.dump(self.__dict__, f, indent=4)
+            
+    def update(self, json_path):
+        """Loads parameters from json file"""
+        with open(json_path) as f:
+            params = json.load(f)
+            self.__dict__.update(params)
+
+    @property
+    def dict(self):
+        """Gives dict-like access to Params instance by `params.dict['learning_rate']"""
+        return self.__dict__
 
 def add_trainer_arg_parser(parser):
      
@@ -39,6 +72,8 @@ def add_trainer_arg_parser(parser):
                          help='default: logs/log.txt')
      parser.add_argument('--test_only', '--test_only', action='store_true',
                          help='Execute a test then return.(default: False)')
+     parser.add_argument('--json', type=str, default='',
+                         help='json configuration file path(default: '')')
 
 
 def add_visdom_arg_parser(parser):

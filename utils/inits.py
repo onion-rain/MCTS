@@ -12,7 +12,7 @@ __all__ = ['suffix_init',
            'device_init',
            'seed_init',
            'dataset_init', 'dataset_div_init', 'dataloader_init', 'dataloader_div_init',
-           'model_init', 'distribute_model_init',
+           'model_init', 'teacher_model_init', 'distribute_model_init',
            'visdom_init',]
 
 
@@ -45,6 +45,8 @@ def suffix_init(config, suffix_usr=''):
         suffix += '_{}'.format(config.quantize_type)
     if config.quantize_type.endswith("dorefa"):
         suffix +='_a{a}w{w}g{g}'.format(a=config.a_bits, w=config.w_bits, g=config.g_bits)
+    if config.kd_teacher_arch is not None:
+        suffix += '_kd_{}'.format(config.kd_teacher_arch)
     suffix += suffix_usr
     suffix += config.suffix_usr
     print('{:<30}  {:<8}'.format('==> suffix: ', suffix))
@@ -326,6 +328,34 @@ def model_init(config, device, num_classes):
         model.load_state_dict(checkpoint['model_state_dict'])
     return model, cfg, checkpoint
 
+def teacher_model_init(config, device, num_classes):
+    """knowledge distiller专用，teacher model初始化"""
+    print('{:<30}  {:<8}'.format('==> creating teacher arch: ', config.kd_teacher_arch))
+    model = None
+    cfg = None
+    checkpoint = None
+    assert config.kd_teacher_checkpoint != ''
+    checkpoint = torch.load(config.kd_teacher_checkpoint, map_location=device)
+    assert checkpoint['arch'] == config.kd_teacher_arch
+    print('{:<30}  {:<8}'.format('==> teacher model checkpoint: ', config.kd_teacher_checkpoint))
+    if config.refine: # 根据cfg加载剪枝后的模型结构
+        cfg=checkpoint['cfg']
+        print(cfg)
+    model = models.__dict__[config.kd_teacher_arch]
+    if config.arch.endswith('_q'):
+        model = model(type=config.quantize_type, a_bits=config.a_bits, w_bits=config.w_bits, g_bits=config.g_bits, num_classes=num_classes)
+    elif cfg is not None:
+        model = model(cfg=cfg, num_classes=num_classes)
+    else:
+        model = model(num_classes=num_classes)
+    # print(model)
+    model.to(device)
+    if len(config.gpu_idx_list) > 1: # 多gpu
+        model = torch.nn.DataParallel(model, device_ids=config.gpu_idx_list)
+    if checkpoint is not None: # resume
+        model.load_state_dict(checkpoint['model_state_dict'])
+    return model, cfg, checkpoint
+
 def distribute_model_init(config, device, num_classes):
     """模型训练model通用初始化
     此种模式下只能通过修改CUDA_VISIBLE_DEVICES来选择GPU"""
@@ -340,8 +370,8 @@ def distribute_model_init(config, device, num_classes):
             cfg=checkpoint['cfg']
             print(cfg)
     model = models.__dict__[config.arch]
-    if config.arch.endswith('dorefanet'):
-        model = model(a_bits=config.a_bits, w_bits=config.w_bits, g_bits=config.g_bits, num_classes=num_classes)
+    if config.arch.endswith('_q'):
+        model = model(type=config.quantize_type, a_bits=config.a_bits, w_bits=config.w_bits, g_bits=config.g_bits, num_classes=num_classes)
     elif cfg is not None:
         model = model(cfg=cfg, num_classes=num_classes)
     else:

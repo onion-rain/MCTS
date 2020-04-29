@@ -6,6 +6,7 @@ __all__ = ['Configuration']
 
 class Configuration(object):
     '''
+    TODO 舍弃此类直接传args
     使用范例：
         import models
         from config import Configuration
@@ -79,9 +80,16 @@ class Configuration(object):
     binarynet = False 
 
     # DoReFaNet
+    quantize_type = ''
     a_bits = 1 # activation量化位数
     w_bits = 1 # weight量化位数
     g_bits = 32 # gradient量化位数
+
+    # knowledge distiller
+    kd_teacher_arch = None
+    kd_teacher_checkpoint = ''
+    kd_temperature = 20
+    kd_alpha = 0.9
 
 
 

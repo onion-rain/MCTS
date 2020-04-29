@@ -233,6 +233,13 @@ if __name__ == "__main__":
 
     add_visdom_arg_parser(parser)
     args = parser.parse_args()
+    
+    if args.json != '':
+        json_path = os.path.join(args.json)
+        assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
+        params = Params_json(json_path)
+        for key in params.dict:
+            args.__dict__[key] = params.dict[key]
 
     # debug用
     # args.workers = 0
