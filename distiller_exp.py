@@ -138,6 +138,7 @@ class DistillerExp(object):
         print("")
 
         # fetch teacher outputs
+        # FIXME 貌似每次dataloader生成的batch并不一样吧，更别说什么随机transform了
         teacher_outputs = fetch_teacher_outputs(self.teacher_model, self.train_dataloader, self.device)
         print("")
 

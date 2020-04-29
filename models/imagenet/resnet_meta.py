@@ -54,8 +54,9 @@ class first_conv_Pruningnet(nn.Module):
         # conv1
         conv1_param = F.relu(self.fc11(block_cfg), inplace=True)
         conv1_param = self.fc12(conv1_param).view(self.out_channels, self.in_channels, 7, 7)
+        # FIXME conv7x7 padding应该为3，之前实验都设的1。。。
         out = F.conv2d(x, conv1_param[:out_channels, :in_channels, :, :], 
-                            bias=None, stride=self.stride, padding=1, groups=1)
+                            bias=None, stride=self.stride, padding=3, groups=1)
         out = self.norm1[scale_id](F.relu(out, inplace=True))
         
         out = self.maxpool(out)
@@ -256,10 +257,10 @@ def resnet152_pruningnet(num_classes=1000):
 
 
 # ------------------------------ Prunednet ------------------------------
-# FIXME conv7x7 padding应该为3
+# FIXME conv7x7 padding应该为3，之前实验都设的1。。。
 def conv7x7(in_channels, out_channels, stride=1):
     """7x7 convolution with padding"""
-    return nn.Conv2d(in_channels, out_channels, kernel_size=7, stride=stride, bias=False)
+    return nn.Conv2d(in_channels, out_channels, kernel_size=7, stride=stride, padding=3, bias=False)
 
 def conv3x3(in_channels, out_channels, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""

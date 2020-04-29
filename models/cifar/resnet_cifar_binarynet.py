@@ -68,9 +68,9 @@ class Basicneck(nn.Module):
         residual = activation(self.norm1(residual))
 
         # conv2
-        residual = self.conv2(residual)
+        residual = self.norm2(self.conv2(residual))
 
-        out = activation(self.norm2(residual + shortcut))
+        out = activation(residual + shortcut)
         return out
 
 
@@ -106,9 +106,9 @@ class Bottleneck(nn.Module):
         residual = activation(self.norm2(residual))
 
         # conv3
-        residual = self.conv3(residual)
+        residual = self.norm3(self.conv3(residual))
 
-        out = activation(self.norm3(residual + shortcut))
+        out = activation(residual + shortcut)
         return out
 
 
