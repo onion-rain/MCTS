@@ -12,7 +12,7 @@ from torch.autograd import Variable
 
 
 __all__ = ['print_bar', 'print_bar_name', 'write_log', 'print_model_parameters', 'print_nonzeros', 
-           'accuracy', 'get_path', 'CrossEntropyLabelSmooth', 'AverageMeter', 
+           'accuracy', 'get_path', 'CrossEntropyLabelSmooth', 'AverageMeter', 'sting2list', 
            'print_flops_params', 'save_checkpoint', 'get_model_flops', 'Logger']
 
 def print_bar(start_time, arch, dataset, best_top1=0, epoch=None):
@@ -148,6 +148,12 @@ class AverageMeter(object):
         self.count += n
         self.avg = round(float(self.sum / self.count), 3)
         self.err_avg = round(100-self.avg, 3)
+
+def sting2list(str):
+    if str == "":
+        return []
+    else: 
+        return list(map(int, str.split(",")))
 
 def flops_to_string(flops, units=None, precision=2):
     if units is None:

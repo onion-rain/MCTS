@@ -40,7 +40,10 @@ class DistillerExp(object):
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
         print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
-        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
+        milestones = [self.config.max_epoch*0.5, self.config.max_epoch*0.75]\
+                        if self.config.milestones == ''\
+                        else sting2list(self.config.milestones)
+        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str(milestones)))
 
         # 更新一些默认标志
         self.start_epoch = 0
@@ -73,7 +76,9 @@ class DistillerExp(object):
 
         self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
             optimizer=self.optimizer,
-            milestones=[self.config.max_epoch*0.5, self.config.max_epoch*0.75], 
+            milestones=[self.config.max_epoch*0.5, self.config.max_epoch*0.75]\
+                        if self.config.milestones == ''\
+                        else sting2list(self.config.milestones), 
             gamma=0.1,
             last_epoch=self.start_epoch-1,
         )
@@ -194,6 +199,9 @@ if __name__ == "__main__":
     parser.add_argument('--kd_alpha', '-alpha', dest='kd_alpha', type=float, default=0.9,
                         help='knowledge distiller alpha(default: 0.9)')
 
+    parser.add_argument('--json', type=str, default='',
+                        help='json configuration file path(default: '')')
+
     args = parser.parse_args()
     
     if args.json != '':
@@ -225,6 +233,7 @@ if __name__ == "__main__":
         suffix_usr=args.suffix_usr,
         log_path=args.log_path,
         test_only=args.test_only,
+        milestones=args.milestones,
 
         kd_teacher_arch=args.kd_teacher_arch,
         kd_teacher_checkpoint=args.kd_teacher_checkpoint,

@@ -39,7 +39,10 @@ class TrainerExp(object):
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
         print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
-        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
+        milestones = [self.config.max_epoch*0.5, self.config.max_epoch*0.75]\
+                        if self.config.milestones == ''\
+                        else sting2list(self.config.milestones)
+        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str(milestones)))
 
         # 更新一些默认标志
         self.start_epoch = 0
@@ -79,7 +82,7 @@ class TrainerExp(object):
 
         self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
             optimizer=self.optimizer,
-            milestones=[self.config.max_epoch*0.5, self.config.max_epoch*0.75], 
+            milestones=milestones, 
             gamma=0.1,
             last_epoch=self.start_epoch-1,
         )
@@ -212,6 +215,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='network trainer')
 
     add_trainer_arg_parser(parser)
+    add_visdom_arg_parser(parser)
 
     parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
@@ -230,8 +234,10 @@ if __name__ == "__main__":
     parser.add_argument('--g_bits', dest='g_bits', type=int, default=32,
                         help='gradient quantization bits(default: 32)')
 
+    parser.add_argument('--json', type=str, default='',
+                        help='json configuration file path(default: '')')
 
-    add_visdom_arg_parser(parser)
+
     args = parser.parse_args()
     
     if args.json != '':
@@ -262,6 +268,7 @@ if __name__ == "__main__":
         suffix_usr=args.suffix_usr,
         log_path=args.log_path,
         test_only=args.test_only,
+        milestones=args.milestones,
 
         sr=args.sr,
         sr_lambda=args.sr_lambda,

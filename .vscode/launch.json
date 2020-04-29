@@ -93,7 +93,7 @@
                 // "--candidate", "0",
 
                 // distiller
-                "--json", "experiments/distill/distill.json",
+                "--json", "experiments/baseline/cifar10_resnet20.json",
             ],
         },
     ]

@@ -1,6 +1,7 @@
 import warnings
 import torch
 from pathlib import Path
+from utils import *
 
 __all__ = ['Configuration']
 
@@ -34,6 +35,7 @@ class Configuration(object):
     suffix_usr = ''
     log_path = 'logs/log.txt'
     test_only = False
+    milestones = ''
 
     # test专用
     load_model_path = None # 加载预训练参数的路径
@@ -113,18 +115,13 @@ class Configuration(object):
             for k, v in self.__class__.__dict__.items():
                 if not k.startswith('__'):
                     print(k, "\t\t", getattr(self, k))
-    
-    def sting2list(self, x):
-        if x == "":
-            return []
-        else: return list(map(int, x.split(",")))
 
     def check_config(self):
         '''
         自动检测config配置是否合理
         '''
         # self.multi_gpus = False
-        self.gpu_idx_list = self.sting2list(self.gpu_idx)
+        self.gpu_idx_list = sting2list(self.gpu_idx)
         # if len(self.gpu_idx_list) > 1:
         #     self.multi_gpus = True
         errors = 0
