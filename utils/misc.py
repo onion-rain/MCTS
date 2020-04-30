@@ -20,7 +20,7 @@ def print_bar(start_time, arch, dataset, best_top1=0, epoch=None):
     if epoch is not None:
         print("--  {:^3}  ".format(epoch), end='')
     interval = datetime.datetime.now() - start_time
-    print("--------  {model}  --  {dataset}  --  best_top1: {best_top1:.3f}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+    print("--------  {model}  --  {dataset}  --  best_top1: {best_top1:.2f}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
         format(
             model=arch,
             dataset=dataset,
@@ -36,7 +36,7 @@ def print_bar_name(start_time, name, best_top1=0, epoch=None):
     if epoch is not None:
         print("--  {:^3}  ".format(epoch), end='')
     interval = datetime.datetime.now() - start_time
-    print("--------  {name}  --  best_top1: {best_top1:.3f}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+    print("--------  {name}  --  best_top1: {best_top1:.2f}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
         format(
             name=name,
             best_top1=best_top1,

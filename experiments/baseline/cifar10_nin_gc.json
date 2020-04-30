@@ -1,5 +1,5 @@
 {
-    "arch": "resnet20",
+    "arch": "nin_gc",
     "dataset": "cifar10",
     "lr": 0.1,
     "valuate": true,

@@ -25,6 +25,7 @@ def conv1x1(in_channels, out_channels, stride=1):
 
 
 class Basicblock(nn.Module):
+    expansion = 4
     def __init__(self, in_channels, out_channels, cfg, stride=1):
         # 此处in_channels不能用cfg[0]代替，因为此处与其他block相接，不能直接删除通道，要用channel_selection来选择通道
         super(Basicblock, self).__init__()
@@ -61,6 +62,7 @@ class Basicblock(nn.Module):
 
 
 class Bottleneck(nn.Module):
+    expansion = 2
     def __init__(self, in_channels, out_channels, cfg, stride=1):
         # 此处in_channels, out_channels不能用cfg[0],cfg[3]代替，因为此处与其他block相接，不能直接删除通道，
         # in_channels要用channel_selection来选择通道,out_channels要与原网络相同

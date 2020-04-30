@@ -25,6 +25,7 @@ class first_conv(nn.Module):
 
 
 class Basicneck(nn.Module):
+    expansion = 4
     def __init__(self, in_channels, mid_channels, out_channels, stride=1,
                                 a_bits=1, w_bits=1, g_bits=32,):
         super(Basicneck, self).__init__()
@@ -50,7 +51,7 @@ class Basicneck(nn.Module):
         return out
 
 class Bottleneck(nn.Module):
-    
+    expansion = 2
     def __init__(self, in_channels, mid_channels, out_channels, stride=1,
                                 a_bits=1, w_bits=1, g_bits=32,):
         super(Bottleneck, self).__init__()
@@ -199,7 +200,7 @@ class ResNet_cifar(nn.Module):
 
         mid_channels = []
         for i in range(1, len(stage_channels)):
-            mid_channels += [int(stage_channels[i]/4),]*stage_repeat[i-1]
+            mid_channels += [int(stage_channels[i]/block.expansion),]*stage_repeat[i-1]
         
         block_num = 1
         for stage in range(len(stage_repeat)):

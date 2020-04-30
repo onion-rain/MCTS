@@ -44,7 +44,7 @@ class first_conv(nn.Module):
 
 
 class Basicneck(nn.Module):
-    
+    expansion = 4
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Basicneck, self).__init__()
 
@@ -75,7 +75,7 @@ class Basicneck(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    
+    expansion = 2
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Bottleneck, self).__init__()
 
@@ -127,7 +127,7 @@ class ResNet_cifar(nn.Module):
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
         # self.expansion = 4
-        self.expansion = 1 # binary NN作者结构
+        # self.expansion = 1 # binary NN作者结构
 
         # stage_channels = [64, 128, 256, 512, 2048] # 原始每层stage的输出通道数
         # stage_channels = [16, 64, 128, 256] # 原始每层stage的输出通道数
@@ -144,7 +144,7 @@ class ResNet_cifar(nn.Module):
 
         mid_channels = []
         for i in range(1, len(stage_channels)):
-            mid_channels += [int(stage_channels[i]/self.expansion),]*stage_repeat[i-1]
+            mid_channels += [int(stage_channels[i]/block.expansion),]*stage_repeat[i-1]
 
         block_num = 1
         for stage in range(len(stage_repeat)):

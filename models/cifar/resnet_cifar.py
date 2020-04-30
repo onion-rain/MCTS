@@ -32,7 +32,7 @@ class first_conv(nn.Module):
 
 
 class Basicneck(nn.Module):
-    
+    expansion = 1
     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
         super(Basicneck, self).__init__()
 
@@ -62,42 +62,42 @@ class Basicneck(nn.Module):
         return out
 
 
-class Bottleneck(nn.Module):
-    
-    def __init__(self, in_channels, mid_channels, out_channels, stride=1):
-        super(Bottleneck, self).__init__()
+# class Bottleneck(nn.Module):
+#     expansion = 4
+#     def __init__(self, in_channels, mid_channels, out_channels, stride=1):
+#         super(Bottleneck, self).__init__()
 
-        self.conv1 = conv1x1(in_channels, mid_channels, stride=1)
-        self.norm1 = nn.BatchNorm2d(mid_channels)
+#         self.conv1 = conv1x1(in_channels, mid_channels, stride=1)
+#         self.norm1 = nn.BatchNorm2d(mid_channels)
 
-        self.conv2 = conv3x3(mid_channels, mid_channels, stride=stride)
-        self.norm2 = nn.BatchNorm2d(mid_channels)
+#         self.conv2 = conv3x3(mid_channels, mid_channels, stride=stride)
+#         self.norm2 = nn.BatchNorm2d(mid_channels)
 
-        self.conv3 = conv1x1(mid_channels, out_channels, stride=1)
-        self.norm3 = nn.BatchNorm2d(out_channels)
+#         self.conv3 = conv1x1(mid_channels, out_channels, stride=1)
+#         self.norm3 = nn.BatchNorm2d(out_channels)
 
-        if stride != 1 or in_channels != out_channels:
-            self.conv_shortcut = conv1x1(in_channels, out_channels, stride=stride)
+#         if stride != 1 or in_channels != out_channels:
+#             self.conv_shortcut = conv1x1(in_channels, out_channels, stride=stride)
 
-    def forward(self, x):
-        # shortcut
-        shortcut = x
-        if hasattr(self, 'conv_shortcut'):
-            shortcut = self.conv_shortcut(shortcut)
+#     def forward(self, x):
+#         # shortcut
+#         shortcut = x
+#         if hasattr(self, 'conv_shortcut'):
+#             shortcut = self.conv_shortcut(shortcut)
 
-        # conv1
-        residual = self.conv1(x)
-        residual = activation(self.norm1(residual))
+#         # conv1
+#         residual = self.conv1(x)
+#         residual = activation(self.norm1(residual))
 
-        # conv2
-        residual = self.conv2(residual)
-        residual = activation(self.norm2(residual))
+#         # conv2
+#         residual = self.conv2(residual)
+#         residual = activation(self.norm2(residual))
 
-        # conv3
-        residual = self.norm3(self.conv3(residual))
+#         # conv3
+#         residual = self.norm3(self.conv3(residual))
 
-        out = activation(residual + shortcut)
-        return out
+#         out = activation(residual + shortcut)
+#         return out
 
 
 class ResNet_cifar(nn.Module):
@@ -113,8 +113,11 @@ class ResNet_cifar(nn.Module):
         self.num_classes = num_classes
         self.stage_repeat = stage_repeat
 
-        stage_channels = [16, 64, 128, 256] # 原始每层stage的输出通道数
-        assert len(stage_channels)-1 == len(stage_repeat)
+        # if block == Basicneck: # resnet通道计算基准为mid_channel，然后通过expansion扩张得到out_channel
+        stage_channels = [16, 16, 32, 64] # 每层stage的输出通道数
+        # elif block == Bottleneck:
+        #     stage_channels = [16, 64, 128, 256] # 每层stage的输出通道数
+        # assert len(stage_channels)-1 == len(stage_repeat)
         
         output_channels = [stage_channels[0]]
         for i in range(1, len(stage_channels)):
@@ -126,7 +129,7 @@ class ResNet_cifar(nn.Module):
 
         mid_channels = []
         for i in range(1, len(stage_channels)):
-            mid_channels += [int(stage_channels[i]/4),]*stage_repeat[i-1]
+            mid_channels += [int(stage_channels[i]/block.expansion),]*stage_repeat[i-1]
 
         block_num = 1
         for stage in range(len(stage_repeat)):
@@ -155,7 +158,7 @@ class ResNet_cifar(nn.Module):
         x = self.classifier(x)
         return x
         
-def resnet20(num_classes=10):
+def resnet20(num_classes=10): # (6n+2)
     return ResNet_cifar(Basicneck, [3, 3, 3], num_classes)
 
 def resnet32(num_classes=10):
@@ -165,8 +168,8 @@ def resnet44(num_classes=10):
     return ResNet_cifar(Basicneck, [7, 7, 7], num_classes)
 
 def resnet56(num_classes=10):
-    return ResNet_cifar(Bottleneck, [6, 6, 6], num_classes)
+    return ResNet_cifar(Basicneck, [9, 9, 9], num_classes)
 
 def resnet110(num_classes=10):
-    return ResNet_cifar(Bottleneck, [12, 12, 12], num_classes)
+    return ResNet_cifar(Basicneck, [12, 12, 12], num_classes)
 

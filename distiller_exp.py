@@ -52,6 +52,7 @@ class DistillerExp(object):
         vis_clear = True
 
         # suffix
+        # self.config.suffix_usr += "_distill"
         self.suffix = suffix_init(self.config)
         # device
         self.device = device_init(self.config)
@@ -72,7 +73,7 @@ class DistillerExp(object):
         )
         
         self.criterion = torch.nn.CrossEntropyLoss()
-        self.kd_criterion = loss_kd(self.config.kd_alpha, self.config.kd_temperature)
+        self.kd_criterion = kd_loss(self.config.kd_alpha, self.config.kd_temperature)
 
         self.lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
             optimizer=self.optimizer,
@@ -95,12 +96,17 @@ class DistillerExp(object):
                 print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
             if 'optimizer_state_dict' in checkpoint.keys():
                 self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+        print("")
+        self.teacher_model, self.teacher_cfg, teacher_checkpoint = teacher_model_init(self.config, self.device, self.num_classes)
+        print("{:<30}  {:<8}".format('==> teacher model best acc1: ', teacher_checkpoint['best_acc1']))
                 
         # visdom
         self.vis, self.vis_interval = visdom_init(self.config, self.suffix, vis_clear)
         
-        self.trainer = Distiller(
+        self.trainer = DistillerTrainer(
             self.model, 
+            self.teacher_model, 
             self.train_dataloader, 
             self.kd_criterion, 
             self.optimizer, 
@@ -119,10 +125,6 @@ class DistillerExp(object):
                 criterion=self.criterion,
                 vis=self.vis,
             )
-
-        print("")
-        self.teacher_model, self.teacher_cfg, teacher_checkpoint = teacher_model_init(self.config, self.device, self.num_classes)
-        print("{:<30}  {:<8}".format('==> teacher model best acc1: ', teacher_checkpoint['best_acc1']))
         
 
     def run(self):
@@ -142,14 +144,9 @@ class DistillerExp(object):
             return
         print("")
 
-        # fetch teacher outputs
-        # FIXME 貌似每次dataloader生成的batch并不一样吧，更别说什么随机transform了
-        teacher_outputs = fetch_teacher_outputs(self.teacher_model, self.train_dataloader, self.device)
-        print("")
-
         for epoch in range(self.start_epoch, self.config.max_epoch):
             # train & valuate
-            self.trainer.train(teacher_outputs, epoch=epoch)
+            self.trainer.train(epoch=epoch)
             if self.valuator is not None:
                 self.valuator.test(self.model, epoch=epoch)
                 

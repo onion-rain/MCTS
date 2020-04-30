@@ -12,6 +12,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--workers", "1",
+                "--gpu", "3",
 
                 // //train
                 // "--arch", "test", 
@@ -93,7 +94,7 @@
                 // "--candidate", "0",
 
                 // distiller
-                "--json", "experiments/baseline/cifar10_resnet20.json",
+                "--json", "experiments/baseline/cifar10_test.json",
             ],
         },
     ]

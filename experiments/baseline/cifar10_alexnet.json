@@ -1,7 +1,7 @@
 {
-    "arch": "resnet20",
+    "arch": "alexnet_cifar",
     "dataset": "cifar10",
-    "lr": 0.1,
+    "lr": 0.01,
     "valuate": true,
     "epochs": 200,
     "milestones": "100, 150",

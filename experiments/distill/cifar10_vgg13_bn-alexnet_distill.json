@@ -1,0 +1,13 @@
+{
+    "arch": "alexnet_cifar",
+    "dataset": "cifar10",
+    "lr": 0.1,
+    "valuate": true,
+    "epochs": 100,
+    "deterministic": true,
+    "workers": 1,
+    "kd_teacher_arch": "vgg13_bn_cifar", 
+    "kd_teacher_checkpoint": "checkpoints/baseline/cifar10_vgg13_bn_cifar_best.pth.tar",
+    "kd_temperature": 20,
+    "kd_alpha": 0.9
+}
