@@ -20,3 +20,7 @@
 [XNOR-Net(nin)](READMEs/xnornet_README.md)
 
 [Dorefa-Net(nin, resnet_cifar)](READMEs/Dorefanet_README.md)
+
+## distill
+
+[distilling-knowledge](READMEs/distill_README.md)
