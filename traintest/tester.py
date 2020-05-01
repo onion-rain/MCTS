@@ -48,6 +48,33 @@ class Tester(object):
             self.criterion = criterion
         if test_dataloader is not None:
             self.test_dataloader = test_dataloader
+    
+    def print_log(self, epoch, done, percentage):
+        time_str = time.strftime('%H:%M:%S')
+        print("\r"
+            "Test: {epoch:4} "
+            "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
+            "loss: {loss_meter:7} | "
+            "top1: {top1:6}% | "
+            # "top5: {top5:6} | "
+            "load_time: {time_percent:3.0f}% | "
+            "UTC+8: {time_str} ".format(
+                epoch=epoch,
+                done=done,
+                total_len=len(self.test_dataloader.dataset),
+                percentage=percentage,
+                loss_meter=self.loss_meter.avg if self.loss_meter.avg<999.999 else 999.999,
+                top1=self.top1_acc.avg,
+                # top5=self.top5_acc.avg,
+                time_percent=self.dataload_time.avg/self.batch_time.avg*100,
+                time_str=time_str
+            ), end=""
+        )
+    
+    def visualize_plot(self, epoch):
+        if self.vis is not None:
+            self.vis.plot('test_loss', self.loss_meter.avg, x=epoch)
+            self.vis.plot('test_top1', self.top1_acc.avg, x=epoch)
 
     def test(self, model, epoch=-1, test_dataloader=None, criterion=None, device=None, vis=None):
         """
@@ -86,35 +113,16 @@ class Tester(object):
                 # measure elapsed time
                 self.batch_time.update(time.time() - end_time)
                 end_time = time.time()
-
+                
+                # print log
                 done = (batch_index+1) * self.test_dataloader.batch_size
                 percentage = 100. * (batch_index+1) / len(self.test_dataloader)
-                time_str = time.strftime('%H:%M:%S')
-                print("\r"
-                    "Test: {epoch:4} "
-                    "[{done:7}/{total_len:7} ({percentage:3.0f}%)] "
-                    "loss: {loss_meter:7} | "
-                    "top1: {top1:6}% | "
-                    # "top5: {top5:6} | "
-                    "load_time: {time_percent:3.0f}% | "
-                    "UTC+8: {time_str} ".format(
-                        epoch=epoch,
-                        done=done,
-                        total_len=len(self.test_dataloader.dataset),
-                        percentage=percentage,
-                        loss_meter=self.loss_meter.avg if self.loss_meter.avg<999.999 else 999.999,
-                        top1=self.top1_acc.avg,
-                        # top5=self.top5_acc.avg,
-                        time_percent=self.dataload_time.avg/self.batch_time.avg*100,
-                        time_str=time_str
-                    ), end=""
-                )
+                self.print_log(epoch, done, percentage)
+
         print("")
         
         # visualize
-        if self.vis is not None:
-            self.vis.plot('test_loss', self.loss_meter.avg, x=epoch)
-            self.vis.plot('test_top1', self.top1_acc.avg, x=epoch)
+        self.visualize_plot(epoch)
 
         return self.loss_meter, self.top1_acc, self.top5_acc
     
