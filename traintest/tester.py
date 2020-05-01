@@ -14,7 +14,7 @@ __all__ = ['Tester']
 
 class Tester(object):
     """
-    tester基类，原则上所有trainer都是继承该类
+    tester基类，原则上所有tester都是继承该类
     """
     def __init__(self, dataloader=None, device=None, criterion=None, vis=None):
 

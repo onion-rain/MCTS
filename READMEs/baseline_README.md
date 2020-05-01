@@ -19,10 +19,8 @@
 |    VGG16_bn     | 14.73 M  |   314.43    |  93.84  |         0h:57.55         |
 |    VGG19_bn     | 20.04 M  |   399.47    |  93.83  |         1h:10.05         |
 |     alexnet     | 129.25 k |    1.34     |  78.69  |         0h:44.29         |
-| resnex29_8x64d  | 34.43 M  |    84.81    |         |                          |
-| resnex29_16x64d | 68.16 M  |    84.81    |         |                          |
-
-
+| resnex29_8x64d  | 34.43 M  |    84.81    |  95.64  |        10h:49.11         |
+| resnex29_16x64d | 68.16 M  |    84.81    |  95.85  |        20h:24.12         |
 
 ![test top1](imgs/baseline/cifar10_baseline_test_top1.jpg)
 
@@ -52,12 +50,18 @@ python trainer_exp.py --json experiments/baseline/cifar10_resnext29_16x64d.json 
 
 ==> Number of parameters:       68.16 M
 
+Train: 199 [  50000/  50000 (100%)] loss:   0.001 | top1:  100.0% | load_time:   0% | lr   : 1.0e-03
 
+Test:  199 [  10000/  10000 (100%)] loss:   0.159 | top1:  95.78% | load_time:   0% | UTC+8: 13:39:51
+
+--------  cifar10_resnext29_16x64d  --  best_top1: 95.85  --  duration: 20h:24.12  --------
+
+best_acc1: 95.85
 
 |      model      |  params  | flops(MMac) | top1(%) | train&val duration(v100) |
 | :-------------: | :------: | :---------: | :-----: | :----------------------: |
-| resnex29_8x64d  | 34.43 M  |    84.81    |         |                          |
-| resnex29_16x64d | 68.16 M  |    84.81    |         |                          |
+| resnex29_8x64d  | 34.43 M  |    84.81    |  95.64  |        10h:49.11         |
+| resnex29_16x64d | 68.16 M  |    84.81    |  95.85  |        20h:24.12         |
 
 ![test top1](imgs/baseline/cifar10_resnext_baseline_test_top1.jpg)
 
