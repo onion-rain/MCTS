@@ -36,6 +36,14 @@ python trainer_exp.py --json experiments/baseline/cifar10_resnext29_8x64d.json -
 
 ==> Number of parameters:       34.43 M
 
+Train: 199 [  50000/  50000 (100%)] loss:   0.001 | top1:  100.0% | load_time:   0% | lr   : 1.0e-03
+
+Test:  199 [  10000/  10000 (100%)] loss:   0.168 | top1:  95.55% | load_time:   1% | UTC+8: 02:41:24
+
+--------  cifar10_resnext29_8x64d  --  best_top1: 95.64  --  duration: 10h:49.11  --------
+
+best_acc1: 95.64
+
 #### resnext29_16x64d
 
 python trainer_exp.py --json experiments/baseline/cifar10_resnext29_16x64d.json --gpu 2 --visdom

@@ -68,11 +68,7 @@ class Trainer(object):
             self.loss_vis.update(loss.item(), output.size(0))
             self.top1_vis.update(prec1.data.cpu(), output.size(0))
 
-
-
-    def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
-                optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
-        """注意：如要更新model必须更新optimizer和lr_scheduler"""
+    def update_attr(self, epoch, model, optimizer, train_dataloader, criterion, vis, vis_interval):
         if epoch is None:
             epoch = 0
         if model is not None:
@@ -89,7 +85,12 @@ class Trainer(object):
             self.vis = vis
         if vis_interval is not None:
             self.vis_interval = vis_interval
-        
+
+    def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
+                optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
+        """注意：如要更新model必须更新optimizer和lr_scheduler"""
+        self.update_attr(epoch, model, optimizer, train_dataloader, criterion, vis, vis_interval)
+
         self.model.train() # 训练模式
         self.init_meters()
 

@@ -21,23 +21,7 @@ class PruningnetTrainer(Trainer):
     def train(self, model=None, epoch=None, train_dataloader=None, criterion=None,
                 optimizer=None, lr_scheduler=None, vis=None, vis_interval=None):
         """注意：如要更新model必须更新optimizer和lr_scheduler"""
-
-        if epoch is None:
-            epoch = 0
-        if model is not None:
-            assert optimizer is not None
-            assert lr_scheduler is not None
-            self.model = model
-            self.optimizer = optimizer
-            self.lr_scheduler = lr_scheduler
-        if train_dataloader is not None:
-            self.train_dataloader = train_dataloader
-        if criterion is not None:
-            self.criterion = criterion
-        if vis is not None:
-            self.vis = vis
-        if vis_interval is not None:
-            self.vis_interval = vis_interval
+        self.update_attr(epoch, model, optimizer, train_dataloader, criterion, vis, vis_interval)
         
         self.model.train() # 训练模式
         self.init_meters()

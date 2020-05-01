@@ -27,16 +27,7 @@ class PruningnetTester(Tester):
             vis: (default=None)
         return: self.loss_meter, self.top1_acc, self.top5_acc
         """
-        self.model = model
-        assert self.model is not None
-        if vis is not None:
-            self.vis = vis
-        if device is not None:
-            self.device = device
-        if criterion is not None:
-            self.criterion = criterion
-        if test_dataloader is not None:
-            self.test_dataloader = test_dataloader
+        self.update_attr(model, epoch, test_dataloader, criterion, device, vis)
         
         self.model.eval() # 验证模式
         self.init_meters()
