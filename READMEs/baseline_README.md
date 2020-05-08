@@ -351,3 +351,31 @@ best_acc1: 78.69
 |      model      |  params  | flops(MMac) | top1(%) | train&val duration(v100) |
 | :-------------: | :------: | :---------: | :-----: | :----------------------: |
 |     alexnet     | 129.25 k |    1.34     |  78.69  |         0h:44.29         |
+
+## Imagenet
+
+### ResNet
+
+#### ResNet18
+
+python trainer_exp.py --json experiments/baseline/imagenet_resnet18.json --gpu 0 --visdom
+
+==> Computational complexity:   1.82 GMac
+
+==> Number of parameters:       11.69 M
+
+#### ResNet34
+
+python trainer_exp.py --json experiments/baseline/imagenet_resnet34.json --gpu 2 --visdom
+
+==> Computational complexity:   3.67 GMac
+
+==> Number of parameters:       21.8 M
+
+### MobileNet V2
+
+python trainer_exp.py --json experiments/baseline/imagenet_mobilenetv2.json --gpu 3 --visdom
+
+==> Computational complexity:   320.24 MMac
+
+==> Number of parameters:       3.5 M

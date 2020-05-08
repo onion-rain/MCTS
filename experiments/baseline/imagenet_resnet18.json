@@ -1,0 +1,10 @@
+{
+    "arch": "resnet18",
+    "dataset": "imagenet",
+    "lr": 0.1,
+    "valuate": true,
+    "epochs": 80,
+    "milestones": "40, 60",
+    "deterministic": false,
+    "workers": 10
+}

@@ -14,11 +14,10 @@ import numpy as np
 import copy
 import argparse
 
-from tester import Tester
-from config import Configuration
-from prune.weight_pruner import WeightPruner
 import models
 from utils import *
+from traintest import *
+from prune.weight_pruner import WeightPruner
 
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
@@ -26,17 +25,15 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class Pruner(object):
     """
-    TODO 由于trainer类大改，本类某些函数可能个已过期
     导入的模型必须有BN层，
-    并且事先进行稀疏训练，
-    并且全连接层前要将左右特征图池化为1x1，即最终卷积输出的通道数即为全连接层输入通道数
+    并且全连接层前要将特征图池化为1x1
     """
     def __init__(self, **kwargs):
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
         assert self.config.check_config() == 0
-        sys.stdout = Logger(self.config.log_path)
+        # sys.stdout = Logger(self.config.log_path)
         print("| ----------------- Initializing Pruner ----------------- |")
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         
@@ -51,24 +48,29 @@ class Pruner(object):
         # Random Seed 
         seed_init(self.config)
         # data
-        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
+        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_init(self.config)
         # model
         self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
         
+        self.criterion = torch.nn.CrossEntropyLoss()
+
         # resume
-        if checkpoint is not None:
-            if 'epoch' in checkpoint.keys():
-                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
-                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-                if checkpoint['epoch'] > -1:
-                    vis_clear = False # 不清空visdom已有visdom env里的内容
-            if 'best_acc1' in checkpoint.keys():
-                self.best_acc1 = checkpoint['best_acc1']
-                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-            if 'optimizer_state_dict' in checkpoint.keys():
-                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        assert checkpoint is not None
+        if 'epoch' in checkpoint.keys():
+            self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
+            print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+            if checkpoint['epoch'] > -1:
+                vis_clear = False # 不清空visdom已有visdom env里的内容
+        if 'best_acc1' in checkpoint.keys():
+            self.best_acc1 = checkpoint['best_acc1']
+            print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+        # self.checkpoint = checkpoint
         
         self.vis = None
+
+        print()
+        print('{:<30}  {:<8}'.format('==> prune_ratio: ', self.config.prune_percent))
+        print('{:<30}  {:<8}'.format('==> prune_object: ', self.config.prune_object))
 
         # step5: pruner
         if self.config.prune_object == 'all':
@@ -81,45 +83,48 @@ class Pruner(object):
         )
 
         # step6: valuator
-        val_config_dic = {
-            'arch': self.model,
-            'dataloader': self.val_dataloader,
-            'device': self.device,
-            'vis': self.vis,
-            'seed': self.config.random_seed
-        }
-        self.valuator = Tester(val_config_dic)
+        self.valuator = Tester(
+            dataloader=self.val_dataloader,
+            device=self.device,
+            criterion=self.criterion,
+            vis=self.vis,
+        )
 
 
     def run(self):
 
         print("")
         print("| -------------------- original model -------------------- |")
-        self.valuator.test(self.model)
-        print_flops_params(self.valuator.model, self.config.dataset)
-        # print_model_parameters(self.valuator.model)
+        print_flops_params(self.model, self.config.dataset)
+        # self.valuator.test(self.model)
 
         print("")
         print("| -------------------- pruning model -------------------- |")
-        self.pruner.prune()
-        self.valuator.test(self.pruner.pruned_model)
-        print_flops_params(self.valuator.model, self.config.dataset)
+        self.pruned_model, pruned_ratio = self.pruner.prune()
+        print_flops_params(self.pruned_model, self.config.dataset)
+        self.valuator.test(self.pruned_model, epoch=0)
 
-        # # save pruned model
-        # name = ('weight_pruned' + str(self.config.prune_percent) 
-        #         + '_' + self.config.dataset 
-        #         + "_" + self.config.arch
-        #         + self.suffix)
-        # if len(self.config.gpu_idx_list) > 1:
-        #     state_dict = self.pruned_model.module.state_dict()
-        # else: state_dict = self.pruned_model.state_dict()
-        # path = save_checkpoint({
-        #     # 'cfg': cfg,
-        #     'ratio': self.prune_ratio,
-        #     'model_state_dict': state_dict,
-        #     'best_acc1': self.valuator.top1_acc.avg,
-        # }, file_root='checkpoints/weight_pruned/', file_name=name)
-        # print('{:<30}  {}'.format('==> pruned model save path: ', path))
+        self.best_acc1 = self.valuator.top1_acc.avg
+        # save pruned model
+        name = ('weight_pruned' + str(self.config.prune_percent) 
+                + '_' + self.config.dataset 
+                + "_" + self.config.arch
+                + self.suffix)
+        if len(self.config.gpu_idx_list) > 1:
+            state_dict = self.pruned_model.module.state_dict()
+        else: state_dict = self.pruned_model.state_dict()
+        save_dict = {
+            'arch': self.config.arch,
+            'ratio': pruned_ratio,
+            'model_state_dict': state_dict,
+            'best_acc1': self.best_acc1,
+        }
+        if self.cfg is not None:
+            save_dict['cfg'] = self.cfg
+        checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=name)
+        
+        print("{}{}".format("best_acc1: ", self.best_acc1))
+        print("{}{}".format("checkpoint_path: ", checkpoint_path))
 
 
 
@@ -135,21 +140,30 @@ if __name__ == "__main__":
                         help='training dataset (default: cifar10)')
     parser.add_argument('--workers', type=int, default=10, metavar='N',
                         help='number of data loading workers (default: 10)')
-    parser.add_argument('--gpu', type=str, default='0', metavar='gpu_idx',
-                        help='training GPU index(default:"0",which means use GPU0')
+    parser.add_argument('--gpu', type=str, default='',
+                        help='training GPU index(default:"",which means use CPU')
     parser.add_argument('--resume', dest='resume_path', type=str, default='',
                         metavar='PATH', help='path to latest train checkpoint (default: '')')
     parser.add_argument('--refine', action='store_true',
                         help='refine from pruned model, use construction to build the model')
-    parser.add_argument('--prune-percent', type=float, default=0.5, 
+    parser.add_argument('--prune_percent', type=float, default=0.5, 
                         help='percentage of weight to prune')
-    parser.add_argument('--prune-object', type=str, metavar='object', default='all',
+    parser.add_argument('--prune_object', type=str, metavar='object', default='all',
                         help='prune object: "conv", "fc", "all"(default: , "all")')
-    parser.add_argument('--log-path', type=str, default='logs/log.txt',
+    parser.add_argument('--log_path', type=str, default='logs/log.txt',
                         help='default: logs/log.txt')
+
+    parser.add_argument('--json', type=str, default='',
+                        help='json configuration file path(default: '')')
 
     args = parser.parse_args()
 
+    if args.json != '':
+        json_path = os.path.join(args.json)
+        assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
+        params = Params_json(json_path)
+        for key in params.dict:
+            args.__dict__[key] = params.dict[key]
 
     pruner = Pruner(
         arch=args.arch,

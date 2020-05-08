@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--workers", "1",
-                "--gpu", "3",
+                // "--gpu", "3",
 
                 // //train
                 // "--arch", "test", 
@@ -94,7 +94,8 @@
                 // "--candidate", "0",
 
                 // distiller
-                "--json", "experiments/baseline/cifar10_test.json",
+                "--json", "experiments/prune/cifar10_weight_prune_vgg16_bn.json",
+                "--prune_percent", "0.5"
             ],
         },
     ]

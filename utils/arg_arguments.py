@@ -54,8 +54,8 @@ def add_trainer_arg_parser(parser):
                         metavar='LR', help='initial learning rate (default: 1e-1)')
     parser.add_argument('--weight_decay', '-wd', dest='weight_decay', type=float,
                         default=1e-4, metavar='W', help='weight decay (default: 1e-4)')
-    parser.add_argument('--gpu', type=str, default='0',
-                        help='training GPU index(default:"0",which means use GPU0')
+    parser.add_argument('--gpu', type=str, default='',
+                        help='training GPU index(default:"",which means use CPU')
     parser.add_argument('--deterministic', '--det', action='store_true',
                         help='Ensure deterministic execution for re-producible results.')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',

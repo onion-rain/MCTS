@@ -1,0 +1,5 @@
+{
+    "arch": "resnet56",
+    "resume_path": "checkpoints/baseline/cifar10_resnet56_best.pth.tar",
+    "dataset": "cifar10"
+}
