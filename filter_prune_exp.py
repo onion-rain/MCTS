@@ -114,21 +114,21 @@ class Pruner(object):
         self.valuator.test(self.model)
         print_flops_params(self.model, self.config.dataset)
 
-        # # save pruned model
-        # name = ('weight_pruned' + str(self.config.prune_percent) 
-        #         + '_' + self.config.dataset 
-        #         + "_" + self.config.arch
-        #         + self.suffix)
-        # if len(self.config.gpu_idx_list) > 1:
-        #     state_dict = self.pruned_model.module.state_dict()
-        # else: state_dict = self.pruned_model.state_dict()
-        # path = save_checkpoint({
-        #     # 'cfg': cfg,
-        #     'ratio': self.prune_ratio,
-        #     'model_state_dict': state_dict,
-        #     'best_acc1': self.valuator.top1_acc.avg,
-        # }, file_root='checkpoints/weight_pruned/', file_name=name)
-        # print('{:<30}  {}'.format('==> pruned model save path: ', path))
+        # save pruned model
+        name = ('filter_pruned' + str(self.config.prune_percent) 
+                + '_' + self.config.dataset 
+                + "_" + self.config.arch
+                + self.suffix)
+        if len(self.config.gpu_idx_list) > 1:
+            state_dict = self.pruned_model.module.state_dict()
+        else: state_dict = self.pruned_model.state_dict()
+        path = save_checkpoint({
+            # 'cfg': cfg,
+            'ratio': self.prune_ratio,
+            'model_state_dict': state_dict,
+            'best_acc1': self.valuator.top1_acc.avg,
+        }, file_root='checkpoints/weight_pruned/', file_name=name)
+        print('{:<30}  {}'.format('==> pruned model save path: ', path))
 
 
 

@@ -55,16 +55,16 @@ class Pruner(object):
         self.criterion = torch.nn.CrossEntropyLoss()
 
         # resume
-        assert checkpoint is not None
-        if 'epoch' in checkpoint.keys():
-            self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
-            print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
-            if checkpoint['epoch'] > -1:
-                vis_clear = False # 不清空visdom已有visdom env里的内容
-        if 'best_acc1' in checkpoint.keys():
-            self.best_acc1 = checkpoint['best_acc1']
-            print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-        # self.checkpoint = checkpoint
+        if checkpoint is not None:
+            if 'epoch' in checkpoint.keys():
+                self.start_epoch = checkpoint['epoch'] + 1 # 保存的是已经训练完的epoch，因此start_epoch要+1
+                print("{:<30}  {:<8}".format('==> checkpoint trained epoch: ', checkpoint['epoch']))
+                if checkpoint['epoch'] > -1:
+                    vis_clear = False # 不清空visdom已有visdom env里的内容
+            if 'best_acc1' in checkpoint.keys():
+                self.best_acc1 = checkpoint['best_acc1']
+                print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
+            # self.checkpoint = checkpoint
         
         self.vis = None
 
@@ -105,26 +105,25 @@ class Pruner(object):
         self.valuator.test(self.pruned_model, epoch=0)
 
         self.best_acc1 = self.valuator.top1_acc.avg
-        # save pruned model
-        name = ('weight_pruned' + str(self.config.prune_percent) 
-                + '_' + self.config.dataset 
-                + "_" + self.config.arch
-                + self.suffix)
-        if len(self.config.gpu_idx_list) > 1:
-            state_dict = self.pruned_model.module.state_dict()
-        else: state_dict = self.pruned_model.state_dict()
-        save_dict = {
-            'arch': self.config.arch,
-            'ratio': pruned_ratio,
-            'model_state_dict': state_dict,
-            'best_acc1': self.best_acc1,
-        }
-        if self.cfg is not None:
-            save_dict['cfg'] = self.cfg
-        checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=name)
-        
         print("{}{}".format("best_acc1: ", self.best_acc1))
-        print("{}{}".format("checkpoint_path: ", checkpoint_path))
+        # save pruned model
+        # name = ('weight_pruned' + str(self.config.prune_percent) 
+        #         + '_' + self.config.dataset 
+        #         + "_" + self.config.arch
+        #         + self.suffix)
+        # if len(self.config.gpu_idx_list) > 1:
+        #     state_dict = self.pruned_model.module.state_dict()
+        # else: state_dict = self.pruned_model.state_dict()
+        # save_dict = {
+        #     'arch': self.config.arch,
+        #     'ratio': pruned_ratio,
+        #     'model_state_dict': state_dict,
+        #     'best_acc1': self.best_acc1,
+        # }
+        # if self.cfg is not None:
+        #     save_dict['cfg'] = self.cfg
+        # checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=name)
+        # print("{}{}".format("checkpoint_path: ", checkpoint_path))
 
 
 

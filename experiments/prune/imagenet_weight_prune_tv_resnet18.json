@@ -1,0 +1,5 @@
+{
+    "arch": "tv_resnet18",
+    "dataset": "imagenet",
+    "workers": 20
+}

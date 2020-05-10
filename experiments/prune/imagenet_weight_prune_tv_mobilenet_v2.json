@@ -1,0 +1,5 @@
+{
+    "arch": "tv_mobilenet_v2",
+    "dataset": "imagenet",
+    "workers": 20
+}

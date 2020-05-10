@@ -1,12 +1,14 @@
 # Network Compresser
 
+[baselin](READMEs/baseline_README.md)
+
 ## prune
 
 [weight prune(all)](READMEs/weight_prune_README.md)
 
-[network slimming(vgg, resnet_cs)](READMEs/slimming_README.md)
-
 [l1 filter prune(vgg16)](READMEs/l1_filter_prune_README.md)
+
+[network slimming(vgg, resnet_cs)](READMEs/slimming_README.md)
 
 [SFP(soft filter prune)(vgg)]()
 

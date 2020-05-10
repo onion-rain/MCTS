@@ -17,7 +17,7 @@ usage: ```pruner.py [-h] [--arch ARCH] [--dataset DATASET] [--workers N]
 
 ### vgg16_bn_cifar
 
-training: ```python trainer.py --arch vgg16_bn_cifar --epochs 150 --gpu 4 --valuate --visdom```
+training(最新见[baseline](baseline_README.md)): ```python trainer_exp.py --json experiments/baseline/cifar10_vgg16_bn.json --gpu 0 --visdom```
 
 pruning: ```python pruner.py --arch vgg16_bn_cifar --gpu 4 --resume checkpoints/cifar10_vgg16_bn_cifar_best.pth.tar```
 
