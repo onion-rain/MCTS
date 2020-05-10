@@ -2,33 +2,21 @@
 
 论文地址：[Pruning Filters for Efficient ConvNets](https://arxiv.org/abs/1608.08710) (ICLR 2017)
 
-
-usage: ```trainer.py [-h] [--arch ARCH] [--dataset DATASET] [--workers N]
-                  [--batch-size N] [--epochs N] [--lr LR] [--weight-decay W]
-                  [--gpu GPU] [--deterministic] [--momentum M] [--valuate]
-                  [--resume PATH] [--refine] [--sparsity-regularization]
-                  [--srl SR_LAMBDA] [--visdom] [--vis-env ENV]
-                  [--vis-legend LEGEND] [--vis-interval N]```
-
-usage: ```pruner.py [-h] [--arch ARCH] [--dataset DATASET] [--workers N]
-                 [--gpu gpu_idx] [--resume PATH] [--refine]```
-
 ## 实验（基于CIFAR10数据集）：
 
 ### vgg16_bn_cifar
 
 training(最新见[baseline](baseline_README.md)): ```python trainer_exp.py --json experiments/baseline/cifar10_vgg16_bn.json --gpu 0 --visdom```
 
-pruning: ```python pruner.py --arch vgg16_bn_cifar --gpu 4 --resume checkpoints/cifar10_vgg16_bn_cifar_best.pth.tar```
+pruning: ```python filter_prune_exp.py --json experiments/prune/cifar10_filter_prune_vgg16_bn.json --gpu 7```
 
-fine-tune: ```python trainer.py --arch vgg16_bn_cifar --epochs 20 --gpu 4--valuate --refine --resume checkpoints/pruned_cifar10_vgg16_bn_cifar_checkpoint.pth.tar --visdom```
+fine-tuning: ```python trainer_exp.py --json experiments/prune/cifar10_filter_prune_vgg16_bn_fine_tuning.json --visdom --gpu 3```
 
-|  vgg19_bn_cifar  | Baseline | pruned (ratio=0.37) | Fine-tuned (10epochs) |
+|  vgg16_bn_cifar  | Baseline | pruned (ratio=0.37) | Fine-tuned (20epochs) |
 | :--------------: | :------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |  93.48   |        49.47        |        93.46          |
+| Top1 Accuracy(%) |  93.84   |        53.21        |        93.46          |
 |  Parameters(M)   |  14.73   |        5.26         |         5.26          |
-|   FLOPs(GMac)    |   0.31   |        0.21         |         0.21          |
-
+|   FLOPs(MMac)    |  314.43  |       227.07        |        227.07         |
 
 |  Pruned Ratio |                                 architecture                                        |
 | :-----------: | :---------------------------------------------------------------------------------: |

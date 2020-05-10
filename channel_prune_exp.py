@@ -19,7 +19,7 @@ from utils import *
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
-# python channel_pruner_exp.py --arch vgg16_bn_cifar --gpu 5 --resume checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar --prune-percent 0.3 --lp-norm 2 
+# python channel_pruner_exp.py --arch vgg16_bn_cifar --gpu 5 --resume checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar --prune-percent 0.3 --lp_norm 2 
 
 print(torch.__version__)
 
@@ -65,8 +65,6 @@ class Pruner(object):
             if 'best_acc1' in checkpoint.keys():
                 self.best_acc1 = checkpoint['best_acc1']
                 print("{:<30}  {:<8}".format('==> checkpoint best acc1: ', checkpoint['best_acc1']))
-            if 'optimizer_state_dict' in checkpoint.keys():
-                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         
         self.vis = None
 
@@ -126,9 +124,9 @@ if __name__ == "__main__":
     
     add_trainer_arg_parser(parser)
 
-    parser.add_argument('--prune-percent', type=float, default=0.5, 
+    parser.add_argument('--prune_percent', type=float, default=0.5, 
                         help='percentage of weight to prune(default: 0.5)')
-    parser.add_argument('--lp-norm', '-lp', dest='lp_norm', type=int, default=2, 
+    parser.add_argument('--lp_norm', '-lp', dest='lp_norm', type=int, default=2, 
                         help='the order of norm(default: 2)')
     parser.add_argument('--method', type=str, default='greedy', 
                         help="'greedy': select one contributed to the smallest next feature after another\

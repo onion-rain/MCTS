@@ -100,30 +100,30 @@ class Pruner(object):
 
         print("")
         print("| -------------------- pruning model -------------------- |")
-        self.pruned_model, pruned_ratio = self.pruner.prune()
+        self.pruned_model, pruned_ratio = self.pruner.prune(self.model)
         print_flops_params(self.pruned_model, self.config.dataset)
         self.valuator.test(self.pruned_model, epoch=0)
 
         self.best_acc1 = self.valuator.top1_acc.avg
         print("{}{}".format("best_acc1: ", self.best_acc1))
-        # save pruned model
-        # name = ('weight_pruned' + str(self.config.prune_percent) 
-        #         + '_' + self.config.dataset 
-        #         + "_" + self.config.arch
-        #         + self.suffix)
-        # if len(self.config.gpu_idx_list) > 1:
-        #     state_dict = self.pruned_model.module.state_dict()
-        # else: state_dict = self.pruned_model.state_dict()
-        # save_dict = {
-        #     'arch': self.config.arch,
-        #     'ratio': pruned_ratio,
-        #     'model_state_dict': state_dict,
-        #     'best_acc1': self.best_acc1,
-        # }
-        # if self.cfg is not None:
-        #     save_dict['cfg'] = self.cfg
-        # checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=name)
-        # print("{}{}".format("checkpoint_path: ", checkpoint_path))
+        save pruned model
+        name = ('weight_pruned' + str(self.config.prune_percent) 
+                + '_' + self.config.dataset 
+                + "_" + self.config.arch
+                + self.suffix)
+        if len(self.config.gpu_idx_list) > 1:
+            state_dict = self.pruned_model.module.state_dict()
+        else: state_dict = self.pruned_model.state_dict()
+        save_dict = {
+            'arch': self.config.arch,
+            'ratio': pruned_ratio,
+            'model_state_dict': state_dict,
+            'best_acc1': self.best_acc1,
+        }
+        if self.cfg is not None:
+            save_dict['cfg'] = self.cfg
+        checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=name)
+        print("{}{}".format("checkpoint_path: ", checkpoint_path))
 
 
 

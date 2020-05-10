@@ -1,0 +1,8 @@
+{
+    "arch": "vgg16_bn_cifar",
+    "epochs": 20,
+    "refine": true,
+    "resume_path": "checkpoints/l1_filter_pruned/filter_prunedcfg_cifar10_vgg16_bn_cifar_checkpoint.pth.tar",
+    "dataset": "cifar10",
+    "valuate": true
+}

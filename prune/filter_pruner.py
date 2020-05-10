@@ -128,11 +128,11 @@ class FilterPruner(object):
         self.conv_prune_ratio = conv_pruned_num/conv_original_num
         print('{:<30}  {:.4f}%'.format('==> prune conv ratio: ', self.conv_prune_ratio*100))
         print('{}'.format(self.pruned_cfg))
-        return self.simple_pruned_model, self.pruned_cfg
+        return self.simple_pruned_model, self.pruned_cfg, self.conv_prune_ratio
 
 
     def prune(self):
-        """构造新的模型结构"""
+        """构造新的模型结构，执行prune之前必须先执行simple_prune获得pruned_cfg"""
         print('{:<30}  {:<8}'.format('==> creating new model: ', self.arch))
         self.pruned_model = models.__dict__[self.arch](cfg=self.pruned_cfg, num_classes=self.original_model.num_classes) # 根据cfg构建新的model
         self.pruned_model.to(self.device) # 模型转移到设备上
@@ -140,7 +140,7 @@ class FilterPruner(object):
         self.pruned_model.eval()
 
         self.weight_recover_vgg(self.pruned_cfg_mask, self.simple_pruned_model, self.pruned_model)
-        return self.pruned_model, self.pruned_cfg
+        return self.pruned_model, self.pruned_cfg, self.conv_prune_ratio
 
 
     def weight_recover_vgg(self, cfg_mask, original_model, pruned_model):

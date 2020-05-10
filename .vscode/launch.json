@@ -94,8 +94,8 @@
                 // "--candidate", "0",
 
                 // distiller
-                "--json", "experiments/prune/cifar10_weight_prune_vgg16_bn.json",
-                "--prune_percent", "0.5"
+                "--json", "experiments/prune/cifar10_filter_prune_vgg16_bn.json",
+                // "--prune_percent", "0.5"
             ],
         },
     ]

@@ -81,8 +81,10 @@ class WeightPruner(object):
             print('{:<30}  {:0.4e}'.format('==> prune fc threshold: ', self.fc_threshold[0]))
 
 
-    def prune(self, prune_percent=None):
+    def prune(self, model=None, prune_percent=None):
         """仅将权值归零"""
+        if model is not None:
+            self.original_model = model
         if prune_percent is not None:
             self.prune_percent = prune_percent
         self.original_model.eval()
