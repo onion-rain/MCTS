@@ -1,7 +1,7 @@
 {
-    "prune_method": "filter",
     "arch": "vgg16_bn_cifar",
     "resume_path": "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
     "dataset": "cifar10",
+    "prune_method": "filter",
     "lp_norm": 1
 }

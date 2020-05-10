@@ -19,6 +19,7 @@ from utils import *
 from traintest import *
 from prune.weight_pruner import WeightPruner
 from prune.filter_pruner import FilterPruner
+from prune.channel_pruner import ChannelPruner
 
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
@@ -89,8 +90,15 @@ class Pruner(object):
                 target_cfg=[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M', 256, 256, 256],
                 p=self.config.lp_norm,
             )
-        elif self.config.prune_method == "thinet":
-            raise NotImplemented
+        elif self.config.prune_method == "channel":
+            self.pruner = ChannelPruner(
+                model=self.model,
+                prune_percent=self.config.prune_percent,
+                dataloader=self.val_dataloader,
+                device=self.device,
+                method=self.config.opt_method,
+                p=self.config.lp_norm,
+            )
 
         # step6: valuator
         self.valuator = Tester(
@@ -118,7 +126,8 @@ class Pruner(object):
         self.best_acc1 = self.valuator.top1_acc.avg
         print("{}{}".format("best_acc1: ", self.best_acc1))
         # save pruned model
-        name = ('filter_pruned' + str(self.config.prune_percent) 
+        name = (self.config.prune_method + '_pruned' 
+                + str(self.config.prune_percent) 
                 + '_' + self.config.dataset 
                 + "_" + self.config.arch
                 + self.suffix)
@@ -131,7 +140,7 @@ class Pruner(object):
             'model_state_dict': state_dict,
             'best_acc1': self.best_acc1,
         }
-        if self.cfg is not None:
+        if self.cfg is not None and self.cfg != 0:
             save_dict['cfg'] = self.cfg
         checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=name)
         print('{}  {}'.format('==> pruned model save path: ', checkpoint_path))
@@ -145,13 +154,17 @@ if __name__ == "__main__":
     add_trainer_arg_parser(parser)
 
     parser.add_argument('--prune_method', type=str, metavar='method', default='weight',
-                        help='prune method: "weight", "filter", "thinet"(default: , "weight")')
+                        help='prune method: "weight", "filter", "channel"(default: , "weight")')
     parser.add_argument('--prune_percent', type=float, default=0.5, 
                         help='percentage of weight to prune(default: 0.5)')
     parser.add_argument('--lp_norm', '-lp', dest='lp_norm', type=int, default=2, 
                         help='the order of norm(default: 2)')
     parser.add_argument('--prune_object', type=str, metavar='object', default='all',
-                        help='prune object: "conv", "fc", "all"(default: , "all")')
+                        help='prune object: "conv", "fc", "all"(default: , "all")') # weight prune
+    parser.add_argument('--opt_method', type=str, default='greedy', 
+                        help="'greedy': select one contributed to the smallest next feature after another\
+                            'lasso': select pruned channels by lasso regression\
+                            'random': randomly select") # channel prune
 
     parser.add_argument('--json', type=str, default='',
                         help='json configuration file path(default: '')')
@@ -177,7 +190,8 @@ if __name__ == "__main__":
         prune_method=args.prune_method,
         prune_percent=args.prune_percent,
         prune_object=args.prune_object,
-        lp_norm=args.lp_norm
+        lp_norm=args.lp_norm,
+        opt_method=args.opt_method,
     )
     pruner.run()
     print("end")

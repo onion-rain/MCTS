@@ -2,6 +2,7 @@
     "arch": "vgg16_bn_cifar",
     "resume_path": "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
     "dataset": "cifar10",
-    "prune_percent": 0.3,
-    "lp_norm": 2
+    "prune_method": "channel",
+    "lp_norm": 2,
+    "opt_method": "greedy"
 }

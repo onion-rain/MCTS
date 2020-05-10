@@ -8,6 +8,8 @@
 
 [l1 filter prune(vgg16)](READMEs/l1_filter_prune_README.md)
 
+[Thinet(vgg16)](READMEs/Thinet_README.md)
+
 [network slimming(vgg, resnet_cs)](READMEs/slimming_README.md)
 
 [SFP(soft filter prune)(vgg)]()

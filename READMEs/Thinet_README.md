@@ -4,4 +4,4 @@
 
 ## 实验（基于CIFAR10数据集）：
 
-python channel_pruner_exp.py --arch vgg16_bn_cifar --resume checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar --prune_percent 0.3 --lp_norm 2 --gpu 5
+python pruner_exp.py --arch vgg16_bn_cifar --json experiments/prune/cifar10_channel_prune_vgg16_bn.json --prune_percent 0.3 --gpu 5

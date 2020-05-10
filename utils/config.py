@@ -66,7 +66,7 @@ class Configuration(object):
     sfp_intervals = None
 
     # thinet
-    method = 'greedy'
+    opt_method = 'greedy'
 
     # meta prune
     max_flops = 0

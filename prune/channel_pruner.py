@@ -4,34 +4,10 @@ import math
 import datetime
 from sklearn.linear_model import Lasso
 
-__all__ = ['pruner_print_bar', 'Thinet_prune']
-
-# # 提取隐藏层features
-# class FeatureExtractor:
-#     features = None
-
-#     def __init__(self, model, layer_num):
-#         self.hook = model[layer_num].register_forward_hook(self.hook_fn)
-
-#     def hook_fn(self, module, input, output):
-#         self.features = output.cpu()
-
-#     def remove(self):
-#         self.hook.remove()
-
-# def get_hidden_output_feature(model, idx, x):
-#     """return model第idx层的前向传播输出特征图"""
-#     feature_extractor = FeatureExtractor(model, idx) # 注册钩子
-#     out = model(x)
-#     feature_extractor.remove() # 销毁钩子
-#     return feature_extractor.features # 第idx层输出的特征
-
-
-
 def pruner_print_bar(str, channel_num, start_time):
     """calculate duration time"""
     interval = datetime.datetime.now() - start_time
-    print("-------- pruned: {str}  --  channel num: {channel_num}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
+    print("-------- layer: {str}  -- remain channel num: {channel_num}  --  duration: {dh:2}h:{dm:02d}.{ds:02d}  --------".
         format(
             str=str,
             channel_num=channel_num,
@@ -304,7 +280,6 @@ def weight_reconstruction(next_module, next_input_feature, next_output_feature, 
     del next_module.weight
     next_module.weight = torch.nn.Parameter(param)
 
-
 def Thinet_prune(model, sparsity, dataloader, device, method, p):
 
     start_time = datetime.datetime.now()
@@ -312,7 +287,7 @@ def Thinet_prune(model, sparsity, dataloader, device, method, p):
     input_iter = iter(dataloader)
     tuples = get_tuples(model)
 
-    pruner_print_bar("get_tuples", None, start_time)
+    pruner_print_bar("got_tuples", None, start_time)
 
     for (module_name, module, next_bn, next_module, fn_input_feature, fn_next_input_feature) in tuples:
         # 此处module和next_module均为conv module
@@ -336,3 +311,40 @@ def Thinet_prune(model, sparsity, dataloader, device, method, p):
         weight_reconstruction(next_module, next_input_feature, next_output_feature, device)
 
         pruner_print_bar(module_name, module.out_channels, start_time)
+
+    return model, 0, sparsity
+
+
+class ChannelPruner(object):
+    def __init__(self, model, prune_percent, dataloader, device, method, p):
+        self.model = model
+        self.prune_percent = prune_percent
+        self.dataloader = dataloader
+        self.device = device
+        self.method = method
+        self.p = p
+
+    def prune(self):
+        return Thinet_prune(self.model, self.prune_percent, self.dataloader, self.device, self.method, self.p)
+
+        
+
+# # 提取隐藏层features
+# class FeatureExtractor:
+#     features = None
+
+#     def __init__(self, model, layer_num):
+#         self.hook = model[layer_num].register_forward_hook(self.hook_fn)
+
+#     def hook_fn(self, module, input, output):
+#         self.features = output.cpu()
+
+#     def remove(self):
+#         self.hook.remove()
+
+# def get_hidden_output_feature(model, idx, x):
+#     """return model第idx层的前向传播输出特征图"""
+#     feature_extractor = FeatureExtractor(model, idx) # 注册钩子
+#     out = model(x)
+#     feature_extractor.remove() # 销毁钩子
+#     return feature_extractor.features # 第idx层输出的特征

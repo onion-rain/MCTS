@@ -1,6 +1,6 @@
 {
-    "prune_method": "weight",
     "arch": "tv_resnet18",
     "dataset": "imagenet",
-    "workers": 20
+    "workers": 20,
+    "prune_method": "weight"
 }

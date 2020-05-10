@@ -1,5 +1,4 @@
 {
-    "prune_method": "filter",
     "arch": "vgg16_bn_cifar",
     "epochs": 20,
     "refine": true,
