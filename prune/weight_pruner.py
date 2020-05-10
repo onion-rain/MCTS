@@ -128,7 +128,7 @@ class WeightPruner(object):
             self.fc_prune_ratio = fc_pruned_num/self.fc_weights_num
             prune_ratio["fc_prune_ratio"] = self.fc_prune_ratio 
             print('{:<30}  {:.4f}%'.format('==> prune fc ratio: ', self.fc_prune_ratio*100))
-        return self.pruned_model, prune_ratio
+        return self.pruned_model, 0, prune_ratio
 
 
 

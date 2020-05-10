@@ -17,6 +17,7 @@ import argparse
 import models
 from utils import *
 from traintest import *
+from prune.weight_pruner import WeightPruner
 from prune.filter_pruner import FilterPruner
 
 import os
@@ -67,14 +68,29 @@ class Pruner(object):
         self.vis = None
 
         # step5: pruner
-        self.pruner = FilterPruner(
-            model=self.model,
-            device=self.device,
-            arch=self.config.arch,
-            # prune_percent=[self.config.prune_percent],
-            target_cfg=[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M', 256, 256, 256],
-            p=self.config.lp_norm,
-        )
+        print()
+        print('{:<30}  {:<8}'.format('==> prune_percent: ', self.config.prune_percent))
+        if self.config.prune_method == "weight":
+            print('{:<30}  {:<8}'.format('==> prune_object: ', self.config.prune_object))
+            if self.config.prune_object == 'all':
+                self.config.prune_object = ['conv', 'fc']
+            self.pruner = WeightPruner(
+                model=self.model, 
+                prune_percent=self.config.prune_percent, 
+                device=self.device, 
+                prune_object=self.config.prune_object,
+            )
+        elif self.config.prune_method == "filter":
+            self.pruner = FilterPruner(
+                model=self.model,
+                device=self.device,
+                arch=self.config.arch,
+                # prune_percent=[self.config.prune_percent],
+                target_cfg=[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M', 256, 256, 256],
+                p=self.config.lp_norm,
+            )
+        elif self.config.prune_method == "thinet":
+            raise NotImplemented
 
         # step6: valuator
         self.valuator = Tester(
@@ -94,16 +110,10 @@ class Pruner(object):
         # self.valuator.test(self.model)
 
         print("")
-        print("| -----------------simple pruning model ------------------ |")
-        self.pruned_model, self.cfg, _ = self.pruner.simple_prune(self.model)
-        self.valuator.test(self.pruned_model)
-        print_flops_params(self.pruned_model, self.config.dataset)
-
-        print("")
         print("| -------------------- pruning model -------------------- |")
         self.pruned_model, self.cfg, self.pruned_ratio = self.pruner.prune()
-        self.valuator.test(self.pruned_model)
         print_flops_params(self.pruned_model, self.config.dataset)
+        self.valuator.test(self.pruned_model, epoch=0)
 
         self.best_acc1 = self.valuator.top1_acc.avg
         print("{}{}".format("best_acc1: ", self.best_acc1))
@@ -133,11 +143,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='network pruner')
     
     add_trainer_arg_parser(parser)
+
+    parser.add_argument('--prune_method', type=str, metavar='method', default='weight',
+                        help='prune method: "weight", "filter", "thinet"(default: , "weight")')
     parser.add_argument('--prune_percent', type=float, default=0.5, 
                         help='percentage of weight to prune(default: 0.5)')
     parser.add_argument('--lp_norm', '-lp', dest='lp_norm', type=int, default=2, 
                         help='the order of norm(default: 2)')
-                        
+    parser.add_argument('--prune_object', type=str, metavar='object', default='all',
+                        help='prune object: "conv", "fc", "all"(default: , "all")')
 
     parser.add_argument('--json', type=str, default='',
                         help='json configuration file path(default: '')')
@@ -160,7 +174,9 @@ if __name__ == "__main__":
         refine=args.refine,
         log_path=args.log_path,
 
+        prune_method=args.prune_method,
         prune_percent=args.prune_percent,
+        prune_object=args.prune_object,
         lp_norm=args.lp_norm
     )
     pruner.run()

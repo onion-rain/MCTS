@@ -1,4 +1,5 @@
 {
+    "prune_method": "weight",
     "arch": "resnet20",
     "resume_path": "checkpoints/baseline/cifar10_resnet20_best.pth.tar",
     "dataset": "cifar10"

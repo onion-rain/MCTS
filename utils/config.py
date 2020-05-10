@@ -59,6 +59,7 @@ class Configuration(object):
     slim_percent = 0.7
 
     # prune
+    prune_method = "weight"
     prune_percent = 0.5
     lp_norm=2
     prune_object = 'all'

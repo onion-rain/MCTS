@@ -6,6 +6,7 @@ import models
 
 class FilterPruner(object):
     """
+    暂时仅支持vgg
     FIXME simple prune 和 prune 得到的模型精度不同
     TODO 适配其他模型
     args:
@@ -59,7 +60,7 @@ class FilterPruner(object):
             self.original_model.eval()
             self.simple_pruned_model = model # 若传入模型则直接在模型上剪，不然还得更新optimizer
         else:
-            self.simple_pruned_model = simple_pruned_model(self.original_model).to(self.device)
+            self.simple_pruned_model = self.original_model.to(self.device)
         self.simple_pruned_model.eval()
 
         if prune_percent is not None:
@@ -132,7 +133,7 @@ class FilterPruner(object):
 
 
     def prune(self):
-        """构造新的模型结构，执行prune之前必须先执行simple_prune获得pruned_cfg"""
+        self.simple_prune()
         print('{:<30}  {:<8}'.format('==> creating new model: ', self.arch))
         self.pruned_model = models.__dict__[self.arch](cfg=self.pruned_cfg, num_classes=self.original_model.num_classes) # 根据cfg构建新的model
         self.pruned_model.to(self.device) # 模型转移到设备上

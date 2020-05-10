@@ -8,7 +8,7 @@
 
 training(最新见[baseline](baseline_README.md)): ```python trainer_exp.py --json experiments/baseline/cifar10_vgg16_bn.json --gpu 0 --visdom```
 
-pruning: ```python filter_prune_exp.py --json experiments/prune/cifar10_filter_prune_vgg16_bn.json --gpu 7```
+pruning: ```python pruner_exp.py --json experiments/prune/cifar10_filter_prune_vgg16_bn.json --gpu 7```
 
 fine-tuning: ```python trainer_exp.py --json experiments/prune/cifar10_filter_prune_vgg16_bn_fine_tuning.json --visdom --gpu 3```
 

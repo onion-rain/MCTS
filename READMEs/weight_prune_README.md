@@ -8,7 +8,7 @@
 
 training(最新见[baseline](baseline_README.md)): ```python trainer_exp.py --json experiments/baseline/cifar10_vgg16_bn.json --gpu 2 --visdom```
 
-prune: ```python weight_pruner_exp.py --json experiments/prune/cifar10_weight_prune_vgg16_bn.json --gpu 7 --prune_percent 0.5```
+prune: ```python pruner_exp.py --json experiments/prune/cifar10_weight_prune_vgg16_bn.json --gpu 7 --prune_percent 0.5```
 
 <!-- fine-tune: ```python trainer.py --arch vgg16_bn_cifar --epochs 20 --gpu 4 --valuate --resume checkpoints/weight_pruned0.5_cifar10_vgg16_bn_cifar_checkpoint.pth.tar --visdom``` -->
 
@@ -22,7 +22,7 @@ prune: ```python weight_pruner_exp.py --json experiments/prune/cifar10_weight_pr
 
 training(最新见[baseline](baseline_README.md)): ```python trainer_exp.py --json experiments/baseline/cifar10_resnet20.json --gpu 2 --visdom```
 
-pruning: ```python pruner.py --arch resnet20_cs --gpu 5 --resume checkpoints/cifar10_resnet20_cs_best.pth.tar --gpu 7 --prune 0.5```
+pruning: ```python pruner_exp.py --json experiments/prune/cifar10_weight_prune_resnet20.json --gpu 7 --prune_percent 0.5```
 
 |          ratio           | Baseline |   0.3    |   0.4    |   0.5    |   0.6    |   0.7    |   0.75    |   0.8    |   0.9    |
 | :----------------------: | :------: | :------: | :------: | :------: | :------: | :------: | :-------: | :------: | :------: |
@@ -34,7 +34,7 @@ pruning: ```python pruner.py --arch resnet20_cs --gpu 5 --resume checkpoints/cif
 
 training(最新见[baseline](baseline_README.md)): ```python trainer_exp.py --json experiments/baseline/cifar10_resnet56.json --gpu 2 --visdom```
 
-pruning: ```python pruner.py --arch resnet56_cs --gpu 6 --resume checkpoints/cifar10_resnet56_cs_best.pth.tar --gpu 7 --prune 0.5```
+pruning: ```python pruner_exp.py --json experiments/prune/cifar10_weight_prune_resnet56.json --gpu 7 --prune_percent 0.5```
 
 |          ratio           | Baseline |   0.3    |   0.4    |   0.5    |   0.6    |   0.7    |   0.75   |   0.8    |   0.9    |
 | :----------------------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: |
@@ -48,7 +48,7 @@ pruning: ```python pruner.py --arch resnet56_cs --gpu 6 --resume checkpoints/cif
 
 training（暂时还没训练出那么高精度的baseline。。直接用的torchvision里的预训练模型）
 
-pruning:```python weight_pruner_exp.py --json experiments/prune/imagenet_weight_prune_tv_mobilenet_v2.json --gpu 7 --prune_percent 0.1```
+pruning:```python pruner_exp.py --json experiments/prune/imagenet_weight_prune_tv_mobilenet_v2.json --gpu 7 --prune_percent 0.1```
 
 |          ratio           | Baseline |   0.05   |   0.1    |   0.15   |   0.2    |   0.3    |   0.4    |   0.5    |   0.6    |   0.7    |   0.75   |   0.8    |   0.9    |
 | :----------------------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: |
@@ -60,7 +60,7 @@ pruning:```python weight_pruner_exp.py --json experiments/prune/imagenet_weight_
 
 training（暂时还没训练出那么高精度的baseline。。直接用的torchvision里的预训练模型）
 
-pruning:```python weight_pruner_exp.py --json experiments/prune/imagenet_weight_prune_tv_resnet18.json --gpu 7 --prune_percent 0.3```
+pruning:```python pruner_exp.py --json experiments/prune/imagenet_weight_prune_tv_resnet18.json --gpu 7 --prune_percent 0.3```
 
 |          ratio           | Baseline |   0.05   |   0.1    |   0.15   |   0.2    |   0.3    |   0.4    |   0.5    |   0.6    |   0.7    |   0.75   |   0.8    |   0.9    |
 | :----------------------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: |
@@ -72,7 +72,7 @@ pruning:```python weight_pruner_exp.py --json experiments/prune/imagenet_weight_
 
 training（暂时还没训练出那么高精度的baseline。。直接用的torchvision里的预训练模型）
 
-pruning:```python weight_pruner_exp.py --json experiments/prune/imagenet_weight_prune_tv_resnet34.json --gpu 7 --prune_percent 0.3```
+pruning:```python pruner_exp.py --json experiments/prune/imagenet_weight_prune_tv_resnet34.json --gpu 7 --prune_percent 0.3```
 
 |          ratio           | Baseline |   0.3    |   0.4    |   0.5    |   0.6    |   0.7    |   0.75   |   0.8    |   0.9    |
 | :----------------------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: | :------: |

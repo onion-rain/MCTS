@@ -1,4 +1,5 @@
 {
+    "prune_method": "weight",
     "arch": "tv_resnet34",
     "dataset": "imagenet",
     "workers": 20
