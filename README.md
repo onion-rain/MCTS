@@ -14,8 +14,6 @@
 
 [SFP(soft filter prune)(vgg)]()
 
-[Thinet(vgg)]()
-
 [MetaPurne(resnet, mobilenetv2)](READMEs/MetaPrune_README.md)
 
 ## quantize

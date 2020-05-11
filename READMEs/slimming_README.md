@@ -51,17 +51,17 @@ fine-tune: ```python trainer.py --arch vgg19_bn_cifar --epochs 10 --gpu 4 --valu
 
 ### resnet20_cs ('cs' means channel sellection)
 
-sparsity training: ```python trainer.py --arch resnet20_cs --epochs 100 --gpu 5 --valuate -sr --visdom --srl 1e-5```
+sparsity training: ```python trainer_exp.py --json experiments/baseline/cifar10_resnet20_cs.json --gpu 3```
 
 slimming: ```python slimmer.py --arch resnet20_cs --gpu 5 --resume checkpoints/sparsity/cifar10_resnet20_cs_sr_best.pth.tar --slim 0.5```
 
-fine-tune: ```python trainer.py --arch resnet20_cs --epochs 40 --gpu 5 --valuate --resume checkpoints/slimmed_ratio0.5_cifar10_resnet20_cs_checkpoint.pth.tar --refine```
+fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet20_fine_tuning.json --gpu 3```
 
-|   resnet20_cs    | Baseline | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
-| :--------------: | :------: | :---------------------------------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |  92.54   |                92.30                |        10.00        |         89.22         |
-|  Parameters(K)   |  683.85  |               683.85                |       620.35        |        620.35         |
-|   FLOPs(GMac)    |   0.1    |                 0.1                 |        0.07         |         0.07          |
+|   resnet20_cs    | Baseline(w) | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
+| :--------------: | :---------: | :---------------------------------: | :-----------------: | :-------------------: |
+| Top1 Accuracy(%) |    94.04    |                94.18                |        10.21        |         92.33         |
+|    Parameters    |   1.11 M    |               1.11 M                |      826.91 k       |       826.91 k        |
+|   FLOPs(MMac)    |   159.95    |               160.41                |        111.2        |         111.2         |
 
 ### resnet56_cs ('cs' means channel sellection)
 

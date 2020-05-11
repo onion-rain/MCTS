@@ -1,0 +1,6 @@
+{
+    "arch": "resnet110_cs",
+    "resume_path": "checkpoints/baseline/cifar10_resnet20_cs_state_dict_best.pth.tar",
+    "dataset": "cifar10",
+    "prune_method": "slimming"
+}

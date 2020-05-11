@@ -23,7 +23,7 @@ import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 # import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 # ssh -L 8097:nico1:8097 tiaoban -p 2222
 
@@ -49,8 +49,6 @@ class TrainerExp(object):
         self.best_acc1 = 0
         self.checkpoint = None
         vis_clear = True
-        # if self.config.test_only:
-        #     assert self.config.resume_path != ''
 
         # suffix
         self.suffix = suffix_init(self.config)
@@ -234,9 +232,9 @@ if __name__ == "__main__":
     add_trainer_arg_parser(parser)
     add_visdom_arg_parser(parser)
 
-    parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
+    parser.add_argument('--sparsity_regularization', '--sr', dest='sr', action='store_true',
                         help='train with channel sparsity regularization')
-    parser.add_argument('--srl', dest='sr_lambda', type=float, default=1e-4,
+    parser.add_argument('--sr_lambda', '--srl', dest='sr_lambda', type=float, default=1e-4,
                         help='scale sparse rate (default: 1e-4), suggest 1e-4 for vgg, 1e-5 for resnet/densenet')
 
     parser.add_argument('--binarynet', dest='binarynet', action='store_true',

@@ -94,9 +94,10 @@
                 // "--candidate", "0",
 
                 // distiller
-                "--json", "experiments/baseline/cifar10_alexnet.json",
-                "--gpu", "2",
-                "--save", "model",
+                // "--json", "experiments/prune/cifar10_slimming_resnet20_fine_tuning.json",
+                "--json", "experiments/prune/cifar10_slimming_resnet20.json",
+                "--gpu", "3",
+                // "--save", "model",
                 // "--prune_percent", "0.5"
             ],
         },

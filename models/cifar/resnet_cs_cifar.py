@@ -5,11 +5,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from . import channel_selection, shortcut_package
+from .slimming_utils import channel_selection, shortcut_package
 
 # cs means channel select
 # 用于cifar数据集stage = 3
 
+# 该resnet结构经过精心设计（为了支持slimming）改了很有可能造成slimming出错
 
 __all__ = ['resnet20_cs', 'resnet32_cs', 'resnet44_cs', 'resnet56_cs', 'resnet110_cs', 'resnet1202_cs']
 

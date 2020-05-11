@@ -1,4 +1,4 @@
-from .utils import *
+from .slimming_utils import *
 
 from .alexnet_cifar import *
 from .densenet_cifar import *

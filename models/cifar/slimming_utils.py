@@ -33,9 +33,6 @@ class channel_selection(nn.Module):
         output = input_tensor[:, selected_index, :, :]
         return output
 
-
-
-
 class shortcut_package(nn.Module):
     def __init__(self, shortcut):
         super(shortcut_package, self).__init__()
