@@ -36,6 +36,7 @@ class Configuration(object):
     log_path = 'logs/log.txt'
     test_only = False
     milestones = ''
+    save_object = 'state_dict'
 
     # test专用
     load_model_path = None # 加载预训练参数的路径

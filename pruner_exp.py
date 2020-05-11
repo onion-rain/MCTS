@@ -112,6 +112,8 @@ class Pruner(object):
 
     def run(self):
 
+        name = (self.config.prune_method + '_pruned' + str(self.config.prune_percent) 
+                + '_' + self.config.dataset + "_" + self.config.arch+ self.suffix)
         print("")
         print("| -------------------- original model -------------------- |")
         print_flops_params(self.model, self.config.dataset)
@@ -124,26 +126,40 @@ class Pruner(object):
         self.valuator.test(self.pruned_model, epoch=0)
 
         self.best_acc1 = self.valuator.top1_acc.avg
-        print("{}{}".format("best_acc1: ", self.best_acc1))
+
         # save pruned model
-        name = (self.config.prune_method + '_pruned' 
-                + str(self.config.prune_percent) 
-                + '_' + self.config.dataset 
-                + "_" + self.config.arch
-                + self.suffix)
-        if len(self.config.gpu_idx_list) > 1:
-            state_dict = self.pruned_model.module.state_dict()
-        else: state_dict = self.pruned_model.state_dict()
-        save_dict = {
-            'arch': self.config.arch,
-            'ratio': self.pruned_ratio,
-            'model_state_dict': state_dict,
-            'best_acc1': self.best_acc1,
-        }
+        if self.config.save_object == 'None':
+            continue
+        elif self.config.save_object == 'state_dict':
+            file_name = name + '_state_dict'
+            if len(self.config.gpu_idx_list) > 1:
+                state_dict = self.model.module.state_dict()
+            else: state_dict = self.model.state_dict()
+            save_dict = {
+                'arch': self.config.arch,
+                'ratio': self.pruned_ratio,
+                'model_state_dict': state_dict,
+                'best_acc1': self.best_acc1,
+            }
+            if self.cfg is not None:
+                save_dict['cfg'] = self.cfg
+        elif self.config.save_object == 'model':
+            file_name = name + '_model'
+            if len(self.config.gpu_idx_list) > 1:
+                model = self.model.module
+            else: model = self.model
+            save_dict = {
+                'arch': self.config.arch,
+                'ratio': self.pruned_ratio,
+                'model': model,
+                'best_acc1': self.best_acc1,
+            }
         if self.cfg is not None and self.cfg != 0:
             save_dict['cfg'] = self.cfg
-        checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=name)
-        print('{}  {}'.format('==> pruned model save path: ', checkpoint_path))
+        checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=file_name)
+        
+        print("{}{}".format("best_acc1: ", self.best_acc1))
+        print('{}{}'.format('==> pruned model save path: ', checkpoint_path))
 
 
 
@@ -186,6 +202,7 @@ if __name__ == "__main__":
         resume_path=args.resume_path,
         refine=args.refine,
         log_path=args.log_path,
+        save_object=args.save_object,
 
         prune_method=args.prune_method,
         prune_percent=args.prune_percent,

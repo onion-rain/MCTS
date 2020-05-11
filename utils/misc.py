@@ -208,25 +208,6 @@ def print_flops_params(model, dataset='cifar', print_per_layer_stat=False):
     print('{:<30}  {:<8}'.format('==> Number of parameters: ', params))
     # print('Total params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
 
-    
-def save_checkpoint(state, is_best=False, epoch=None, file_root='checkpoints/', file_name='model'):
-    """
-    args:
-        state: model.state_dict()
-        is_best(bool): 是则单独保存到model_best.pth.tar，覆盖至前的
-        epoch(int): 若为None则覆盖之前的checkpoint，否则分别保存每一次的checkpoint
-        file_root(str): checkpoint文件保存目录
-        file_name(str): file_name
-    return:
-        (str)返回文件保存path：file_root + file_name + '_checkpoint.pth.tar'
-    """
-    if epoch is not None:
-        file_root = file_root + "epoch{}_".format(str(epoch))
-    torch.save(state, file_root + file_name + '_checkpoint.pth.tar')
-    if is_best:
-        shutil.copyfile(file_root+file_name+'_checkpoint.pth.tar', file_root + file_name + '_best.pth.tar')
-    return (file_root + file_name + '_checkpoint.pth.tar')
-
 
 def get_model_flops(one_shot_model, dataset='cifar', pr=False):
     prods = {}
@@ -331,3 +312,24 @@ class Logger(object):
  
     def flush(self):
         pass
+
+    
+def save_checkpoint(dict, is_best=False, epoch=None, file_root='checkpoints/', file_name='model'):
+    """
+    args:
+        dict: model.state_dict()
+        is_best(bool): 是则单独保存到model_best.pth.tar，覆盖至前的
+        epoch(int): 若为None则覆盖之前的checkpoint，否则分别保存每一次的checkpoint
+        file_root(str): checkpoint文件保存目录
+        file_name(str): file_name
+    return:
+        (str)返回文件保存path：file_root + file_name + '_checkpoint.pth.tar'
+    """
+    if epoch is not None:
+        file_root = file_root + "epoch{}_".format(str(epoch))
+    torch.save(dict, file_root + file_name + '_checkpoint.pth.tar')
+    if is_best:
+        shutil.copyfile(file_root+file_name+'_checkpoint.pth.tar', file_root + file_name + '_best.pth.tar')
+    return (file_root + file_name + '_checkpoint.pth.tar')
+
+

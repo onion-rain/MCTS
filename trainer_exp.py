@@ -23,7 +23,7 @@ import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 # import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "3,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 # ssh -L 8097:nico1:8097 tiaoban -p 2222
 
@@ -191,19 +191,36 @@ class TrainerExp(object):
             print("")
             
             # save checkpoint
-            if len(self.config.gpu_idx_list) > 1:
-                state_dict = self.model.module.state_dict()
-            else: state_dict = self.model.state_dict()
-            save_dict = {
-                'arch': self.config.arch,
-                'epoch': epoch,
-                'model_state_dict': state_dict,
-                'best_acc1': self.best_acc1,
-                'optimizer_state_dict': self.optimizer.state_dict(),
-            }
-            if self.cfg is not None:
-                save_dict['cfg'] = self.cfg
-            checkpoint_path = save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
+            if self.config.save_object == 'None':
+                continue
+            elif self.config.save_object == 'state_dict':
+                file_name = name + '_state_dict'
+                if len(self.config.gpu_idx_list) > 1:
+                    state_dict = self.model.module.state_dict()
+                else: state_dict = self.model.state_dict()
+                save_dict = {
+                    'arch': self.config.arch,
+                    'epoch': epoch,
+                    'model_state_dict': state_dict,
+                    'best_acc1': self.best_acc1,
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                }
+                if self.cfg is not None:
+                    save_dict['cfg'] = self.cfg
+            # FIXME 由于未知原因保存的model无法torch.load加载
+            elif self.config.save_object == 'model':
+                file_name = name + '_model'
+                if len(self.config.gpu_idx_list) > 1:
+                    model = self.model.module
+                else: model = self.model
+                save_dict = {
+                    'arch': self.config.arch,
+                    'epoch': epoch,
+                    'model': model,
+                    'best_acc1': self.best_acc1,
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                }
+            checkpoint_path = save_checkpoint(save_dict, is_best=is_best, file_root='checkpoints/', file_name=file_name)
         
         print("{}{}".format("best_acc1: ", self.best_acc1))
         print("{}{}".format("checkpoint_path: ", checkpoint_path))
@@ -269,6 +286,7 @@ if __name__ == "__main__":
         log_path=args.log_path,
         test_only=args.test_only,
         milestones=args.milestones,
+        save_object=args.save_object,
 
         sr=args.sr,
         sr_lambda=args.sr_lambda,

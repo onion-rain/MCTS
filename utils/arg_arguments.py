@@ -74,6 +74,8 @@ def add_trainer_arg_parser(parser):
                         help='Execute a test then return.(default: False)')
     parser.add_argument('--milestones', type=str, default='',
                         help='List of epoch indices. Must be increasing.(default: "epochs*0.5, epochs*0.75)')
+    parser.add_argument('--save_object', '--save', type=str, default='state_dict',
+                        help='save object: "None"/"state_dict"/"model".(default: state_dict)')
 
 
 def add_visdom_arg_parser(parser):

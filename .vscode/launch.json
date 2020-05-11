@@ -94,7 +94,9 @@
                 // "--candidate", "0",
 
                 // distiller
-                "--json", "experiments/prune/cifar10_filter_prune_vgg16_bn.json",
+                "--json", "experiments/baseline/cifar10_alexnet.json",
+                "--gpu", "2",
+                "--save", "model",
                 // "--prune_percent", "0.5"
             ],
         },
