@@ -6,20 +6,81 @@
 
 参考代码：https://github.com/Eric-mingjie/network-slimming
 
-usage: ```trainer.py [-h] [--arch ARCH] [--dataset DATASET] [--workers N]
-                  [--batch-size N] [--epochs N] [--lr LR] [--weight-decay W]
-                  [--gpu GPU] [--deterministic] [--momentum M] [--valuate]
-                  [--resume PATH] [--refine] [--sparsity-regularization]
-                  [--srl SR_LAMBDA] [--visdom] [--vis-env ENV]
-                  [--vis-legend LEGEND] [--vis-interval N]```
-
-usage: ```slimmer.py [-h] [--arch ARCH] [--dataset DATASET] [--workers N]
-                  [--gpu gpu_idx] [--resume PATH] [--refine]
-                  [--slim-percent N]```
-
 ## 实验（基于CIFAR10数据集）：
 
+(resnet前几个实验训练的时候忘记-sr了，导致并没有稀疏训练，从图中可以看到没有带_sr，不过效果并没有太大影响。。日后再重新实验吧)
+
+### resnet20_cs ('cs' means channel sellection)
+
+sparsity training: ```python trainer_exp.py --json experiments/baseline/cifar10_resnet20_cs_sr.json --gpu 3 --visdom```
+
+slimming: ``` python pruner_exp.py --json experiments/prune/cifar10_slimming_resnet20.json --gpu 2 --prune_percent 0.5```
+
+fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet20_fine_tuning.json --gpu 3 --visdom```
+
+|   resnet20_cs    | Baseline: resnet20(w) | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
+| :--------------: | :-------------------: | :---------------------------------: | :-----------------: | :-------------------: |
+| Top1 Accuracy(%) |         94.04         |                94.18                |        11.7         |         91.71         |
+|    Parameters    |        1.11 M         |               1.11 M                |      826.91 k       |       826.91 k        |
+|   FLOPs(MMac)    |        159.95         |               160.41                |        111.2        |         111.2         |
+
+### resnet32_cs ('cs' means channel sellection)
+
+sparsity training: ```python trainer_exp.py --json experiments/baseline/cifar10_resnet32_cs_sr.json --gpu 3 --visdom```
+
+slimming: ``` python pruner_exp.py --json experiments/prune/cifar10_slimming_resnet32.json --gpu 2 --prune_percent 0.5```
+
+fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet32_fine_tuning.json --gpu 6 --visdom```
+
+|   resnet20_cs    | Baseline(w) | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
+| :--------------: | :---------: | :---------------------------------: | :-----------------: | :-------------------: |
+| Top1 Accuracy(%) |    94.04    |                94.18                |        10.21        |         92.33         |
+|    Parameters    |   1.11 M    |               1.11 M                |      826.91 k       |       826.91 k        |
+|   FLOPs(MMac)    |   159.95    |               160.41                |        111.2        |         111.2         |
+
+### resnet56_cs ('cs' means channel sellection)
+
+sparsity training: ```python trainer_exp.py --json experiments/baseline/cifar10_resnet56_cs_sr.json --gpu 6 --visdom```
+
+slimming: ``` python pruner_exp.py --json experiments/prune/cifar10_slimming_resnet56.json --gpu 2 --prune_percent 0.5```
+
+fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet56_fine_tuning.json --gpu 3 --visdom```
+
+|   resnet56_cs    | Baseline | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.6) | Fine-tuned (40epochs) |
+| :--------------: | :------: | :---------------------------------: | :-----------------: | :-------------------: |
+| Top1 Accuracy(%) |  93.33   |                93.70                |        11.72        |         90.99         |
+|  Parameters(M)   |   1.98   |                1.98                 |        1.81         |         1.81          |
+|   FLOPs(GMac)    |   0.29   |                0.29                 |        0.25         |         0.25          |
+
+### resnet110_cs ('cs' means channel sellection)
+
+sparsity training: ```python trainer_exp.py --json experiments/baseline/cifar10_resnet110_cs_sr.json --gpu 6 --visdom```
+
+slimming: ``` python pruner_exp.py --json experiments/prune/cifar10_slimming_resnet110.json --gpu 2 --prune_percent 0.5```
+
+fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet110_fine_tuning.json --gpu 3 --visdom```
+
+|   resnet110_cs   | Baseline | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.6) | Fine-tuned (20epochs) |
+| :--------------: | :------: | :---------------------------------: | :-----------------: | :-------------------: |
+| Top1 Accuracy(%) |  93.88   |                93.58                |        10.00        |         90.66         |
+|  Parameters(M)   |   3.93   |                3.93                 |        3.54         |         3.54          |
+|   FLOPs(GMac)    |   0.58   |                0.58                 |        0.53         |         0.53          |
+
+## 可视化：
+
+带refine的为fine-tuning
+
+### test_loss(交叉熵):
+
+![test_loss](imgs/slimming/test_loss.jpg)
+
+### test_top1:
+
+![test_top1](imgs/slimming/test_top1.jpg)
+
 ### vgg19_bn_cifar
+
+(早期实验，工程重构后没有重新实验)
 
 sparsity training: ```python trainer.py --arch vgg19_bn_cifar --epochs 150 --gpu 4 --valuate -sr --visdom --srl 1e-4```
 
@@ -48,55 +109,3 @@ fine-tune: ```python trainer.py --arch vgg19_bn_cifar --epochs 10 --gpu 4 --valu
 |      0.5      | [54, 64, 'M', 128, 128, 'M', 256, 256, 249, 226, 'M', 202, 118, 141, 238, 'M', 188, 214, 198, 91] |
 |      0.6      | [51, 64, 'M', 128, 128, 'M', 256, 256, 249, 224, 'M', 190, 95, 115, 136, 'M', 71, 63, 84, 91] |
 |      0.7      | [49, 64, 'M', 128, 128, 'M', 256, 256, 249, 208, 'M', 116, 38, 18, 8, 'M', 14, 9, 16, 94] |
-
-### resnet20_cs ('cs' means channel sellection)
-
-sparsity training: ```python trainer_exp.py --json experiments/baseline/cifar10_resnet20_cs.json --gpu 3```
-
-slimming: ```python slimmer.py --arch resnet20_cs --gpu 5 --resume checkpoints/sparsity/cifar10_resnet20_cs_sr_best.pth.tar --slim 0.5```
-
-fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet20_fine_tuning.json --gpu 3```
-
-|   resnet20_cs    | Baseline(w) | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
-| :--------------: | :---------: | :---------------------------------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |    94.04    |                94.18                |        10.21        |         92.33         |
-|    Parameters    |   1.11 M    |               1.11 M                |      826.91 k       |       826.91 k        |
-|   FLOPs(MMac)    |   159.95    |               160.41                |        111.2        |         111.2         |
-
-### resnet56_cs ('cs' means channel sellection)
-
-sparsity training: ```python trainer.py --arch resnet56_cs --epochs 100 --gpu 6 --valuate -sr --visdom --srl 1e-5```
-
-slimming: ```python slimmer.py --arch resnet56_cs --gpu 6 --resume checkpoints/sparsity/cifar10_resnet56_cs_sr_best.pth.tar --slim 0.6```
-
-fine-tune: ```python trainer.py --arch resnet56_cs --epochs 40 --gpu 6 --valuate --resume checkpoints/slimmed_ratio0.6_cifar10_resnet56_cs_checkpoint.pth.tar --refine```
-
-|   resnet56_cs    | Baseline | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.6) | Fine-tuned (40epochs) |
-| :--------------: | :------: | :---------------------------------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |  93.33   |                93.70                |        11.72        |         90.99         |
-|  Parameters(M)   |   1.98   |                1.98                 |        1.81         |         1.81          |
-|   FLOPs(GMac)    |   0.29   |                0.29                 |        0.25         |         0.25          |
-
-### resnet110_cs ('cs' means channel sellection)
-
-sparsity training: ```python trainer.py --arch resnet110_cs --epochs 100 --gpu 7 --valuate -sr --visdom --srl 1e-5```
-
-slimming: ```python slimmer.py --arch resnet110_cs --gpu 7 --resume checkpoints/sparsity/cifar10_resnet110_cs_sr_best.pth.tar --slim 0.6```
-
-fine-tune: ```python trainer.py --arch resnet110_cs --epochs 20 --gpu 7 --valuate --resume checkpoints/slimmed_ratio0.6_cifar10_resnet110_cs_checkpoint.pth.tar --refine```
-
-|   resnet110_cs   | Baseline | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.6) | Fine-tuned (20epochs) |
-| :--------------: | :------: | :---------------------------------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |  93.88   |                93.58                |        10.00        |         90.66         |
-|  Parameters(M)   |   3.93   |                3.93                 |        3.54         |         3.54          |
-|   FLOPs(GMac)    |   0.58   |                0.58                 |        0.53         |         0.53          |
-
-## 稀疏/正常训练过程（From Scratch）：
-
-### test_loss(交叉熵):
-
-![test_loss](imgs/slimming/test_loss.jpg)
-
-### test_top1:
-
-![test_top1](imgs/slimming/test_top1.jpg)

@@ -1,0 +1,10 @@
+{
+    "arch": "resnet110_cs",
+    "epochs": 40,
+    "milestones": "20, 30",
+    "lr": 0.1,
+    "refine": true,
+    "resume_path": "checkpoints/slimmed/slimming_pruned0.5_cifar10_resnet110_cs_state_dict_checkpoint.pth.tar",
+    "dataset": "cifar10",
+    "valuate": true
+}

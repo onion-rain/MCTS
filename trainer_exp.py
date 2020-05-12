@@ -111,7 +111,7 @@ class TrainerExp(object):
                 self.criterion, 
                 self.optimizer, 
                 self.device, 
-                self.sr_lambda, 
+                self.config.sr_lambda, 
                 self.vis, 
                 self.vis_interval,
                 self.lr_scheduler,
