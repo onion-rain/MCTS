@@ -150,8 +150,8 @@ class SFP(object):
 
             # prune
             if (epoch%self.config.sfp_intervals == self.config.sfp_intervals-1)\
-            and (epoch + self.config.sfp_intervals < self.config.max_epoch):
-                if epoch + 2*self.config.sfp_intervals <= self.config.max_epoch:
+            and (epoch + self.config.sfp_intervals <= self.config.max_epoch):
+                if epoch + 2*self.config.sfp_intervals < self.config.max_epoch:
                     # 中途soft prune
                     print("\nsimple pruning...")
                     self.model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)

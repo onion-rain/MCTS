@@ -16,9 +16,12 @@ prunednet retrain from scratch: ```python meta_trainer_exp.py --arch resnet50_pr
 
 #### baseline:
 
+train: ```python meta_trainer_exp.py --json experiments/baseline/imagenet_resnet50_prunednet.json --gpu 2```（checkpoint保存gene全-1）
+或：```python trainer_exp.py --json experiments/baseline/imagenet_resnet50_prunednet.json --gpu 2```（checkpoint不保存gene）
+
 gene: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, ???]
 
-flops: 4.08 GMac
+flops: 4.11 GMac
 
 params: 25.56 M
 

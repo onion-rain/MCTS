@@ -168,7 +168,7 @@ class TrainerExp(object):
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
         # print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
-            print_bar_name(start_time, name, self.best_acc1)
+        print_bar_name(start_time, name, self.best_acc1)
         if self.config.test_only:
             return
         print("")
@@ -203,8 +203,6 @@ class TrainerExp(object):
                     'best_acc1': self.best_acc1,
                     'optimizer_state_dict': self.optimizer.state_dict(),
                 }
-                if self.cfg is not None:
-                    save_dict['cfg'] = self.cfg
             # FIXME 由于未知原因保存的model无法torch.load加载
             elif self.config.save_object == 'model':
                 file_name = name + '_model'
@@ -218,6 +216,8 @@ class TrainerExp(object):
                     'best_acc1': self.best_acc1,
                     'optimizer_state_dict': self.optimizer.state_dict(),
                 }
+            if self.cfg is not None:
+                save_dict['cfg'] = self.cfg
             checkpoint_path = save_checkpoint(save_dict, is_best=is_best, file_root='checkpoints/', file_name=file_name)
         
         print("{}{}".format("best_acc1: ", self.best_acc1))

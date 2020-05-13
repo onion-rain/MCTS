@@ -21,7 +21,7 @@ from utils import *
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 
 # train resnet50_pruningnet需要一个v100(32GB)或两个p100(16GB)
@@ -53,7 +53,10 @@ class MetaTrainer(object):
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
         print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
         print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
-        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.25, self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
+        milestones = [self.config.max_epoch*0.5, self.config.max_epoch*0.75]\
+                        if self.config.milestones == ''\
+                        else sting2list(self.config.milestones)
+        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str(milestones)))
 
         # 更新一些默认标志
         self.start_epoch = 0
@@ -187,7 +190,7 @@ class MetaTrainer(object):
         # initial test
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
-        print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+        print_bar_name(start_time, name, self.best_acc1)
         if self.config.test_only:
             return
         print("")
@@ -203,20 +206,37 @@ class MetaTrainer(object):
                 is_best = self.trainer.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
 
-            print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+            print_bar_name(start_time, name, self.best_acc1)
             print("")
             
             # save checkpoint
-            if len(self.config.gpu_idx_list) > 1:
-                state_dict = self.model.module.state_dict()
-            else: state_dict = self.model.state_dict()
-            save_dict = {
-                'arch': self.config.arch,
-                'epoch': epoch,
-                'model_state_dict': state_dict,
-                'best_acc1': self.best_acc1,
-                'optimizer_state_dict': self.optimizer.state_dict(),
-            }
+            if self.config.save_object == 'None':
+                continue
+            elif self.config.save_object == 'state_dict':
+                file_name = name + '_state_dict'
+                if len(self.config.gpu_idx_list) > 1:
+                    state_dict = self.model.module.state_dict()
+                else: state_dict = self.model.state_dict()
+                save_dict = {
+                    'arch': self.config.arch,
+                    'epoch': epoch,
+                    'model_state_dict': state_dict,
+                    'best_acc1': self.best_acc1,
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                }
+            # FIXME 由于未知原因保存的model无法torch.load加载
+            elif self.config.save_object == 'model':
+                file_name = name + '_model'
+                if len(self.config.gpu_idx_list) > 1:
+                    model = self.model.module
+                else: model = self.model
+                save_dict = {
+                    'arch': self.config.arch,
+                    'epoch': epoch,
+                    'model': model,
+                    'best_acc1': self.best_acc1,
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                }
             if self.config.arch.endswith('prunednet'):
                 save_dict['gene'] = self.gene
             save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
@@ -238,7 +258,18 @@ if __name__ == "__main__":
                         metavar='PATH', help='path to latest checkpoint (default: '')')
     parser.add_argument('--candidate', dest='candidate_idx', type=int, default=0,
                         metavar='N', help='candidates index choose (default: 0(the best))')
+
+    parser.add_argument('--json', type=str, default='',
+                        help='json configuration file path(default: '')')
+
     args = parser.parse_args()
+
+    if args.json != '':
+        json_path = os.path.join(args.json)
+        assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
+        params = Params_json(json_path)
+        for key in params.dict:
+            args.__dict__[key] = params.dict[key]
 
     # debug用
     # args.workers = 0
@@ -261,11 +292,15 @@ if __name__ == "__main__":
         suffix_usr=args.suffix_usr,
         log_path=args.log_path,
         test_only=args.test_only,
-        # 使用visdom可视化训练过程
+        milestones=args.milestones,
+        save_object=args.save_object,
+
+        # visdom
         visdom = args.visdom, 
         vis_env=args.vis_env,
         vis_legend=args.vis_legend,
         vis_interval=args.vis_interval,
+
         #retrain
         search_resume_path=args.search_resume_path, 
         candidate_idx=args.candidate_idx,

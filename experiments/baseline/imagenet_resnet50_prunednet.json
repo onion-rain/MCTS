@@ -1,5 +1,5 @@
 {
-    "arch": "resnet50",
+    "arch": "resnet50_prunednet",
     "dataset": "imagenet",
     "lr": 0.1,
     "valuate": true,
