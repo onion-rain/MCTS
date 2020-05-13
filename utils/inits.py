@@ -39,6 +39,8 @@ def suffix_init(config, suffix_usr=''):
         suffix += '_sfp'
     if config.max_flops != 0:
         suffix += '_flops{}'.format(config.max_flops)
+    if config.prune_percent != 0:
+        suffix += '_prune{}'.format(config.prune_percent)
     # if config.binarynet is True:
     #     suffix += '_binary'
     if config.quantize_type != '':

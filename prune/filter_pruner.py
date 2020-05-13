@@ -132,7 +132,9 @@ class FilterPruner(object):
         return self.simple_pruned_model, self.pruned_cfg, self.conv_prune_ratio
 
 
-    def prune(self):
+    def prune(self, model=None):
+        if model is not None:
+            self.original_model = model
         self.simple_prune()
         print('{:<30}  {:<8}'.format('==> creating new model: ', self.arch))
         self.pruned_model = models.__dict__[self.arch](cfg=self.pruned_cfg, num_classes=self.original_model.num_classes) # 根据cfg构建新的model

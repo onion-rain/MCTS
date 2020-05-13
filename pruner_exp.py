@@ -184,7 +184,7 @@ if __name__ == "__main__":
                         help='prune method: "weight", "filter", "channel", "slimming"(default: , "weight")')
     parser.add_argument('--prune_percent', type=float, default=0.5, 
                         help='percentage of weight to prune(default: 0.5)')
-    parser.add_argument('--lp_norm', '-lp', dest='lp_norm', type=int, default=2, 
+    parser.add_argument('--lp_norm', '--lp', dest='lp_norm', type=int, default=2, 
                         help='the order of norm(default: 2)')
     parser.add_argument('--prune_object', type=str, metavar='object', default='all',
                         help='prune object: "conv", "fc", "all"(default: , "all")') # weight prune

@@ -95,7 +95,7 @@
 
                 // distiller
                 // "--json", "experiments/prune/cifar10_slimming_resnet20_fine_tuning.json",
-                "--json", "experiments/prune/cifar10_slimming_resnet20.json",
+                "--json", "experiments/prune/cifar10_sfp_vgg16_bn.json",
                 "--gpu", "3",
                 // "--save", "model",
                 // "--prune_percent", "0.5"

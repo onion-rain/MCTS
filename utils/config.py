@@ -61,7 +61,7 @@ class Configuration(object):
 
     # prune
     prune_method = "weight"
-    prune_percent = 0.5
+    prune_percent = 0
     lp_norm=2
     prune_object = 'all'
     sfp_intervals = None

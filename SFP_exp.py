@@ -14,11 +14,10 @@ import random
 import datetime
 import argparse
 
-from tester import Tester
-from train&test import *
-from prune.filter_pruner import FilterPruner
 import models
 from utils import *
+from traintest import *
+from prune.filter_pruner import FilterPruner
 
 import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
@@ -27,24 +26,27 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class SFP(object):
-    """
-    TODO 由于trainer类大改，本类某些函数可能个已过期
-    """
+
     def __init__(self, **kwargs):
 
         self.config = Configuration()
         self.config.update_config(kwargs) # 解析参数更新默认配置
         assert self.config.check_config() == 0
-        sys.stdout = Logger(self.config.log_path)
+        # sys.stdout = Logger(self.config.log_path)
         print("| ------------------ Initializing SFP ------------------- |")
         print('{:<30}  {:<8}'.format('==> num_workers: ', self.config.num_workers))
-        print('{:<30}  {:<8}'.format('==> srlambda: ', self.config.sr_lambda))
-        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str([self.config.max_epoch*0.5, self.config.max_epoch*0.75])))
+        print('{:<30}  {:<8}'.format('==> batch_size: ', self.config.batch_size))
+        print('{:<30}  {:<8}'.format('==> max_epoch: ', self.config.max_epoch))
+        milestones = [self.config.max_epoch*0.5, self.config.max_epoch*0.75]\
+                        if self.config.milestones == ''\
+                        else sting2list(self.config.milestones)
+        print('{:<30}  {:<8}'.format('==> lr_scheduler milestones: ', str(milestones)))
 
         # 更新一些默认标志
         self.start_epoch = 0
         self.best_acc1 = 0
         self.checkpoint = None
+        self.pruned_ratio = 0
         vis_clear = True
 
         # suffix
@@ -54,7 +56,7 @@ class SFP(object):
         # Random Seed 
         seed_init(self.config)
         # data
-        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_div_init(self.config, val_num=50)
+        self.train_dataloader, self.val_dataloader, self.num_classes = dataloader_init(self.config)
         # model
         self.model, self.cfg, checkpoint = model_init(self.config, self.device, self.num_classes)
         
@@ -105,15 +107,13 @@ class SFP(object):
 
         # step6: valuator
         self.valuator = None
-        if self.config.valuate is True:
-            val_config_dic = {
-                'arch': self.model,
-                'dataloader': self.val_dataloader,
-                'device': self.device,
-                'vis': self.vis,
-                'seed': self.config.random_seed
-            }
-            self.valuator = Tester(val_config_dic)
+        if self.config.valuate == True:
+            self.valuator = Tester(
+                dataloader=self.val_dataloader,
+                device=self.device,
+                criterion=self.criterion,
+                vis=self.vis,
+            )
         
         # filter pruner
         self.pruner = FilterPruner(
@@ -123,7 +123,7 @@ class SFP(object):
             prune_percent=[self.config.prune_percent],
             # target_cfg=[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 256, 256, 256, 'M', 256, 256, 256],
             p=self.config.lp_norm,
-        )        
+        )
         
 
     def run(self):
@@ -136,7 +136,10 @@ class SFP(object):
         # initial test
         if self.valuator is not None:
             self.valuator.test(self.model, epoch=self.start_epoch-1)
-        print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+        # print_bar(start_time, self.config.arch, self.config.dataset, self.best_acc1)
+            print_bar_name(start_time, name, self.best_acc1)
+        if self.config.test_only:
+            return
         print("")
 
         for epoch in range(self.start_epoch, self.config.max_epoch):
@@ -146,15 +149,22 @@ class SFP(object):
                 self.valuator.test(self.model, epoch=epoch)
 
             # prune
-            if epoch%self.config.sfp_intervals == self.config.sfp_intervals-1:
-                self.model, self.cfg = self.pruner.simple_prune(self.model)
-                if self.valuator is not None:
-                    self.valuator.test(self.model, epoch=epoch+0.5)
-            elif epoch == self.config.max_epoch-1:
-                self.model, self.cfg = self.pruner.simple_prune(self.model)
-                self.model, self.cfg = self.pruner.prune(self.model)
-                if self.valuator is not None:
-                    self.valuator.test(self.model, epoch=epoch+0.5)
+            if (epoch%self.config.sfp_intervals == self.config.sfp_intervals-1)\
+            and (epoch + self.config.sfp_intervals < self.config.max_epoch):
+                if epoch + 2*self.config.sfp_intervals <= self.config.max_epoch:
+                    # 中途soft prune
+                    print("\nsimple pruning...")
+                    self.model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
+                    if self.valuator is not None:
+                        self.valuator.test(self.model, epoch=epoch+0.5)
+                    print()
+                else:
+                    # 最后hard prune
+                    print("\npruning")
+                    self.best_acc1 = 0
+                    self.model, self.cfg, self.pruned_ratio = self.pruner.prune(self.model)
+                    if self.valuator is not None:
+                        self.valuator.test(self.model, epoch=epoch+0.5)
 
             if self.valuator is not None:
                 is_best = self.valuator.top1_acc.avg > self.best_acc1
@@ -163,24 +173,48 @@ class SFP(object):
                 is_best = self.trainer.top1_acc.avg > self.best_acc1
                 self.best_acc1 = max(self.top1_acc.avg, self.best_acc1)
                 
-            print_bar(start_time, self.config.arch, self.config.dataset,self.best_acc1)
+            # print_bar(start_time, self.config.arch, self.config.dataset,self.best_acc1)
+            print_bar_name(start_time, name, self.best_acc1)
             print("")
             
             # save checkpoint
-            if len(self.config.gpu_idx_list) > 1:
-                state_dict = self.model.module.state_dict()
-            else: state_dict = self.model.state_dict()
-            save_dict = {
-                'model': self.config.arch,
-                'epoch': epoch,
-                'model_state_dict': state_dict,
-                'best_acc1': self.best_acc1,
-                'optimizer_state_dict': self.optimizer.state_dict(),
-            }
-            if self.cfg is not None:
+            if self.config.save_object == 'None':
+                continue
+            elif self.config.save_object == 'state_dict':
+                file_name = name + '_state_dict'
+                if len(self.config.gpu_idx_list) > 1:
+                    state_dict = self.model.module.state_dict()
+                else: state_dict = self.model.state_dict()
+                save_dict = {
+                    'arch': self.config.arch,
+                    'ratio': self.pruned_ratio,
+                    'epoch': epoch,
+                    'model_state_dict': state_dict,
+                    'best_acc1': self.best_acc1,
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                }
+                if self.cfg is not None:
+                    save_dict['cfg'] = self.cfg
+            # FIXME 由于未知原因保存的model无法torch.load加载
+            elif self.config.save_object == 'model':
+                file_name = name + '_model'
+                if len(self.config.gpu_idx_list) > 1:
+                    model = self.model.module
+                else: model = self.model
+                save_dict = {
+                    'arch': self.config.arch,
+                    'ratio': self.pruned_ratio,
+                    'epoch': epoch,
+                    'model': model,
+                    'best_acc1': self.best_acc1,
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                }
+            if self.cfg is not None and self.cfg != 0:
                 save_dict['cfg'] = self.cfg
-            save_checkpoint(save_dict, is_best=is_best, epoch=None, file_root='checkpoints/', file_name=name)
+            checkpoint_path = save_checkpoint(save_dict, is_best=is_best, file_root='checkpoints/', file_name=file_name)
+
         print("{}{}".format("best_acc1: ", self.best_acc1))
+        print('{}{}'.format('==> pruned model save path: ', checkpoint_path))
 
 
 
@@ -190,20 +224,26 @@ if __name__ == "__main__":
 
     add_trainer_arg_parser(parser)
 
-    parser.add_argument('--sparsity-regularization', '-sr', dest='sr', action='store_true',
-                        help='train with channel sparsity regularization')
-    parser.add_argument('--srl', dest='sr_lambda', type=float, default=1e-4,
-                        help='scale sparse rate (default: 1e-4), suggest 1e-4 for vgg, 1e-5 for resnet/densenet')
-
     add_visdom_arg_parser(parser)
                         
-    parser.add_argument('--prune-percent', type=float, default=0.2, metavar='PERCENT', 
+    parser.add_argument('--prune_percent', type=float, default=0.2, metavar='PERCENT', 
                         help='percentage of weight to prune(default: 0.2)')
-    parser.add_argument('--lp-norm', '-lp', dest='lp_norm', type=int, default=2, metavar='P', 
+    parser.add_argument('--lp_norm', '--lp', dest='lp_norm', type=int, default=2, metavar='P', 
                         help='the order of norm(default: 2)')
-    parser.add_argument('--sfp-intervals', type=int, default=3, metavar='N', 
+    parser.add_argument('--sfp_intervals', '--sfp', type=int, default=3, metavar='N', 
                         help='soft filter prune interval(default: 3)')
+
+    parser.add_argument('--json', type=str, default='',
+                        help='json configuration file path(default: '')')
+
     args = parser.parse_args()
+    
+    if args.json != '':
+        json_path = os.path.join(args.json)
+        assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
+        params = Params_json(json_path)
+        for key in params.dict:
+            args.__dict__[key] = params.dict[key]
 
     # debug用
     # args.workers = 0
@@ -223,11 +263,11 @@ if __name__ == "__main__":
         valuate=args.valuate,
         resume_path=args.resume_path,
         refine=args.refine,
+        suffix_usr=args.suffix_usr,
         log_path=args.log_path,
         test_only=args.test_only,
-
-        sr=args.sr,
-        sr_lambda=args.sr_lambda,
+        milestones=args.milestones,
+        save_object=args.save_object,
 
         visdom = args.visdom, # 使用visdom可视化训练过程
         vis_env=args.vis_env,
