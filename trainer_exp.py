@@ -189,6 +189,12 @@ class TrainerExp(object):
             print("")
             
             # save checkpoint
+            save_dict = {
+                'arch': self.config.arch,
+                'epoch': epoch,
+                'best_acc1': self.best_acc1,
+                'optimizer_state_dict': self.optimizer.state_dict(),
+            }
             if self.config.save_object == 'None':
                 continue
             elif self.config.save_object == 'state_dict':
@@ -196,26 +202,14 @@ class TrainerExp(object):
                 if len(self.config.gpu_idx_list) > 1:
                     state_dict = self.model.module.state_dict()
                 else: state_dict = self.model.state_dict()
-                save_dict = {
-                    'arch': self.config.arch,
-                    'epoch': epoch,
-                    'model_state_dict': state_dict,
-                    'best_acc1': self.best_acc1,
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                }
+                save_dict['model_state_dict'] = state_dict
             # FIXME 由于未知原因保存的model无法torch.load加载
             elif self.config.save_object == 'model':
                 file_name = name + '_model'
                 if len(self.config.gpu_idx_list) > 1:
                     model = self.model.module
                 else: model = self.model
-                save_dict = {
-                    'arch': self.config.arch,
-                    'epoch': epoch,
-                    'model': model,
-                    'best_acc1': self.best_acc1,
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                }
+                save_dict['model'] = model
             if self.cfg is not None:
                 save_dict['cfg'] = self.cfg
             checkpoint_path = save_checkpoint(save_dict, is_best=is_best, file_root='checkpoints/', file_name=file_name)

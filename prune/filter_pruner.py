@@ -47,8 +47,8 @@ class FilterPruner(object):
         self.prune_percent = prune_percent
         self.original_model = copy.deepcopy(model).to(device)
         self.target_cfg = target_cfg
-        self.pruned_cfg = []
-        self.pruned_cfg_mask = []
+        self.remain_cfg = []
+        self.remain_cfg_mask = []
         self.p = p
         self.original_model.eval() # 验证模式
 
@@ -74,7 +74,7 @@ class FilterPruner(object):
                 elif isinstance(module, torch.nn.MaxPool2d):
                     self.prune_percent.append(0)
 
-        self.pruned_cfg = []
+        self.remain_cfg = []
         self.conv_threshold = []
         conv_pruned_num = 0
         conv_original_num = 0
@@ -88,7 +88,7 @@ class FilterPruner(object):
                 else:
                     pruned_filters_num = int(original_filters_num*self.prune_percent[index])
                     remain_filters_num = original_filters_num-pruned_filters_num
-                self.pruned_cfg.append(remain_filters_num)
+                self.remain_cfg.append(remain_filters_num)
 
                 filter_weight_num = module.weight.data.shape[1] * module.weight.data.shape[2] * module.weight.data.shape[3]
 
@@ -109,7 +109,7 @@ class FilterPruner(object):
                 # 用于从旧模型向新模型恢复weight
                 cfg_mask = torch.zeros(original_filters_num).to(self.device)
                 cfg_mask[keep_filters_index.tolist()] = 1
-                self.pruned_cfg_mask.append(cfg_mask)
+                self.remain_cfg_mask.append(cfg_mask)
 
                 # 更新一些统计数据
                 # conv_threshold_index = pruned_filters_num
@@ -120,7 +120,7 @@ class FilterPruner(object):
                 #     format(layer_index, original_filters_num, remain_filters_num))
                 index += 1
             elif isinstance(module, torch.nn.MaxPool2d):
-                self.pruned_cfg.append('M')
+                self.remain_cfg.append('M')
                 index += 1
 
         # print('{:<30}'.format('==> prune conv threshold: '), end='')
@@ -128,8 +128,8 @@ class FilterPruner(object):
         # print('{:<30}  {:.4f}'.format('==> conv layer num: ', index))
         self.conv_prune_ratio = conv_pruned_num/conv_original_num
         print('{:<30}  {:.4f}%'.format('==> prune conv ratio: ', self.conv_prune_ratio*100))
-        print('{}'.format(self.pruned_cfg))
-        return self.simple_pruned_model, self.pruned_cfg, self.conv_prune_ratio
+        print('{}'.format(self.remain_cfg))
+        return self.simple_pruned_model, self.remain_cfg, self.conv_prune_ratio
 
 
     def prune(self, model=None):
@@ -137,18 +137,18 @@ class FilterPruner(object):
             self.original_model = model
         self.simple_prune()
         print('{:<30}  {:<8}'.format('==> creating new model: ', self.arch))
-        self.pruned_model = models.__dict__[self.arch](cfg=self.pruned_cfg, num_classes=self.original_model.num_classes) # 根据cfg构建新的model
+        self.pruned_model = models.__dict__[self.arch](cfg=self.remain_cfg, num_classes=self.original_model.num_classes) # 根据cfg构建新的model
         self.pruned_model.to(self.device) # 模型转移到设备上
 
         self.pruned_model.eval()
 
-        self.weight_recover_vgg(self.pruned_cfg_mask, self.simple_pruned_model, self.pruned_model)
-        return self.pruned_model, self.pruned_cfg, self.conv_prune_ratio
+        self.weight_recover_vgg(self.remain_cfg_mask, self.simple_pruned_model, self.pruned_model)
+        return self.pruned_model, self.remain_cfg, self.conv_prune_ratio
 
 
     def weight_recover_vgg(self, cfg_mask, original_model, pruned_model):
+        # FIXME 应该是有bug。。
         """根据 cfg_mask 将 original_model 的权重恢复到结构化剪枝后的 pruned_model """
-        # 将参数复制到新模型
         layer_id_in_cfg = 0
         conv_in_channels_mask = torch.ones(3)
         conv_out_channels_mask = cfg_mask[layer_id_in_cfg]

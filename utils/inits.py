@@ -312,7 +312,8 @@ def model_init(config, device, num_classes):
         checkpoint = torch.load(config.resume_path, map_location=device)
         assert checkpoint['arch'] == config.arch
         print('{:<30}  {:<8}'.format('==> resuming from: ', config.resume_path))
-        if config.refine: # 根据cfg加载剪枝后的模型结构
+        # if config.refine: # 根据cfg加载剪枝后的模型结构
+        if 'cfg' in checkpoint:
             cfg=checkpoint['cfg']
             print(cfg)
     model = models.__dict__[config.arch]
@@ -340,7 +341,8 @@ def teacher_model_init(config, device, num_classes):
     checkpoint = torch.load(config.kd_teacher_checkpoint, map_location=device)
     assert checkpoint['arch'] == config.kd_teacher_arch
     print('{:<30}  {:<8}'.format('==> teacher model checkpoint: ', config.kd_teacher_checkpoint))
-    if config.refine: # 根据cfg加载剪枝后的模型结构
+    # if config.refine: # 根据cfg加载剪枝后的模型结构
+    if 'cfg' in checkpoint:
         cfg=checkpoint['cfg']
         print(cfg)
     model = models.__dict__[config.kd_teacher_arch]
@@ -368,7 +370,8 @@ def distribute_model_init(config, device, num_classes):
     if config.resume_path != '': # 断点续练hhh
         checkpoint = torch.load(config.resume_path, map_location=device)
         print('{:<30}  {:<8}'.format('==> resuming from: ', config.resume_path))
-        if config.refine: # 根据cfg加载剪枝后的模型结构
+        # if config.refine: # 根据cfg加载剪枝后的模型结构
+        if 'cfg' in checkpoint:
             cfg=checkpoint['cfg']
             print(cfg)
     model = models.__dict__[config.arch]

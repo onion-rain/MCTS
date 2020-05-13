@@ -15,90 +15,15 @@
                 // "--gpu", "3",
 
                 // //train
-                // "--arch", "test", 
-                // "--dataset", "cifar10",
-                // "--gpu", "0",
-                // "--quantize-type", "dorefa",
-                // "--a_bits", "2",
-                // "--w_bits", "2",
-                // "--test_only", 
-                // "--resume", "checkpoints/meta_prune/imagenet_mobilenetv2_prunednet_flops44_best.pth.tar"
-                // "--valuate",
+                "--arch", "vgg16_bn_cifar", 
+                "--dataset", "cifar10",
+                "--gpu", "3",
+                "--test_only", 
+                "--resume", "checkpoints/cifar10_vgg16_bn_cifar_sfp_prune0.4_state_dict_checkpoint.pth.tar",
+                "--valuate",
                 // "--binary",
                 // "--resume", "checkpoints/cifar10_nin_dorefanet_a1w1g32_checkpoint.pth.tar"
                 
-                // //slimming
-                // "--arch", "resnet20_cs",
-                // "--gpu", "4",
-                // "--resume", "checkpoints/basline_sr/cifar10_resnet20_cs_sr_best.pth.tar",
-                // "--slim", "0.5",
-
-                // //weight prune
-                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
-                // "--arch", "vgg16_bn_cifar",
-                // "--prune-percent", "0.1",
-                // "--prune-object", "conv",
-                
-                // //l1 filter prune
-                // "--arch", "vgg16_bn_cifar",
-                // "--gpu", "5",
-                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
-                // "--prune-percent", "0.3",
-                // "--lp-norm", "1"
-
-                // //SFP
-                // "--arch", "vgg19_bn_cifar",
-                // "--epochs", "150",
-                // "--gpu", "5",
-                // "--valuate",
-                // "--lp-norm", "2",
-                // "--sfp-intervals", "3",
-                // "--prune-percent", "0.2",
-                
-                // //thinet
-                // "--arch", "vgg16_bn_cifar",
-                // "--gpu", "5",
-                // "--resume", "checkpoints/baseline/cifar10_vgg16_bn_cifar_best.pth.tar",
-                // "--prune-percent", "0.3",
-                // "--lp-norm", "2",
-                // "--method", "lasso",
-                
-                // // Meta train
-                // // "--arch", "resnet50_pruningnet",
-                // "--arch", "mobilenetv2_pruningnet",
-                // // "--arch", "mobile_pruningnet",
-                // "--dataset", "imagenet",
-                // "--gpu", "",
-                // "--batch-size", "100",
-                // // "--valuate",
-                // // "--visdom",
-                // "--epochs", "32",
-
-                // //Meta search
-                // "--arch", "mobilenetv2_pruningnet",
-                // "--dataset", "imagenet",
-                // "--gpu", "1",
-                // "--resume", "checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar",
-                // "--flops", "40", 
-                // "--population", "5", 
-                // "--select-num", "3", 
-                // "--mutation-num", "1", 
-                // "--crossover-num", "1",
-                // "--flops-arch", "mobilenetv2_prunednet",
-                // "--search-resume", "checkpoints/meta_prune/MetaPruneSearch_mobilenetv2_pruningnet_flops40.0_checkpoint.pth.tar",
-
-                // // Meta retrain
-                // "--arch", "resnet50_prunednet", 
-                // "--search-resume", "checkpoints/MetaPruneSearch_31_resnet50_pruningnet_checkpoint.pth.tar", 
-                // "--epochs", "60",
-                // "--candidate", "0",
-
-                // distiller
-                // "--json", "experiments/prune/cifar10_slimming_resnet20_fine_tuning.json",
-                "--json", "experiments/prune/cifar10_sfp_vgg16_bn.json",
-                "--gpu", "3",
-                // "--save", "model",
-                // "--prune_percent", "0.5"
             ],
         },
     ]

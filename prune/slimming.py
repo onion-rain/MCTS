@@ -7,7 +7,7 @@ from models.cifar.slimming_utils import *
 
 class Slimming(object):
     """
-    TODO 做成像channel pruner那种
+    TODO 做成像channel pruner那种直接从原模型上prune然后保存整体模型+参数，不需要cfg重新构造
     """
     def __init__(self, arch, model, device, slim_percent, gpu_idx_list):
         self.arch = arch
@@ -137,7 +137,6 @@ class Slimming(object):
 
         original_modules = list(original_model.modules())
         slimmed_modules = list(self.slimmed_model.modules())
-        # 此处不能用下面表达式，因为它给出的module顺序瞎几把乱出
         for layer_index, [module0, module1] in enumerate(zip(original_model.modules(), self.slimmed_model.modules())):
             if isinstance(module0, shortcut_package):
                 # 虽然也属于conv2d，不过这儿先拿出来好处理

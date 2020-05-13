@@ -3,7 +3,7 @@
     "dataset": "cifar10",
     "lr": 0.1,
     "valuate": true,
-    "epochs": 200,
+    "epochs": 5,
     "milestones": "100, 150",
     "deterministic": true,
     "workers": 1,

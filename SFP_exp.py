@@ -149,22 +149,28 @@ class SFP(object):
                 self.valuator.test(self.model, epoch=epoch)
 
             # prune
-            if (epoch%self.config.sfp_intervals == self.config.sfp_intervals-1)\
-            and (epoch + self.config.sfp_intervals <= self.config.max_epoch):
-                if epoch + 2*self.config.sfp_intervals < self.config.max_epoch:
-                    # 中途soft prune
-                    print("\nsimple pruning...")
-                    self.model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
-                    if self.valuator is not None:
-                        self.valuator.test(self.model, epoch=epoch+0.5)
-                    print()
-                else:
-                    # 最后hard prune
-                    print("\npruning")
-                    self.best_acc1 = 0
-                    self.model, self.cfg, self.pruned_ratio = self.pruner.prune(self.model)
-                    if self.valuator is not None:
-                        self.valuator.test(self.model, epoch=epoch+0.5)
+            if epoch == self.config.max_epoch-1:
+                # 最后hard prune
+
+
+                print("\nsimple pruning...")
+                self.model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
+                if self.valuator is not None:
+                    self.valuator.test(self.model, epoch=epoch+0.5)
+
+
+                print("\npruning")
+                self.best_acc1 = 0
+                self.model, self.cfg, self.pruned_ratio = self.pruner.prune(self.model)
+                if self.valuator is not None:
+                    self.valuator.test(self.model, epoch=epoch+0.5)
+            elif epoch%self.config.sfp_intervals == self.config.sfp_intervals-1:
+                # 中途soft prune
+                print("\nsimple pruning...")
+                self.model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
+                if self.valuator is not None:
+                    self.valuator.test(self.model, epoch=epoch+0.5)
+                print()
 
             if self.valuator is not None:
                 is_best = self.valuator.top1_acc.avg > self.best_acc1
@@ -178,6 +184,12 @@ class SFP(object):
             print("")
             
             # save checkpoint
+            save_dict = {
+                'arch': self.config.arch,
+                'ratio': self.pruned_ratio,
+                'epoch': epoch,
+                'best_acc1': self.best_acc1,
+            }
             if self.config.save_object == 'None':
                 continue
             elif self.config.save_object == 'state_dict':
@@ -185,32 +197,18 @@ class SFP(object):
                 if len(self.config.gpu_idx_list) > 1:
                     state_dict = self.model.module.state_dict()
                 else: state_dict = self.model.state_dict()
-                save_dict = {
-                    'arch': self.config.arch,
-                    'ratio': self.pruned_ratio,
-                    'epoch': epoch,
-                    'model_state_dict': state_dict,
-                    'best_acc1': self.best_acc1,
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                }
-                if self.cfg is not None:
-                    save_dict['cfg'] = self.cfg
+                save_dict['model_state_dict'] = state_dict
             # FIXME 由于未知原因保存的model无法torch.load加载
             elif self.config.save_object == 'model':
                 file_name = name + '_model'
                 if len(self.config.gpu_idx_list) > 1:
                     model = self.model.module
                 else: model = self.model
-                save_dict = {
-                    'arch': self.config.arch,
-                    'ratio': self.pruned_ratio,
-                    'epoch': epoch,
-                    'model': model,
-                    'best_acc1': self.best_acc1,
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                }
+                save_dict['model'] = model
             if self.cfg is not None and self.cfg != 0:
                 save_dict['cfg'] = self.cfg
+            if epoch != self.config.max_epoch-1:
+                save_dict['optimizer_state_dict'] = self.optimizer.state_dict()
             checkpoint_path = save_checkpoint(save_dict, is_best=is_best, file_root='checkpoints/', file_name=file_name)
 
         print("{}{}".format("best_acc1: ", self.best_acc1))

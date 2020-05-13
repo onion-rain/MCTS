@@ -22,7 +22,7 @@ def dump_model(model_name=None,
     return
 
 if __name__ == "__main__":
-    checkpoint = torch.load('checkpoints/slimmed/slimming_pruned0.5_cifar10_resnet20_cs_state_dict_checkpoint.pth.tar')
+    checkpoint = torch.load('checkpoints/cifar10_vgg16_bn_cifar_sfp_prune0.4_state_dict_checkpoint.pth.tar')
     # dump_model(
     #     model_name='resnet110_cs', 
     #     cfg=None,

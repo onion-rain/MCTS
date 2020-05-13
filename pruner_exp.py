@@ -140,6 +140,11 @@ class Pruner(object):
         print("{}{}".format("best_acc1: ", self.best_acc1))
 
         # save pruned model
+        save_dict = {
+            'arch': self.config.arch,
+            'ratio': self.pruned_ratio,
+            'best_acc1': self.best_acc1,
+        }
         if self.config.save_object == 'None':
             return
         elif self.config.save_object == 'state_dict':
@@ -147,12 +152,7 @@ class Pruner(object):
             if len(self.config.gpu_idx_list) > 1:
                 state_dict = self.pruned_model.module.state_dict()
             else: state_dict = self.pruned_model.state_dict()
-            save_dict = {
-                'arch': self.config.arch,
-                'ratio': self.pruned_ratio,
-                'model_state_dict': state_dict,
-                'best_acc1': self.best_acc1,
-            }
+            save_dict['model_state_dict'] = state_dict
             if self.cfg is not None:
                 save_dict['cfg'] = self.cfg
         elif self.config.save_object == 'model':
@@ -160,12 +160,7 @@ class Pruner(object):
             if len(self.config.gpu_idx_list) > 1:
                 model = self.pruned_model.module
             else: model = self.pruned_model
-            save_dict = {
-                'arch': self.config.arch,
-                'ratio': self.pruned_ratio,
-                'model': model,
-                'best_acc1': self.best_acc1,
-            }
+            save_dict['model'] = model
         if self.cfg is not None and self.cfg != 0:
             save_dict['cfg'] = self.cfg
         checkpoint_path = save_checkpoint(save_dict, file_root='checkpoints/', file_name=file_name)

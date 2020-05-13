@@ -27,3 +27,13 @@
 ## distill
 
 [distilling-knowledge](READMEs/distill_README.md)
+
+## 现存bug：
+
+TODO 没法保存完整模型：或者说是保存的完整模型无法加载，判断应该是保存的问题。
+
+TODO 中途resume断点续练无法完全复现：完全没头绪，不就两个东西一个model state dict一个optimizer state dict吗。
+
+TODO simple prune和prune结果不同，应该是cfg重构模型后权重恢复那儿有bug：没得头绪，打算把第一个bug解决了直接保存完整模型，弃用cfg重构模型那套方案。
+
+TODO imagenet训练mobilenetv2精度好低。。resnet也比tv里的pth低近3个百分点：超参调一遍训练好久。。。爷吐了。
