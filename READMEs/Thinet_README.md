@@ -4,7 +4,7 @@
 
 ## 实验（基于CIFAR10数据集）：
 
-pruning: ```python pruner_exp.py --arch vgg16_bn_cifar --json experiments/prune/cifar10_channel_prune_vgg16_bn.json --prune_percent 0.3 --gpu 5```
+pruning: ```python pruner_exp.py--json experiments/prune/cifar10_channel_prune_vgg16_bn.json --prune_percent 0.3 --gpu 5```
 
 |          ratio           | Baseline |  0.3   |  0.4   |  0.5  |  0.6  |  0.7  |   0.8   |
 | :----------------------: | :------: | :----: | :----: | :---: | :---: | :---: | :-----: |

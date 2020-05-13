@@ -1,6 +1,6 @@
 # Network Compresser
 
-[baselin](READMEs/baseline_README.md)
+[baseline](READMEs/baseline_README.md)
 
 ## prune
 
@@ -12,7 +12,7 @@
 
 [network slimming(vgg, resnet_cs)](READMEs/slimming_README.md)
 
-[SFP(soft filter prune)(vgg)]()
+[SFP(soft filter prune)(vgg)](READMEs/SFP_README.md)
 
 [MetaPurne(resnet, mobilenetv2)](READMEs/MetaPrune_README.md)
 

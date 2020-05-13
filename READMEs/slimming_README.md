@@ -32,11 +32,11 @@ slimming: ``` python pruner_exp.py --json experiments/prune/cifar10_slimming_res
 
 fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet32_fine_tuning.json --gpu 6 --visdom```
 
-|   resnet20_cs    | Baseline(w) | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
-| :--------------: | :---------: | :---------------------------------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |    94.04    |                94.18                |        10.21        |         92.33         |
-|    Parameters    |   1.11 M    |               1.11 M                |      826.91 k       |       826.91 k        |
-|   FLOPs(MMac)    |   159.95    |               160.41                |        111.2        |         111.2         |
+|   resnet32_cs    | Baseline: resnet32(w) | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
+| :--------------: | :-------------------: | :---------------------------------: | :-----------------: | :-------------------: |
+| Top1 Accuracy(%) |         94.48         |                94.85                |        9.65         |         92.12         |
+|  Parameters(M)   |         1.89          |                1.89                 |        1.34         |         1.34          |
+|   FLOPs(MMac)    |        273.77         |               274.52                |       194.62        |        194.62         |
 
 ### resnet56_cs ('cs' means channel sellection)
 
@@ -46,11 +46,11 @@ slimming: ``` python pruner_exp.py --json experiments/prune/cifar10_slimming_res
 
 fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet56_fine_tuning.json --gpu 3 --visdom```
 
-|   resnet56_cs    | Baseline | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.6) | Fine-tuned (40epochs) |
-| :--------------: | :------: | :---------------------------------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |  93.33   |                93.70                |        11.72        |         90.99         |
-|  Parameters(M)   |   1.98   |                1.98                 |        1.81         |         1.81          |
-|   FLOPs(GMac)    |   0.29   |                0.29                 |        0.25         |         0.25          |
+|   resnet56_cs    | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
+| :--------------: | :---------------------------------: | :-----------------: | :-------------------: |
+| Top1 Accuracy(%) |                95.04                |        10.45        |         94.22         |
+|  Parameters(M)   |                3.44                 |        2.35         |         2.35          |
+|   FLOPs(MMac)    |               502.73                |       359.39        |        359.39         |
 
 ### resnet110_cs ('cs' means channel sellection)
 
@@ -60,23 +60,19 @@ slimming: ``` python pruner_exp.py --json experiments/prune/cifar10_slimming_res
 
 fine-tune: ```python trainer_exp.py --json experiments/prune/cifar10_slimming_resnet110_fine_tuning.json --gpu 3 --visdom```
 
-|   resnet110_cs   | Baseline | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.6) | Fine-tuned (20epochs) |
-| :--------------: | :------: | :---------------------------------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |  93.88   |                93.58                |        10.00        |         90.66         |
-|  Parameters(M)   |   3.93   |                3.93                 |        3.54         |         3.54          |
-|   FLOPs(GMac)    |   0.58   |                0.58                 |        0.53         |         0.53          |
+|   resnet110_cs   | Trained with sparsity (lambda=1e-5) | slimmed (ratio=0.5) | Fine-tuned (40epochs) |
+| :--------------: | :---------------------------------: | :-----------------: | :-------------------: |
+| Top1 Accuracy(%) |                95.39                |        10.42        |         94.66         |
+|  Parameters(M)   |                6.94                 |        4.56         |         4.56          |
+|   FLOPs(MMac)    |              1.02 GMac              |     741.71 MMac     |      741.71 MMac      |
 
 ## 可视化：
 
 带refine的为fine-tuning
 
-### test_loss(交叉熵):
-
-![test_loss](imgs/slimming/test_loss.jpg)
-
 ### test_top1:
 
-![test_top1](imgs/slimming/test_top1.jpg)
+![test_top1](imgs/slimming/slimming_test_top1.jpg)
 
 ### vgg19_bn_cifar
 
