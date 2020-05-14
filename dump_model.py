@@ -2,6 +2,7 @@
 
 import torch
 import torchvision as tv
+import numpy as np
 
 from utils import *
 
@@ -37,7 +38,7 @@ def get_features_hook1(self, input, output):# self 代表类模块本身
 
 if __name__ == "__main__":
 
-    train_transform = tv.transforms.Compose([
+    transform = tv.transforms.Compose([
         # tv.transforms.CenterCrop(32),
         tv.transforms.ToTensor(), 
         tv.transforms.Normalize(
@@ -48,23 +49,16 @@ if __name__ == "__main__":
         ) # 标准化的过程为(input-mean)/std
     ])
 
-    train_dataset = tv.datasets.CIFAR10(
+    dataset = tv.datasets.CIFAR10(
         root='/home/xueruini/onion_rain/pytorch/dataset/', 
-        train=True, 
+        train=False, 
         download=False,
-        transform=train_transform,)
+        transform=transform,)
 
-    # train_dataloader = torch.utils.data.DataLoader(
-    #     dataset=train_dataset, 
-    #     batch_size=1,
-    #     shuffle=False,
-    #     num_workers=1,
-    #     pin_memory=True,
-    # )
 
     for i in range(10000):
 
-        input, _ = train_dataset.__getitem__(i)
+        input, _ = dataset.__getitem__(i)
         input = input.unsqueeze(0)
 
         checkpoint_simple = torch.load('checkpoints/cifar10_test_simple_prune0.5_state_dict_best.pth.tar')
@@ -85,7 +79,9 @@ if __name__ == "__main__":
 
         # print("simple")
         simple_output = simple_pruned_model(input)
-        simple_feature = simple_pruned_model.feature_map.numpy()
+        simple_feature = simple_pruned_model.feature_map
+        # simple_feature = np.around(simple_feature.numpy(), decimals=4)
+        _, simple_pred = simple_feature.topk(1, 1, True, True)
         # print(simple_feature)
 
         checkpoint_filter = torch.load('checkpoints/cifar10_test_filter_prune0.5_state_dict_best.pth.tar')
@@ -106,10 +102,14 @@ if __name__ == "__main__":
 
         # print("pruned")
         pruned_output = pruned_model(input)
-        pruned_feature = pruned_model.feature_map.numpy()
+        pruned_feature = pruned_model.feature_map
+        # pruned_feature = np.around(pruned_feature.numpy(), decimals=4)
+        _, pruned_pred = pruned_feature.topk(1, 1, True, True)
         # print(pruned_feature)
-        
-        if (pruned_feature == simple_feature).any():
+
+        print("\r{}".format(i), end="")
+        # if not (pruned_feature == simple_feature).any():
+        if pruned_pred != simple_pred:
             print("{}false".format(i))
             print(simple_feature)
             print(pruned_feature)
