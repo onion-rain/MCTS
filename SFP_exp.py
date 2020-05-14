@@ -153,10 +153,15 @@ class SFP(object):
                 # 最后hard prune
 
 
-                print("\nsimple pruning...")
-                self.model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
+                print("\nsimple pruning1...")
+                self.simple_pruned_model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
                 if self.valuator is not None:
-                    self.valuator.test(self.model, epoch=epoch+0.5)
+                    self.valuator.test(self.simple_pruned_model, epoch=epoch+0.5)
+
+                # print("\nsimple pruning2...")
+                # self.simple_pruned_model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
+                # if self.valuator is not None:
+                #     self.valuator.test(self.simple_pruned_model, epoch=epoch+0.5)
 
 
                 print("\npruning")
@@ -167,7 +172,7 @@ class SFP(object):
             elif epoch%self.config.sfp_intervals == self.config.sfp_intervals-1:
                 # 中途soft prune
                 print("\nsimple pruning...")
-                self.model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
+                self.model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model, in_place=True)
                 if self.valuator is not None:
                     self.valuator.test(self.model, epoch=epoch+0.5)
                 print()

@@ -9,6 +9,7 @@ class FilterPruner(object):
     暂时仅支持vgg
     FIXME simple prune 和 prune 得到的模型精度不同
     TODO 适配其他模型
+    仅支持带bn的vgg（conv-bn-conv-bn结构）
     args:
         model(torch.nn.Module): 模型
         arch(str): 模型名，用于加载剪枝后新的网络结构
@@ -37,7 +38,6 @@ class FilterPruner(object):
         )
         pruner.simple_prune()
         pruner.prune()
-    注：simple_prune()可单独使用，但要prune，必须先simple_prune()
     """
     def __init__(self, model, arch=None, prune_percent=[0.5,], device='cpu',
                     target_cfg=None, p="fro"):
@@ -53,12 +53,15 @@ class FilterPruner(object):
         self.original_model.eval() # 验证模式
 
 
-    def simple_prune(self, model=None, prune_percent=None):
+    def simple_prune(self, model=None, prune_percent=None, in_place=False):
         """仅将权值归零"""
         if model is not None:
-            self.original_model = copy.deepcopy(model).to(self.device)
-            self.original_model.eval()
-            self.simple_pruned_model = model # 若传入模型则直接在模型上剪，不然还得更新optimizer
+            # self.original_model = copy.deepcopy(model).to(self.device)
+            # self.original_model.eval()
+            if in_place == False:
+                self.simple_pruned_model = copy.deepcopy(model).to(self.device) 
+            elif in_place == True: # 若传入模型则直接在模型上剪，不然还得更新optimizer
+                self.simple_pruned_model = model
         else:
             self.simple_pruned_model = self.original_model.to(self.device)
         self.simple_pruned_model.eval()
@@ -74,6 +77,7 @@ class FilterPruner(object):
                 elif isinstance(module, torch.nn.MaxPool2d):
                     self.prune_percent.append(0)
 
+        self.remain_cfg_mask = []
         self.remain_cfg = []
         self.conv_threshold = []
         conv_pruned_num = 0
@@ -132,9 +136,13 @@ class FilterPruner(object):
         return self.simple_pruned_model, self.remain_cfg, self.conv_prune_ratio
 
 
-    def prune(self, model=None):
-        if model is not None:
-            self.original_model = model
+    def prune(self, model=None, in_place=False):
+        # in_place没意义，反正都得重构一个新网络，相当于in_place一直是False
+        # if model is not None:
+        #     if in_place == False:
+        #         self.original_model = copy.deepcopy(model).to(self.device)
+        #     elif in_place == True:
+        self.original_model = copy.deepcopy(model).to(self.device)
         self.simple_prune()
         print('{:<30}  {:<8}'.format('==> creating new model: ', self.arch))
         self.pruned_model = models.__dict__[self.arch](cfg=self.remain_cfg, num_classes=self.original_model.num_classes) # 根据cfg构建新的model
@@ -143,6 +151,10 @@ class FilterPruner(object):
         self.pruned_model.eval()
 
         self.weight_recover_vgg(self.remain_cfg_mask, self.simple_pruned_model, self.pruned_model)
+        # print('simple pruned')
+        # print(self.simple_pruned_model.features._modules['0'].weight)
+        # print('pruned')
+        # print(self.pruned_model.features._modules['0'].weight)
         return self.pruned_model, self.remain_cfg, self.conv_prune_ratio
 
 
@@ -153,7 +165,8 @@ class FilterPruner(object):
         conv_in_channels_mask = torch.ones(3)
         conv_out_channels_mask = cfg_mask[layer_id_in_cfg]
         for [module0, module1] in zip(original_model.modules(), pruned_model.modules()):
-            if isinstance(module0, torch.nn.Conv2d):
+            a = 1
+            if isinstance(module0, torch.nn.Conv2d):# idx0为保留的输入通道idx，idx1为保留的输出通道idx
                 idx0 = np.squeeze(np.argwhere(np.asarray(conv_in_channels_mask.cpu().numpy()))) # 从掩模计算出需要保留的权重下标
                 idx1 = np.squeeze(np.argwhere(np.asarray(conv_out_channels_mask.cpu().numpy())))
                 # print('conv: in channels: {:d}, out chennels:{:d}'.format(idx0.shape[0], idx1.shape[0]))
@@ -166,9 +179,20 @@ class FilterPruner(object):
                 if idx1.size == 1:
                     idx1 = np.resize(idx1, (1,))
 
-                w = module0.weight.data[:, idx0, :, :].clone() # 剪输入通道
-                w = w[idx1, :, :, :].clone() # 剪输出通道
-                module1.weight.data = w.clone()
+                weight = module0.weight.data[:, idx0, :, :].clone() # 剪输入通道
+                weight = weight[idx1, :, :, :].clone() # 剪输出通道
+                bias = module0.bias.data[idx1]
+                module1.weight.data = weight.clone()
+                module1.bias.data = bias.clone()
+
+                # print("simple pruned_model")
+                # print(module0.weight)
+                # print("pruned_model")
+                # print(module1.weight)
+                # a = 1
+
+
+                # conv_in_channels_mask = conv_out_channels_mask
             elif isinstance(module0, torch.nn.BatchNorm2d):
                 idx1 = np.squeeze(np.argwhere(np.asarray(conv_out_channels_mask.cpu().numpy()))) # np.argwhere()返回非零元素下标
                 # 将应保留的权值复制到新模型中
@@ -176,15 +200,46 @@ class FilterPruner(object):
                 module1.bias.data = module0.bias.data[idx1].clone()
                 module1.running_mean = module0.running_mean[idx1].clone()
                 module1.running_var = module0.running_var[idx1].clone()
+                module1.num_batches_tracked = module0.num_batches_tracked
                 # 下一层
                 conv_in_channels_mask = conv_out_channels_mask.clone()
                 layer_id_in_cfg += 1
                 if layer_id_in_cfg < len(cfg_mask):  # do not change in Final FC
                     conv_out_channels_mask = cfg_mask[layer_id_in_cfg]
+
+
+                # print("simple pruned_model---------weight.data")
+                # print(module0.weight.data)
+                # print("pruned_model---------weight.data")
+                # print(module1.weight.data)
+
+                # print("simple pruned_model---------bias.data")
+                # print(module0.bias.data)
+                # print("pruned_model---------bias.data")
+                # print(module1.bias.data)
+
+                # print("simple pruned_model---------running_mean")
+                # print(module0.running_mean)
+                # print("pruned_model---------running_mean")
+                # print(module1.running_mean)
+
+                # print("simple pruned_model---------running_var")
+                # print(module0.running_var)
+                # print("pruned_model---------running_var")
+                # print(module1.running_var)
+                # a = 1
+
             elif isinstance(module0, torch.nn.Linear):
                 # 调整全连接层输入通道数
                 idx0 = np.squeeze(np.argwhere(np.asarray(conv_in_channels_mask.cpu().numpy())))
                 module1.weight.data = module0.weight.data[:, idx0].clone() # module0.weight.data[输出通道数，输入通道数]
+                module1.bias.data = module0.bias.data.clone()
+
+                # print("simple pruned_model")
+                # print(module0.weight)
+                # print("pruned_model")
+                # print(module1.weight)
+
                 # print("full connection: in channels: {:d}, out channels: {:d}".format(idx0.shape[0], module0.weight.data.shape[0]))
                 break # 仅调整第一层全连接层
 

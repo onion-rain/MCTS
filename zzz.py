@@ -29,10 +29,14 @@
 
 
 
-import torch.quantization
+import torch
 
 
+a = torch.tensor([2e-13])
 
+b = a
+
+print(b)
 
 
 
@@ -139,30 +143,30 @@ import torch.quantization
 # plt.ylim([-1.1, 1.1])
 # plt.savefig('MultiTaskLasso.png')
 
-import torch
-import numpy as np
-import random
+# import torch
+# import numpy as np
+# import random
 
-class Round(torch.autograd.Function):
-    @staticmethod
-    def forward(self, input):
-        output = torch.round(input)
-        return output
-    @staticmethod
-    def backward(self, grad_input):
-        grad_output = grad_input
-        return grad_output
+# class Round(torch.autograd.Function):
+#     @staticmethod
+#     def forward(self, input):
+#         output = torch.round(input)
+#         return output
+#     @staticmethod
+#     def backward(self, grad_input):
+#         grad_output = grad_input
+#         return grad_output
 
-random.seed(0)
-torch.manual_seed(0)
-np.random.seed(0)
+# random.seed(0)
+# torch.manual_seed(0)
+# np.random.seed(0)
 
-x = torch.randn(2, 3, requires_grad=True)
-# y = torch.round(x)
-y = Round.apply(x)
-y = 2 * y
+# x = torch.randn(2, 3, requires_grad=True)
+# # y = torch.round(x)
+# y = Round.apply(x)
+# y = 2 * y
 
-y = y.sum()
-y.backward()
+# y = y.sum()
+# y.backward()
 
-print(x.grad)
+# print(x.grad)

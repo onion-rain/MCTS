@@ -1,15 +1,15 @@
 {
-    "arch": "vgg16_bn_cifar",
+    "arch": "test",
     "dataset": "cifar10",
     "lr": 0.1,
     "valuate": true,
-    "epochs": 200,
+    "epochs": 1,
     "milestones": "100, 150",
     "deterministic": true,
     "workers": 1,
 
     "prune_method": "filter",
-    "prune_percent": 0.4,
+    "prune_percent": 0.5,
     "sfp_intervals": 3,
     "lp_norm": 2
 }

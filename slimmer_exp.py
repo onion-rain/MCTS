@@ -25,7 +25,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3, 4, 5, 6, 7"
 
 class Slimmer(object):
     """
-    TODO 由于trainer类大改，本类某些函数可能个已过期
     导入的模型必须有BN层，
     并且事先进行稀疏训练，
     并且全连接层前要将左右特征图池化为1x1，即最终卷积输出的通道数即为全连接层输入通道数

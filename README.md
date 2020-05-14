@@ -37,3 +37,5 @@ TODO 中途resume断点续练无法完全复现：完全没头绪，不就两个
 TODO simple prune和prune结果不同，应该是cfg重构模型后权重恢复那儿有bug：没得头绪，打算把第一个bug解决了直接保存完整模型，弃用cfg重构模型那套方案。
 
 TODO imagenet训练mobilenetv2精度好低。。resnet也比tv里的pth低近3个百分点：超参调一遍训练好久。。。爷吐了。
+
+TODO 舍弃config类直接传args，历史遗留问题。。重构代价有点大，以后有时间再搞
