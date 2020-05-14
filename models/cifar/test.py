@@ -34,10 +34,12 @@ class VGG_cifar(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        self.feature_map = x
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.classifier(x)
+
+        self.feature_map = x.detach()
+        
         return x
 
     def _initialize_weights(self):

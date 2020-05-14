@@ -158,10 +158,7 @@ class SFP(object):
                 if self.valuator is not None:
                     self.valuator.test(self.simple_pruned_model, epoch=epoch+0.5)
 
-                # print("\nsimple pruning2...")
-                # self.simple_pruned_model, self.cfg, self.pruned_ratio = self.pruner.simple_prune(self.model)
-                # if self.valuator is not None:
-                #     self.valuator.test(self.simple_pruned_model, epoch=epoch+0.5)
+                # self.model = self.simple_pruned_model
 
                 print("\npruning")
                 self.best_acc1 = 0

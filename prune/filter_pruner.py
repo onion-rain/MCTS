@@ -82,12 +82,14 @@ class FilterPruner(object):
         self.remain_cfg_mask = []
         self.remain_cfg = []
         self.conv_threshold = []
+        keep_filters_index = []
         conv_pruned_num = 0
         conv_original_num = 0
         index = 0
         for layer_index, module in enumerate(self.simple_pruned_model.modules()):
             if isinstance(module, torch.nn.Conv2d):
-                # FIXME 这里光把当前层conv weight归零无法完全模拟filter剪掉。。还得把下层conv的对应输入通道weight归零， 因为两层conv之间的bn层bias会将原本归零的通道给加上bias。。
+                # 这里光把当前层conv weight归零无法完全模拟filter剪掉。。还得把下层conv的对应输入通道weight归零， 
+                # 因为两层conv之间的bn层bias会将原本归零的通道给加上bias。或将下层bn的bias归零
                 original_filters_num = module.weight.data.shape[0] # 当前层filter总数
                 if self.target_cfg is not None:
                     remain_filters_num = self.target_cfg[index]
@@ -96,7 +98,7 @@ class FilterPruner(object):
                     pruned_filters_num = int(original_filters_num*self.prune_percent[index])
                     remain_filters_num = original_filters_num-pruned_filters_num
                 self.remain_cfg.append(remain_filters_num)
- 
+
                 filter_weight_num = module.weight.data.shape[1] * module.weight.data.shape[2] * module.weight.data.shape[3]
 
                 # 排序计算保留filter的索引
@@ -126,6 +128,13 @@ class FilterPruner(object):
                 # print('layer index: {:<5} total filters: {:<10} remaining filters: {:<10}'.
                 #     format(layer_index, original_filters_num, remain_filters_num))
                 index += 1
+            elif isinstance(module, torch.nn.BatchNorm2d):
+                # bn层剪掉channel的scaling factor可以不归零，但是bias一定要归零
+                original_channel_num = module.bias.data.shape[0]
+                assert keep_filters_index != []
+                mask = torch.zeros(original_channel_num).to(self.device)
+                mask[keep_filters_index.tolist()] = 1
+                module.bias.data.mul_(mask)
             elif isinstance(module, torch.nn.MaxPool2d):
                 self.remain_cfg.append('M')
                 index += 1
@@ -162,7 +171,6 @@ class FilterPruner(object):
 
 
     def weight_recover_vgg(self, cfg_mask, original_model, pruned_model):
-        # FIXME 应该是有bug。。
         """根据 cfg_mask 将 original_model 的权重恢复到结构化剪枝后的 pruned_model """
         layer_id_in_cfg = 0
         conv_in_channels_mask = torch.ones(3)
