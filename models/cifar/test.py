@@ -12,7 +12,7 @@ def make_layers(cfg, batch_norm=False):
         if v == 'M':
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
         else:
-            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1, bias=False)
             if batch_norm:
                 layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
             else:
@@ -34,6 +34,7 @@ class VGG_cifar(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
+        self.feature_map = x
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.classifier(x)

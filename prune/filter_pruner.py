@@ -9,7 +9,9 @@ class FilterPruner(object):
     暂时仅支持vgg
     FIXME simple prune 和 prune 得到的模型精度不同
     TODO 适配其他模型
-    仅支持带bn的vgg（conv-bn-conv-bn结构）
+    要求：
+        带bn的vgg（conv-bn-conv-bn结构）
+        conv无bias
     args:
         model(torch.nn.Module): 模型
         arch(str): 模型名，用于加载剪枝后新的网络结构
@@ -85,6 +87,7 @@ class FilterPruner(object):
         index = 0
         for layer_index, module in enumerate(self.simple_pruned_model.modules()):
             if isinstance(module, torch.nn.Conv2d):
+                # FIXME 这里光把当前层conv weight归零无法完全模拟filter剪掉。。还得把下层conv的对应输入通道weight归零， 因为两层conv之间的bn层bias会将原本归零的通道给加上bias。。
                 original_filters_num = module.weight.data.shape[0] # 当前层filter总数
                 if self.target_cfg is not None:
                     remain_filters_num = self.target_cfg[index]
@@ -93,7 +96,7 @@ class FilterPruner(object):
                     pruned_filters_num = int(original_filters_num*self.prune_percent[index])
                     remain_filters_num = original_filters_num-pruned_filters_num
                 self.remain_cfg.append(remain_filters_num)
-
+ 
                 filter_weight_num = module.weight.data.shape[1] * module.weight.data.shape[2] * module.weight.data.shape[3]
 
                 # 排序计算保留filter的索引
@@ -181,9 +184,9 @@ class FilterPruner(object):
 
                 weight = module0.weight.data[:, idx0, :, :].clone() # 剪输入通道
                 weight = weight[idx1, :, :, :].clone() # 剪输出通道
-                bias = module0.bias.data[idx1]
+                # bias = module0.bias.data[idx1]
                 module1.weight.data = weight.clone()
-                module1.bias.data = bias.clone()
+                # module1.bias.data = bias.clone()
 
                 # print("simple pruned_model")
                 # print(module0.weight)
