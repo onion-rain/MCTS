@@ -47,6 +47,7 @@ class SFP(object):
         self.best_acc1 = 0
         self.checkpoint = None
         self.pruned_ratio = 0
+        self.pruned_model = None
         vis_clear = True
 
         # suffix
@@ -162,9 +163,10 @@ class SFP(object):
 
                 print("\npruning")
                 self.best_acc1 = 0
-                self.model, self.cfg, self.pruned_ratio = self.pruner.prune(self.model)
+                self.pruned_model, self.cfg, self.pruned_ratio = self.pruner.prune(self.model)
+                print_flops_params(model=self.pruned_model)
                 if self.valuator is not None:
-                    self.valuator.test(self.model, epoch=epoch+0.5)
+                    self.valuator.test(self.pruned_model, epoch=epoch+0.5)
             elif epoch%self.config.sfp_intervals == self.config.sfp_intervals-1:
                 # 中途soft prune
                 print("\nsimple pruning...")
@@ -188,9 +190,11 @@ class SFP(object):
             save_dict = {
                 'arch': self.config.arch,
                 'ratio': self.pruned_ratio,
-                'epoch': epoch,
+                'epoch': epoch if self.pruned_model==None else 0,
                 'best_acc1': self.best_acc1,
             }
+            if self.pruned_model is not None:
+                self.model = self.pruned_model
             if self.config.save_object == 'None':
                 continue
             elif self.config.save_object == 'state_dict':

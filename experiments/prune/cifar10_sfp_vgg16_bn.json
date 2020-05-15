@@ -9,7 +9,6 @@
     "workers": 1,
 
     "prune_method": "filter",
-    "prune_percent": 0.4,
     "sfp_intervals": 3,
     "lp_norm": 2
 }

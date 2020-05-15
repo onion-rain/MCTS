@@ -14,12 +14,13 @@
                 "--workers", "1",
                 "--gpu", "3",
 
-                "--arch", "test", 
+                // "--arch", "test", 
+                "--arch", "vgg16_bn_cifar", 
                 "--dataset", "cifar10",
                 "--test_only", 
                 "--valuate",
-                // "--resume", "checkpoints/cifar10_test_simple_prune0.5_state_dict_best.pth.tar",
-                "--resume", "checkpoints/cifar10_test_filter_prune0.5_state_dict_best.pth.tar",
+                "--resume", "checkpoints/cifar10_vgg16_bn_cifar_sfp_prune0.4_state_dict_checkpoint.pth.tar",
+                // "--resume", "checkpoints/cifar10_test_filter_prune0.5_state_dict_best.pth.tar",
                 
                 // "--json", "experiments/prune/test.json",
             ],
