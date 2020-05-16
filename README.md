@@ -6,9 +6,9 @@
 
 [weight prune(all)](READMEs/weight_prune_README.md)
 
-[l1 filter prune(vgg16)](READMEs/l1_filter_prune_README.md)
+[l1 filter prune(vgg)](READMEs/l1_filter_prune_README.md)
 
-[Thinet(vgg16)](READMEs/Thinet_README.md)
+[Thinet(vgg)](READMEs/Thinet_README.md)
 
 [network slimming(vgg, resnet_cs)](READMEs/slimming_README.md)
 
@@ -18,11 +18,11 @@
 
 ## quantize
 
-[binarynet(resnet_cifar)](READMEs/binarynet_README.md)
+[binarynet(resnet_cifar)](READMEs/quantize_README.md)
 
-[XNOR-Net(nin)](READMEs/xnornet_README.md)
+[XNOR-Net(nin)](READMEs/quantize_README.md)
 
-[Dorefa-Net(nin, resnet_cifar)](READMEs/Dorefanet_README.md)
+[Dorefa-Net(nin, resnet_cifar)](READMEs/quantize_README.md)
 
 ## distill
 

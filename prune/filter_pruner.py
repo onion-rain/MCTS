@@ -176,7 +176,7 @@ class FilterPruner(object):
         conv_in_channels_mask = torch.ones(3)
         conv_out_channels_mask = cfg_mask[layer_id_in_cfg]
         for [module0, module1] in zip(original_model.modules(), pruned_model.modules()):
-            a = 1
+            # a = 1
             if isinstance(module0, torch.nn.Conv2d):# idx0为保留的输入通道idx，idx1为保留的输出通道idx
                 idx0 = np.squeeze(np.argwhere(np.asarray(conv_in_channels_mask.cpu().numpy()))) # 从掩模计算出需要保留的权重下标
                 idx1 = np.squeeze(np.argwhere(np.asarray(conv_out_channels_mask.cpu().numpy())))

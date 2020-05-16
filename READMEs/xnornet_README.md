@@ -1,6 +1,6 @@
 # pytorch-xnornet
 
-[新版链接](READMEs/quantize_README.md)
+[新版链接](quantize_README.md)
 
 论文地址：[XNOR-Net: ImageNet Classification Using Binary Convolutional Neural Networks](https://arxiv.org/abs/1603.05279v4)
 

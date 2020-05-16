@@ -1,6 +1,6 @@
 # pytorch-DoReFa-Net
 
-[新版链接](READMEs/quantize_README.md)
+[新版链接](quantize_README.md)
 
 论文地址：[DoReFa-Net: Training Low Bitwidth Convolutional Neural Networks with Low Bitwidth Gradients](http://arxiv.org/abs/1606.06160)
 

@@ -102,7 +102,7 @@ class QuantizedConv2d(torch.nn.Conv2d):
 # `8P  d8' 88b  d88 88   88 88  V888    88      .88.    d8' db 88.     88  .8D         88booo.   .88.   88  V888 88.     88   88 88 `88. 
 #  `Y88'Y8 ~Y8888P' YP   YP VP   V8P    YP    Y888888P d88888P Y88888P Y8888D' C88888D Y88888P Y888888P VP   V8P Y88888P YP   YP 88   YD
 
-class QuantizedLinear(torch.nn.Conv2d):
+class QuantizedLinear(torch.nn.Linear):
     """
     args:
         a_bits(int): activation量化位数

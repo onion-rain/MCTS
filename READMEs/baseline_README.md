@@ -364,6 +364,10 @@ best_acc1: 78.69
 
 ==> Number of parameters:       11.69 M
 
+Test:   72 [  50000/  50000 (100%)] loss:   1.412 | top1: 66.032% | load_time:  33% | UTC+8: 10:32:45
+
+--------  imagenet_resnet18  --  best_top1: 66.03  --  duration:  0h:00.26  --------
+
 #### ResNet34
 
 ```python trainer_exp.py --json experiments/baseline/imagenet_resnet34.json --gpu 2 --visdom```
@@ -379,3 +383,7 @@ best_acc1: 78.69
 ==> Computational complexity:   320.24 MMac
 
 ==> Number of parameters:       3.5 M
+
+Test:   75 [  50000/  50000 (100%)] loss:   1.957 | top1: 54.904% | load_time:  32% | UTC+8: 10:31:13
+
+--------  imagenet_mobilenet_v2  --  best_top1: 54.90  --  duration:  0h:00.28  --------

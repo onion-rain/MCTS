@@ -1,6 +1,6 @@
 # distill
 
-## nin to resnet20
+## resnet20 to nin
 
 python distiller_exp.py --json experiments/distill/cifar10_resnet20-nin_distill.json --gpu 1
 
