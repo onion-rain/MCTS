@@ -8,8 +8,6 @@
 # f = a.mul_(b)
 
 
-
-
 # d = torch.stack([a, b, c])
 # e = torch.cat([a, b, c])
 
