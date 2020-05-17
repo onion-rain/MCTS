@@ -121,6 +121,10 @@ prunednet retrain from scratch: ```python meta_trainer_exp.py --arch mobilenetv2
 
 #### baseline:
 
+train: ```python meta_trainer_exp.py --json experiments/baseline/imagenet_mobilenetv2_prunednet.json --gpu 5 --visdom```（checkpoint保存gene全-1）
+
+或：```python trainer_exp.py --json experiments/baseline/imagenet_mobilenetv2_prunednet.json --gpu 5 --visdom```（checkpoint不保存gene）
+
 gene: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, ???]
 
 flops: 320.24 MMac

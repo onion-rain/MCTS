@@ -1,4 +1,4 @@
-# Network Compresser
+# NCTS(Model Compression Toolset)
 
 [baseline](READMEs/baseline_README.md)
 
