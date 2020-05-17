@@ -1,4 +1,4 @@
-# NCTS(Model Compression Toolset)
+# MCTS(Model Compression Toolset)
 
 [baseline](READMEs/baseline_README.md)
 
