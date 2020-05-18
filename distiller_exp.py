@@ -24,7 +24,7 @@ import warnings
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
 # import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
 # fuser -v /dev/nvidia* |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 # ssh -L 8097:nico1:8097 tiaoban -p 2222
 

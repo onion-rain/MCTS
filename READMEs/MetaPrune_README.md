@@ -131,9 +131,13 @@ flops: 320.24 MMac
 
 params: 6.55 M
 
-top1 acc:
+Train:  79 [1281200/1281167 (100%)] loss:   2.829 | top1: 56.671% | load_time:   4% | lr   : 1.0e-03
 
-checkpoint: 
+Test:   79 [  50000/  50000 (100%)] loss:   1.701 | top1: 61.904% | load_time:  50% | UTC+8: 23:05:18
+
+--------  imagenet_mobilenetv2_prunednet  --  best_top1: 61.92  --  duration: 60h:25.09  --------
+
+best_acc1: 61.922
 
 #### flops0(no flops limit):
 

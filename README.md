@@ -28,7 +28,7 @@
 
 [distilling-knowledge](READMEs/distill_README.md)
 
-## 现存bug：
+## TODO：
 
 TODO 没法保存完整模型：或者说是保存的完整模型无法加载，判断应该是保存的问题。
 
