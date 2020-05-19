@@ -1,5 +1,7 @@
 # MCTS(Model Compression Toolset)
 
+![MCTS](READMEs/imgs/MCTS.pdf)
+
 [baseline](READMEs/baseline_README.md)
 
 ## prune
