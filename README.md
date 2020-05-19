@@ -1,6 +1,6 @@
 # MCTS(Model Compression Toolset)
 
-![MCTS](READMEs/imgs/MCTS.pdf)
+![MCTS](READMEs/imgs/MCTS.jpg)
 
 [baseline](READMEs/baseline_README.md)
 
