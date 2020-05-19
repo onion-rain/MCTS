@@ -18,8 +18,8 @@ prunednet retrain from scratch: ```python meta_trainer_exp.py --arch resnet50_pr
 
 | Flops limit(MMac) | Baseline |                           No limit                           |  1900  |  1500  |
 | :---------------: | :------: | :----: | :----: | :----: |
-| Top1(without fine-tuning)(%) |    |                            57.782‬                            |                            57.75‬                             |                            57.494‬                            |
-| Top1(train from scratch)(%) |  | 71.852 | 71.212 | 70.61 |
+| Top1(without fine-tuning)(%) | N/A |                            57.782‬                            |                            57.75‬                             |                            57.494‬                            |
+| Top1(train from scratch)(%) | 74.00 | 71.852 | 71.212 | 70.61 |
 |   Parameters(M)   |                            25.56                             |                            18.57                             |                            14.87                             |                            13.95                             |
 | Flops(GMac) | 4.11 | 2.56 | 1.85 | 1.49 |
 |    Gene    |  [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, ???]  | [27, 28, 29, 23, -1, 20, 22, 17, 19, 16, 30, 9, 28, 12, 20, 14, 22, 25, 27, 24, 25, 42.218] | [20, 13, 16, 16, -1, 21, 9, 23, 21, 21, 14, 26, 19, 17, 27, 19, 15, 11, 17, 22, 25, 42.25] | [20, 10, 16, 17, -1, 9, 3, 7, 23, 10, 19, 12, 16, 20, 17, 13, 22, 11, 18, 19, 24, 42.506] |
@@ -36,9 +36,13 @@ flops: 4.11 GMac
 
 params: 25.56 M
 
-top1 acc:
+Train:  79 [1281200/1281167 (100%)] loss:   2.116 | top1: 72.665% | load_time:   3% | lr   : 1.0e-03
 
-checkpoint: 
+Test:   79 [  50000/  50000 (100%)] loss:   1.106 | top1:  73.93% | load_time:   4% | UTC+8: 01:56:23
+
+--------  imagenet_resnet50_prunednet  --  best_top1: 74.00  --  duration: 88h:10.27  --------
+
+best_acc1: 74.002
 
 #### flops0(no flops limit):
 
@@ -113,10 +117,10 @@ prunednet retrain from scratch: ```python meta_trainer_exp.py --arch mobilenetv2
 
 | Flops limit(MMac) | Baseline |                           No limit                           |  300  |  141  |  125  |  106  |  85  |  44  |
 | :---------------: | :------: | :----: | :----: | :----: | :----: | :----: | :----: | :----: |
-| Top1(without fine-tuning)(%) |    |                            46.652                            |                             46.4‬                             |                            44.808‬                            |                            44.082                            |                            43.308                            |                            41.54                             |                             33.3                             |
-| Top1(train from scratch)(%) |  |                                                              |                                                              |                            45.28                             |                             45.1                             |                             44.2                             |                            43.178                            |                            38.404                            |
-|   Parameters(M)   |                             6.55                             |                                                           |                             4.26                             |                             2.74                             |                             2.59                             |                             2.4                              |                             2.21                             |                             1.65                             |
-| Flops(MMac) |                            679.9                            |                                                              |                            292.67                            |                            145.69                            |                            128.65                            |                            107.53                            |                            87.41                             |                            46.47                             |
+| Top1(without fine-tuning)(%) | N/A |                            46.652                            |                             46.4‬                             |                            44.808‬                            |                            44.082                            |                            43.308                            |                            41.54                             |                             33.3                             |
+| Top1(train from scratch)(%) | 61.922 | 49.31 | 48.18 |                            45.28                             |                             45.1                             |                             44.2                             |                            43.178                            |                            38.404                            |
+|   Parameters(M)   |                             6.55                             | 4.43 |                             4.26                             |                             2.74                             |                             2.59                             |                             2.4                              |                             2.21                             |                             1.65                             |
+| Flops(MMac) |                            679.9                            | 383.43 |                            292.67                            |                            145.69                            |                            128.65                            |                            107.53                            |                            87.41                             |                            46.47                             |
 |    Gene    | [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, ???] | [24, 5, 29, 29, 28, 17, 22, 22, -1, 29, 25, 14, 22, 25, 14, 21, 15, 25, 5, 24, 24, 15, 25, 16, 22, 25, 53.348] | [15, 7, 15, 27, 17, 16, 20, 26, -1, 27, 14, 25, 10, 5, 21, 25, 7, 28, 10, 21, 8, 11, 16, 24, 13, 26, 53.6] | [14, 3, 6, 14, 12, 8, 16, 12, -1, 16, 6, 4, 21, 6, 14, 15, 10, 7, 11, 11, 18, 1, 20, 11, 10, 15, 55.192] | [7, 16, 7, 10, 11, 4, 17, 10, -1, 13, 4, 5, 14, 14, 9, 18, 10, 16, 17, 8, 8, 6, 17, 10, 9, 14, 55.918] | [11, 3, 4, 7, 7, 11, 15, 11, -1, 14, 7, 4, 13, 13, 10, 11, 11, 16, 13, 7, 3, 5, 9, 10, 9, 10, 56.692] | [7, 4, 5, 7, 6, 3, 9, 11, -1, 19, 4, 9, 11, 9, 9, 6, 10, 3, 6, 3, 7, 5, 17, 8, 8, 11, 58.46] | [2, 4, 4, 6, 6, 1, 4, 2, -1, 5, 4, 1, 8, 3, 0, 9, 2, 5, 5, 5, 2, 9, 9, 13, 3, 3, 66.7] |
 
 #### baseline:
@@ -127,7 +131,7 @@ train: ```python meta_trainer_exp.py --json experiments/baseline/imagenet_mobile
 
 gene: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, ???]
 
-flops: 320.24 MMac
+flops: 679.9 MMac
 
 params: 6.55 M
 
@@ -143,27 +147,29 @@ best_acc1: 61.922
 
 gene: [24, 5, 29, 29, 28, 17, 22, 22, -1, 29, 25, 14, 22, 25, 14, 21, 15, 25, 5, 24, 24, 15, 25, 16, 22, 25, 53.348]
 
-flops: 109.16 MMac
+flops: 383.43 MMac
 
-params: 2.4 M   
+params: 4.43 M   
 
-top1 acc: 45.456 
+top1 acc: 49.31
 
-pruningnet checkpoint: checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar
+Train:  79 [1281200/1281167 (100%)] loss:   3.371 | top1: 44.728% | load_time:   2% | lr   : 5.0e-03
 
-search checkpoint: checkpoints/meta_prune/MetaPruneSearch_mobilenetv2_pruningnet_flops300.0_checkpoint.pth.tar
+Test:   79 [  50000/  50000 (100%)] loss:     2.5 | top1: 46.956% | load_time:  25% | UTC+8: 07:48:10
 
-retrained checkpoint: checkpoints/meta_prune/imagenet_mobilenetv2_prunednet_best.pth.tar
+--------  imagenet_mobilenetv2_prunednet_flops0  --  best_top1: 49.31  --  duration: 44h:08.03  --------
+
+best_acc1: 49.31
 
 #### flops300:
 
 gene: [15, 7, 15, 27, 17, 16, 20, 26, -1, 27, 14, 25, 10, 5, 21, 25, 7, 28, 10, 21, 8, 11, 16, 24, 13, 26, 53.6]
 
-flops: 109.16 GMac
+flops: 292.67 MMac
 
-params: 2.59 M
+params: 4.26 M
 
-top1 acc: 45.456 
+top1 acc: 48.18
 
 pruningnet checkpoint: checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_best.pth.tar
 
@@ -261,3 +267,7 @@ pruningnet checkpoint: checkpoints/meta_prune/imagenet_mobilenetv2_pruningnet_be
 search checkpoint: checkpoints/meta_prune/MetaPruneSearch_mobilenetv2_pruningnet_flops106.0_checkpoint.pth.tar
 
 retrained checkpoint: checkpoints/meta_prune/imagenet_mobilenetv2_prunednet_flops44_best.pth.tar
+
+### 训练可视化
+
+![test_top1](imgs/meta_prune/metaprune_trainfromscratch_test_top1.jpg)

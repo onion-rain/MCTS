@@ -53,3 +53,29 @@ Test:   99 [  10000/  10000 (100%)] loss:   0.339 | top1:  92.77% | load_time:  
 --------  cifar10_resnet20_kd_resnext29_16x64d  --  best_top1: 92.81  --  duration:  9h:39.46  --------
 
 best_acc1: 92.81
+
+## cifar10_resnext to resnet32
+
+|     model     | resnet32(baseline) | resnext29_16x64d(teacher) | resnet32(stuedent) |
+| :-----------: | :----------------: | :-----------------------: | :----------------: |
+|    Top1(%)    |       92.95        |           95.85           |                    |
+| Parameters(M) |      0.46671       |           68.16           |      0.46671       |
+|  Flops(MMac)  |       69.74        |           84.81           |       69.74        |
+
+python distiller_exp.py --json experiments/distill/cifar10_resnext-resnet32_distill.json --gpu 1 --visdom
+
+==> Computational complexity:   69.74 MMac
+
+==> Number of parameters:       466.71 k
+
+Train:  99 [  50000/  50000 (100%)] loss:   0.078 | top1: 98.786% | load_time:   0% | lr   : 1.0e-03
+
+Test:   99 [  10000/  10000 (100%)] loss:   0.337 | top1:  93.18% | load_time:  47% | UTC+8: 09:22:23
+
+--------  cifar10_resnet32_kd_resnext29_16x64d  --  best_top1: 93.33  --  duration:  9h:47.49  --------
+
+best_acc1: 93.33
+
+## 训练可视化
+
+![test_top1](imgs/distill/distill_test_top1.jpg)
