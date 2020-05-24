@@ -84,15 +84,15 @@ slimming: ```python slimmer.py --arch vgg19_bn_cifar --gpu 4 --resume checkpoint
 
 fine-tune: ```python trainer.py --arch vgg19_bn_cifar --epochs 10 --gpu 4 --valuate --resume checkpoints/slimmed_ratio0.7_cifar10_vgg19_bn_cifar_checkpoint.pth.tar --refine```
 
-|  vgg19_bn_cifar  | Baseline | Trained with sparsity (lambda=1e-4) | slimmed (ratio=0.7) | Fine-tuned (10epochs) |
+|  vgg19_bn_cifar  | Baseline | Trained with sparsity (lambda=1e-4) | slimmed (ratio=0.6) | Fine-tuned (10epochs) |
 | :--------------: | :------: | :---------------------------------: | :-----------------: | :-------------------: |
-| Top1 Accuracy(%) |  93.26   |                94.02                |        10.00        |         92.64         |
-|  Parameters(M)   |  20.04   |                20.04                |        2.49         |         2.49          |
-|   FLOPs(GMac)    |   0.4    |                 0.4                 |        0.22         |         0.22          |
+| Top1 Accuracy(%) |  93.26   |                94.02                |        10.00        |         94.05         |
+|  Parameters(M)   |  20.04   |                20.04                |        3.25         |         3.25          |
+|   FLOPs(GMac)    |   0.4    |                 0.4                 |        0.23         |         0.23          |
 
 |             Pruned Ratio             |     0      |     0.1     |     0.2     |    0.3    |    0.4     |    0.5     |    0.6     |    0.7     |
 | :----------------------------------: | :--------: | :---------: | :---------: | :-------: | :--------: | :--------: | :--------: | :--------: |
-| Top1 Accuracy (%) without Fine-tuned |   93.26    |    93.93    |    93.96    |   93.95   |   94.01    |   94.03    |   94.05    |   93.01    |
+|  Top1 Accuracy (%) with Fine-tuned   |   93.26    |    93.93    |    93.96    |   93.95   |   94.01    |   94.03    |   94.05    |   93.01    |
 |      Parameters(M)/ FLOPs(GMac)      | 20.04/ 0.4 | 15.93/ 0.35 | 12.36/ 0.31 | 9.4/ 0.28 | 6.82/ 0.25 | 4.62/ 0.24 | 3.25/ 0.23 | 2.49/ 0.22 |
 
 | Slimmed Ratio |                         architecture                         |
