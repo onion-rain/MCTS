@@ -376,6 +376,24 @@ Test:   72 [  50000/  50000 (100%)] loss:   1.412 | top1: 66.032% | load_time:  
 
 ==> Number of parameters:       21.8 M
 
+
+
+#### ResNet50
+
+```python trainer_exp.py --json experiments/baseline/imagenet_resnet34.json --gpu 2 --visdom```
+
+==> Computational complexity:   4.11 GMac
+
+==> Number of parameters:       25.56 M
+
+Train:  79 [1281200/1281167 (100%)] loss:   2.116 | top1: 72.665% | load_time:   3% | lr   : 1.0e-03
+
+Test:   79 [  50000/  50000 (100%)] loss:   1.106 | top1:  73.93% | load_time:   4% | UTC+8: 01:56:23
+
+--------  imagenet_resnet50_prunednet  --  best_top1: 74.00  --  duration: 88h:10.27  --------
+
+best_acc1: 74.002
+
 ### MobileNet V2
 
 ```python trainer_exp.py --json experiments/baseline/imagenet_mobilenetv2.json --gpu 3 --visdom```
